@@ -1,4 +1,4 @@
-/* app.js -- boot, theme switcher, shared formatters.
+/* app.js -- boot, Digital Rain toggle wiring, H1 boot flourish, shared formatters.
  *
  * Boot order matters for the "never blank gauges" rule (spec Section 10.3):
  * 1. Paint every gauge from the last COMMITTED data/history/*.json row +
@@ -63,29 +63,61 @@
     if (span) span.textContent = label != null ? label : status;
   };
 
-  // ---------- theme switcher ----------
+  // ---------- Digital Rain ON/OFF rocker ----------
+  // The theme switcher is gone (single-identity redesign, 2026-07-09) --
+  // this replaces it with a rocker for rain.js's own on/off toggle. Reads
+  // localStorage directly rather than window.BER.isRainOn() because this
+  // runs synchronously at the very top of boot(), before rain.js's later
+  // <script> in document order has necessarily executed; the click
+  // handler below calls window.BER.setRainOn() instead, which is safe --
+  // by the time a visitor can click anything, every deferred script has
+  // long since run.
 
-  function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem("ber_theme", theme);
-    document.querySelectorAll(".theme-chip").forEach((chip) => {
-      const isActive = chip.dataset.themeChoice === theme;
-      chip.setAttribute("aria-pressed", String(isActive));
+  function initRainSwitcher() {
+    const current = localStorage.getItem("ber_rain") !== "off"; // mirrors rain.js's own default-on rule
+    document.querySelectorAll(".rain-chip").forEach((chip) => {
+      const isOnChip = chip.dataset.rainChoice === "on";
+      chip.setAttribute("aria-pressed", String(isOnChip === current));
+      chip.addEventListener("click", () => {
+        if (window.BER.setRainOn) window.BER.setRainOn(isOnChip);
+      });
     });
-    // charts.js listens for this to dispose + re-init with the new theme's
-    // token colors (spec Section 16.1.4).
-    document.dispatchEvent(new CustomEvent("ber:theme-changed", { detail: { theme } }));
+    document.addEventListener("ber:rain-changed", (e) => {
+      document.querySelectorAll(".rain-chip").forEach((chip) => {
+        const isOnChip = chip.dataset.rainChoice === "on";
+        chip.setAttribute("aria-pressed", String(isOnChip === e.detail.on));
+      });
+    });
   }
 
-  function initThemeSwitcher() {
-    const current = document.documentElement.dataset.theme || "engine";
-    document.querySelectorAll(".theme-chip").forEach((chip) => {
-      chip.setAttribute("aria-pressed", String(chip.dataset.themeChoice === current));
-      chip.addEventListener("click", () => applyTheme(chip.dataset.themeChoice));
-    });
-  }
+  // ---------- H1 boot flourish ----------
+  // One-time scramble-to-settle over <=700ms, never re-loops, skipped under
+  // reduced-motion (director ruling). Latin caps + digits only -- this runs
+  // in DOM text in IBM Plex Mono, which has no katakana coverage, and
+  // never touches any numeral or data element.
+  const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const SCRAMBLE_DURATION_MS = 700;
 
-  BER.applyTheme = applyTheme;
+  function scrambleH1() {
+    const el = document.getElementById("site-title");
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const target = el.textContent;
+    const start = performance.now();
+    function frame(now) {
+      const progress = Math.min((now - start) / SCRAMBLE_DURATION_MS, 1);
+      const revealCount = Math.floor(progress * target.length);
+      let out = "";
+      for (let i = 0; i < target.length; i++) {
+        if (target[i] === " " || i < revealCount) out += target[i];
+        else out += SCRAMBLE_CHARS[(Math.random() * SCRAMBLE_CHARS.length) | 0];
+      }
+      el.textContent = out;
+      if (progress < 1) requestAnimationFrame(frame);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(frame);
+  }
 
   // ---------- boot: paint from committed data ----------
 
@@ -117,7 +149,9 @@
   }
 
   async function boot() {
-    initThemeSwitcher();
+    localStorage.removeItem("ber_theme"); // one-time cleanup, nothing reads this key anymore
+    initRainSwitcher();
+    scrambleH1();
 
     let health = null;
     try {

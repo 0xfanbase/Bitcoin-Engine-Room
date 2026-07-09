@@ -6,41 +6,23 @@
 <title>BTC Engine Room</title>
 <meta name="description" content="A free, self-auditing Bitcoin fundamentals dashboard. Every gauge shows its data source, freshness, and validation status." />
 
-<!-- Inline pre-paint theme script: must run before CSS paints to avoid a
-     flash of the wrong theme. Default is 'engine' unless the visitor
-     already chose 'matrix' (localStorage, not a cookie -- a static site
-     never reads a cookie server-side). Sanitized against a fixed allow-list:
-     returning visitors who previously picked the now-removed 'light'/'dark'
-     themes fall back to 'engine' instead of inheriting a dead theme value
-     with no token block behind it. No prefers-color-scheme override: engine
-     wins unless the user explicitly picked matrix. -->
-<script>
-(function () {
-  var theme = localStorage.getItem('ber_theme');
-  if (theme !== 'engine' && theme !== 'matrix') {
-    theme = 'engine';
-    localStorage.setItem('ber_theme', theme); // self-heal a stale pre-2026-07-09 light/dark value
-  }
-  document.documentElement.dataset.theme = theme;
-})();
-</script>
-
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <!-- Non-blocking font load (standard loadCSS pattern): the page's own
-     style.css stays render-blocking (needed for layout/theme correctness),
-     but the Google Fonts stylesheet shouldn't hold up first paint --
+     style.css stays render-blocking (needed for layout correctness), but
+     the Google Fonts stylesheet shouldn't hold up first paint --
      display=swap on the font URL already avoids invisible text either way.
-     Source Serif 4 dropped: it existed only for the now-removed light
-     theme's serif masthead. -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" />
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-<noscript><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
+     Archivo Black dropped: the single-identity redesign (2026-07-09) moved
+     the masthead H1 and section plates to IBM Plex Mono -- see CLAUDE.md
+     Section 6 rule 5. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
 
-<canvas id="matrix-rain-canvas" aria-hidden="true"></canvas>
+<canvas id="digital-rain-canvas" aria-hidden="true"></canvas>
 
 <header class="site-header">
   <a class="brand" href="#top">BTC ENGINE ROOM</a>
@@ -48,18 +30,21 @@
     <span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--ink-dim);" id="engine-status-dot"></span>
     <span id="engine-status-text">checking&hellip;</span>
   </div>
-  <!-- Two-position rocker, not a chip row (director ruling: a binary choice
-       reads as one instrument switch, not three peer options). -->
-  <div class="theme-switcher" role="group" aria-label="Theme">
-    <button class="theme-chip" data-theme-choice="engine" aria-pressed="true">Engine</button>
-    <button class="theme-chip" data-theme-choice="matrix" aria-pressed="false">Digital Rain</button>
+  <!-- Digital Rain ON/OFF, not a theme picker (director ruling: with one
+       visual identity, committing the whole page to an animated background
+       is only responsible if a visitor can stop it without losing the
+       site). Same two-position rocker treatment as the retired theme
+       switcher. -->
+  <div class="rain-switcher" role="group" aria-label="Digital Rain">
+    <button class="rain-chip" type="button" data-rain-choice="on" aria-pressed="true">Rain On</button>
+    <button class="rain-chip" type="button" data-rain-choice="off" aria-pressed="false">Rain Off</button>
   </div>
 </header>
 
 <main class="page" id="top">
 
   <section class="masthead">
-    <h1>Bitcoin Engine Room</h1>
+    <h1 id="site-title">Bitcoin Engine Room</h1>
     <div class="odometer" id="odometer" aria-label="Current block height">
       <span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span>
     </div>
@@ -72,11 +57,11 @@
       <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-block-height" aria-label="Info">i</button>
     </div>
 
-    <!-- Block Rail (engine theme only): the train's position IS elapsed time
-         since the last block -- data, not decoration. Crawls imperceptibly
-         (~0.1-0.2px/s) between blocks and only visibly moves once, as a
-         ~4.5s run-off/re-entry sweep synced to the odometer roll on genuine
-         new-block arrival. Director ruling, CLAUDE.md Section 6 rule 2. -->
+    <!-- Block Rail: the train's position IS elapsed time since the last
+         block -- data, not decoration. Crawls imperceptibly between blocks
+         and only visibly moves once, as a run-off/re-entry sweep synced to
+         the odometer roll and rain.js's block-arrival surge on genuine new-
+         block arrival. Director ruling, CLAUDE.md Section 6 rule 2. -->
     <div class="block-rail" id="block-rail" aria-hidden="true" title="minutes since last block (full rail = 10:00 expected)">
       <div class="block-rail-track" id="block-rail-track">
         <div class="block-rail-ticks"></div>
@@ -239,20 +224,21 @@
       <p class="chart-caption">% performance vs. days since halving, each epoch normalized to its halving-day price. <a href="#cycle-overlay-card">#cycle</a></p>
     </div>
 
-    <div class="chart-card" id="deviation-dial-card">
+    <div class="chart-card" id="market-sentiment-card">
       <div class="chart-plate">
         <div class="chart-plate-heading">
-          <h3>Deviation Dial</h3>
-          <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-deviation-dial" aria-label="Info">i</button>
+          <h3>Market Sentiment</h3>
+          <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-market-sentiment" aria-label="Info">i</button>
         </div>
+        <div class="chart-plate-stats numeral" id="market-sentiment-stats">&mdash;</div>
       </div>
-      <div class="info-panel" id="info-deviation-dial" hidden>
-        <p>A single needle that averages three separate percentile readings: how stretched price is from the power-law trend, the Mayer Multiple, and where the current halving cycle sits versus past cycles.</p>
-        <p>It's a quick, at-a-glance temperature check, deliberately built as a simple toy composite &mdash; not a valuation model. Don't treat the needle position as investment advice.</p>
-        <p class="info-source">Source: computed nightly from the three models above</p>
+      <div class="info-panel" id="info-market-sentiment" hidden>
+        <p>A 0-100 score built from volatility, momentum, social-media buzz, and other market-sentiment signals, tracked daily over time &mdash; low means the market has been fearful, high means it's been greedy.</p>
+        <p>This is sentiment, not valuation: it says something about the crowd's mood, not about where price is headed next. The gauge card above shows today's single reading; this chart shows how it's moved.</p>
+        <p class="info-source">Source: alternative.me (sole source)</p>
       </div>
-      <div id="deviation-dial-chart" class="chart-canvas"></div>
-      <p class="chart-caption">Toy composite: average of the power-law residual, Mayer Multiple, and cycle-position percentiles. Not a valuation model. <a href="#deviation-dial-card">#dial</a></p>
+      <div id="market-sentiment-chart" class="chart-canvas"></div>
+      <p class="chart-caption">Fear &amp; Greed Index, 0-100, daily. A sentiment gauge, not a price model -- replaced the former "Deviation Dial," which averaged three percentile ranks and was labeled a toy composite even in its own methodology note. <a href="#market-sentiment-card">#sentiment</a></p>
     </div>
   </div>
 
