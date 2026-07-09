@@ -63,33 +63,6 @@
     if (span) span.textContent = label != null ? label : status;
   };
 
-  // ---------- Digital Rain ON/OFF rocker ----------
-  // The theme switcher is gone (single-identity redesign, 2026-07-09) --
-  // this replaces it with a rocker for rain.js's own on/off toggle. Reads
-  // localStorage directly rather than window.BER.isRainOn() because this
-  // runs synchronously at the very top of boot(), before rain.js's later
-  // <script> in document order has necessarily executed; the click
-  // handler below calls window.BER.setRainOn() instead, which is safe --
-  // by the time a visitor can click anything, every deferred script has
-  // long since run.
-
-  function initRainSwitcher() {
-    const current = localStorage.getItem("ber_rain") !== "off"; // mirrors rain.js's own default-on rule
-    document.querySelectorAll(".rain-chip").forEach((chip) => {
-      const isOnChip = chip.dataset.rainChoice === "on";
-      chip.setAttribute("aria-pressed", String(isOnChip === current));
-      chip.addEventListener("click", () => {
-        if (window.BER.setRainOn) window.BER.setRainOn(isOnChip);
-      });
-    });
-    document.addEventListener("ber:rain-changed", (e) => {
-      document.querySelectorAll(".rain-chip").forEach((chip) => {
-        const isOnChip = chip.dataset.rainChoice === "on";
-        chip.setAttribute("aria-pressed", String(isOnChip === e.detail.on));
-      });
-    });
-  }
-
   // ---------- H1 boot flourish ----------
   // One-time scramble-to-settle over <=700ms, never re-loops, skipped under
   // reduced-motion (director ruling). Latin caps + digits only -- this runs
@@ -150,7 +123,7 @@
 
   async function boot() {
     localStorage.removeItem("ber_theme"); // one-time cleanup, nothing reads this key anymore
-    initRainSwitcher();
+    localStorage.removeItem("ber_rain"); // one-time cleanup: the rain ON/OFF rocker was removed, 2026-07-09
     scrambleH1();
 
     let health = null;
