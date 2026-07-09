@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "notes": "Two profiles, deliberately different. `live_snapshot` validates ONE NEW DAY's value against current-era bounds and is consumed by fetch_snapshot.py (P2). `backfill_absolute` validates the FULL historical series (2010-present) in this phase's pytest suite and must hold for early low-price years too -- never reuse live_snapshot bounds against backfilled history, and never weaken either profile to make a check pass.",
+  "live_snapshot": {
+    "price_usd": {
+      "min": 1000,
+      "max": 10000000,
+      "max_day_over_day_pct_change": 0.40
+    },
+    "block_height": {
+      "strictly_increasing": true,
+      "min_delta_per_day": 100,
+      "max_delta_per_day": 200,
+      "note": "Not backfilled as a history file in P1 -- this rule is pinned now for P2's fetch_snapshot.py."
+    },
+    "hash_rate_eh_s": {
+      "max_pct_dev_from_trailing_30d_median": 0.50
+    },
+    "difficulty": {
+      "changes_only_at_retarget": true,
+      "max_pct_change_per_retarget": 0.30
+    },
+    "supply_btc": {
+      "monotonic_non_decreasing": true,
+      "max_btc": 21000000,
+      "max_pct_dev_from_subsidy_schedule": 0.001
+    },
+    "cross_source_variance": {
+      "price_pct": 0.015,
+      "hashrate_pct": 0.18,
+      "hashrate_pct_note": "Widened from a naive tight threshold (director-reviewed correction). Hash-rate ESTIMATORS across providers use different trailing-average smoothing windows (e.g. a 3-day vs. a 7-day window) and routinely disagree by double digits even when both are 'correct'. A tight threshold here would just generate constant false-positive VARIANCE_WARN noise."
+    }
+  },
+  "backfill_absolute": {
+    "price_usd": {
+      "min": 0.01,
+      "max": 10000000,
+      "note": "Min is near-zero, not 1000 -- BTC legitimately traded under $1 through 2010-2011."
+    },
+    "hash_rate_eh_s": {
+      "min": 0,
+      "max": null
+    },
+    "difficulty": {
+      "min": 1,
+      "max": null,
+      "series_is_sparse_step_function": true,
+      "max_pct_change_between_distinct_values": 0.30
+    },
+    "supply_btc": {
+      "min": 0,
+      "max": 21000000,
+      "monotonic_non_decreasing": true
+    }
+  }
+}

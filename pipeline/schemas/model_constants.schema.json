@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fandamentals.github.io/bitcoin-engine-room/schemas/model_constants.schema.json",
+  "title": "model_constants.json",
+  "type": "object",
+  "required": ["schema_version", "power_law", "cycle_overlay"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "power_law": {
+      "type": "object",
+      "required": [
+        "genesis_date", "fit_start_date", "sampling", "weighting",
+        "price_series_source", "expected_range", "audit_drift_thresholds"
+      ],
+      "properties": {
+        "genesis_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "fit_start_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "expected_range": {
+          "type": "object",
+          "required": ["b", "a", "r_squared_min"],
+          "properties": {
+            "b": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+            "a": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+            "r_squared_min": {"type": "number"}
+          }
+        }
+      }
+    },
+    "cycle_overlay": {
+      "type": "object",
+      "required": ["halving_dates", "next_halving_est_date", "next_halving_height"],
+      "properties": {
+        "halving_dates": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}
+        },
+        "next_halving_height": {"type": "integer"}
+      }
+    }
+  }
+}

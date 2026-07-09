@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fandamentals.github.io/bitcoin-engine-room/schemas/fng_daily.schema.json",
+  "title": "fng_daily history file",
+  "description": "alternative.me's Fear & Greed index. Data begins ~2018-02-01, not Bitcoin's genesis.",
+  "type": "object",
+  "required": ["metric", "unit", "schema_version", "generated_at", "series"],
+  "additionalProperties": false,
+  "properties": {
+    "metric": {"const": "fng_daily"},
+    "unit": {"const": "index_0_100"},
+    "schema_version": {"type": "integer", "const": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "series": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["date", "value", "classification", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+          "value": {"type": "integer", "minimum": 0, "maximum": 100},
+          "classification": {
+            "type": "string",
+            "enum": ["Extreme Fear", "Fear", "Neutral", "Greed", "Extreme Greed"]
+          },
+          "source": {"const": "alternative_me"}
+        }
+      }
+    }
+  }
+}
