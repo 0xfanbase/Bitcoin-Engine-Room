@@ -138,17 +138,17 @@ Suggested fix: none needed -- this is exactly the situation `model_constants.jso
 ### [audit] continuity (hashrate_daily) -- WARN (2026-07-09)
 Source: audit-auto
 Description: 1 gap(s) in daily series, first at 2025-11-12 -> 2025-11-16
-Suggested fix: (fill in during the next /improve pass)
+Suggested fix: not implemented this pass -- considered for the new `pipeline/known_gaps.json` allowlist (see the `[/improve]` entry below) alongside the supply_daily gap, but NOT added to it, because unlike supply_daily's gap this one hasn't actually been verified against a real source yet (e.g. checking whether blockchain.info's `hash-rate` chart itself has a gap in this window, vs. a pipeline-side issue during the P1-backfill-to-P2-live-append transition). Don't allowlist it without that check first -- doing so without verification would be exactly the kind of unjustified WARN-suppression the guardrails exist to prevent.
 
 ### [audit] continuity (supply_daily) -- WARN (2026-07-09)
 Source: audit-auto
 Description: 1 gap(s) in daily series, first at 2009-01-03 -> 2009-01-09
-Suggested fix: (fill in during the next /improve pass)
+Suggested fix (implemented, 2026-07-09 `/improve` pass): this specific gap was already investigated and confirmed genuine during P5 (network mined no blocks for ~6 days right after the genesis block -- see PROGRESS.md's P5 entry) -- it was just re-triggering the same WARN every single day with nothing new to act on. Added `pipeline/known_gaps.json` (+ `pipeline/schemas/known_gaps.schema.json`), a small hand-curated allowlist of exactly this kind of already-verified, cited, immutable-history gap; `audit.py`'s `check_continuity()` now skips a gap only if it matches an allowlisted metric+exact-date-range entry. The gap itself is still fully visible in the committed `supply_daily.json` history -- nothing is hidden, this only stops a permanently-true fact from cluttering the daily findings feed.
 
 ### [audit] continuity (fng_daily) -- WARN (2026-07-09)
 Source: audit-auto
 Description: 2 gap(s) in daily series, first at 2018-04-13 -> 2018-04-17
-Suggested fix: (fill in during the next /improve pass)
+Suggested fix: not implemented this pass, same reasoning as the hashrate_daily entry above -- eligible for `known_gaps.json` once someone actually checks alternative.me's public Fear & Greed history for a real reporting gap in this window (plausible, since the index was brand new in early 2018), rather than assuming it and allowlisting blind.
 
 ### [audit] site_integrity -- WARN (2026-07-09)
 Source: audit-auto

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "gaps": [
+    {
+      "metric": "supply_daily",
+      "gap_start": "2009-01-03",
+      "gap_end": "2009-01-09",
+      "reason": "No blocks were mined for roughly six days immediately after the genesis block (2009-01-03) -- a genuine historical fact about early Bitcoin, spot-checked against block-explorer data during Phase 5 (2026-07-09, see PROGRESS.md), not a data-source or pipeline defect."
+    }
+  ]
+}

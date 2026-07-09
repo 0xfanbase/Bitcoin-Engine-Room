@@ -14,9 +14,16 @@ def _patch_paths(monkeypatch, tmp_path):
     monkeypatch.setattr(audit, "BACKLOG_PATH", tmp_path / "IMPROVEMENT_BACKLOG.md")
     monkeypatch.setattr(audit, "INDEX_HTML_PATH", tmp_path / "index.html")
     monkeypatch.setattr(audit, "ASSETS_DIR", tmp_path / "assets")
+    monkeypatch.setattr(audit, "KNOWN_GAPS_PATH", tmp_path / "known_gaps.json")  # absent by default -- no allowlist
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     (tmp_path / "history").mkdir(parents=True, exist_ok=True)
     (tmp_path / "IMPROVEMENT_BACKLOG.md").write_text("# Improvement Backlog\n")
+
+
+def _write_known_gaps(tmp_path, gaps):
+    doc = {"schema_version": 1, "gaps": gaps}
+    with open(tmp_path / "known_gaps.json", "w") as f:
+        json.dump(doc, f)
 
 
 def _write_series(tmp_path, metric, dates_values, source="test"):
@@ -69,6 +76,39 @@ def test_continuity_skips_difficulty_entirely(tmp_path, monkeypatch):
     findings = audit.check_continuity()
 
     assert all(f["metric"] != "difficulty_daily" for f in findings)
+
+
+def test_continuity_allowlisted_gap_produces_no_finding(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    _write_known_gaps(
+        tmp_path,
+        [{"metric": "supply_daily", "gap_start": "2009-01-03", "gap_end": "2009-01-09", "reason": "test fixture"}],
+    )
+    _write_series(tmp_path, "supply_daily", [("2009-01-03", 1), ("2009-01-09", 2), ("2009-01-10", 3)])
+    for metric in ("price_daily", "hashrate_daily", "fng_daily"):
+        _write_series(tmp_path, metric, [("2026-07-01", 1), ("2026-07-02", 2)])
+
+    assert audit.check_continuity() == []
+
+
+def test_continuity_unlisted_gap_still_warns_even_with_known_gaps_present(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    _write_known_gaps(
+        tmp_path,
+        [{"metric": "supply_daily", "gap_start": "2009-01-03", "gap_end": "2009-01-09", "reason": "test fixture"}],
+    )
+    # A different, unexplained gap on the SAME metric must still be caught --
+    # the allowlist matches on exact metric+date-range, not "any gap on a
+    # metric that has ever had a known gap".
+    _write_series(tmp_path, "supply_daily", [("2030-01-01", 1), ("2030-01-05", 2)])
+    for metric in ("price_daily", "hashrate_daily", "fng_daily"):
+        _write_series(tmp_path, metric, [("2026-07-01", 1), ("2026-07-02", 2)])
+
+    findings = audit.check_continuity()
+
+    assert len(findings) == 1
+    assert findings[0]["metric"] == "supply_daily"
+    assert "2030-01-01" in findings[0]["detail"]
 
 
 # --------------------------------------------------------------------------

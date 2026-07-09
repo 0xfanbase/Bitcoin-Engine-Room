@@ -24,6 +24,7 @@ HISTORY_DIR = REPO_ROOT / "data" / "history"
 HEALTH_PATH = REPO_ROOT / "data" / "health.json"
 MODELS_PATH = REPO_ROOT / "data" / "models.json"
 SANITY_RULES_PATH = REPO_ROOT / "pipeline" / "sanity_rules.json"
+KNOWN_GAPS_PATH = REPO_ROOT / "pipeline" / "known_gaps.json"
 AUDIT_DIR = REPO_ROOT / "data" / "audit"
 BACKLOG_PATH = REPO_ROOT / "IMPROVEMENT_BACKLOG.md"
 INDEX_HTML_PATH = REPO_ROOT / "index.html"
@@ -67,7 +68,22 @@ def _finding(check: str, severity: str, detail: str, metric: str | None = None) 
 # --------------------------------------------------------------------------
 
 
+def _load_known_gaps() -> set[tuple[str, str, str]]:
+    # known_gaps.json is a small, hand-curated allowlist of gaps that have
+    # already been investigated and confirmed genuine (e.g. real historical
+    # events, not a pipeline or data-source defect) -- see its own "reason"
+    # field for each entry's citation. Excluding them from continuity's
+    # findings isn't weakening the check: the underlying gap is still fully
+    # visible in the committed history file itself, this just stops a fact
+    # that can never change (it's immutable past history) from re-triggering
+    # the same WARN every single day forever, which trains readers to stop
+    # taking the audit seriously.
+    doc = load_json(KNOWN_GAPS_PATH) or {"gaps": []}
+    return {(g["metric"], g["gap_start"], g["gap_end"]) for g in doc.get("gaps", [])}
+
+
 def check_continuity() -> list[dict]:
+    known_gaps = _load_known_gaps()
     findings = []
     for metric in CONTINUITY_CHECKED_METRICS:
         doc = load_json(HISTORY_DIR / f"{metric}.json")
@@ -81,6 +97,8 @@ def check_continuity() -> list[dict]:
             prev = date.fromisoformat(series[i - 1]["date"])
             curr = date.fromisoformat(series[i]["date"])
             if curr != prev + timedelta(days=1):
+                if (metric, prev.isoformat(), curr.isoformat()) in known_gaps:
+                    continue
                 gap_count += 1
                 if first_gap is None:
                     first_gap = f"{prev.isoformat()} -> {curr.isoformat()}"
