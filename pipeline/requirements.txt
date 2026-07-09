@@ -1,0 +1,5 @@
+requests>=2.31
+numpy>=1.26
+jsonschema>=4.20
+pytest>=8.0
+responses>=0.24
