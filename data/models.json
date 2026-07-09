@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-09T02:49:37Z",
+  "generated_at": "2026-07-09T07:52:32Z",
   "power_law": {
     "params": {
       "a": -16.271353,
@@ -17,6 +17,7 @@
       "r_squared": 0.959781,
       "sigma": 0.30134,
       "fit_start_date": "2010-07-17",
+      "genesis_date": "2009-01-03",
       "n_points": 5805
     },
     "current": {
@@ -36285,15 +36286,5 @@
         "distance_pct": -1.45
       }
     ]
-  },
-  "deviation_dial": {
-    "score_0_100": 10.2,
-    "label": "Idle",
-    "components": {
-      "power_law_residual_percentile": 10.13,
-      "mayer_multiple_percentile": 20.4,
-      "cycle_position_percentile": 0.0
-    },
-    "methodology_note": "Simple average of three empirical percentile ranks (power-law fit residual, Mayer Multiple, cycle-position vs. the 3 prior halving epochs at the same days-since-halving offset). A toy composite -- not a valuation model. Published here so the math is exactly as visible as the number."
   }
 }

@@ -1,7 +1,7 @@
 /* charts.js -- PROJECTIONS section: power law corridor (the hero chart,
  * full-width log-log per director rule #7), 4-year cycle overlay, Mayer
- * Multiple / 200WMA strip, and the deviation dial. Apache ECharts (CDN,
- * spec Section 3). Re-themed on 'ber:theme-changed' by reading the current
+ * Multiple / 200WMA strip, and Market Sentiment (Fear & Greed history).
+ * Apache ECharts (CDN, spec Section 3). Colors are read from the current
  * CSS custom properties directly -- single source of truth stays the
  * design tokens, no separate hardcoded ECharts theme registrations.
  */
@@ -24,7 +24,7 @@
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  function themeColors() {
+  function colorTokens() {
     const style = getComputedStyle(document.documentElement);
     const get = (name) => style.getPropertyValue(name).trim();
     return {
@@ -146,7 +146,7 @@
       btn.addEventListener("click", () => {
         powerLawRange = btn.dataset.powerLawRange;
         document.querySelectorAll("[data-power-law-range]").forEach((b) => b.classList.toggle("is-active", b === btn));
-        renderPowerLaw(themeColors());
+        renderPowerLaw(colorTokens());
       });
     });
   }
@@ -240,63 +240,81 @@
     }
   }
 
-  // ---------- Deviation dial ----------
+  // ---------- Market Sentiment (Fear & Greed history) ----------
+  // Replaces the former "Deviation Dial" (director ruling, 2026-07-09):
+  // that composite averaged three percentile ranks and was labeled a toy
+  // in its own methodology note, presenting a non-model with model-grade
+  // visual weight. Fear & Greed is real, sourced daily data -- but it's
+  // sentiment, not valuation, so the card says so and the classification
+  // zones render as dim reference bands (--panel-border, graduated
+  // opacity), never accent -- rule 4 stays accent-as-data-only even for a
+  // "zone," since these are structural reference chrome, not a reading.
+  const SENTIMENT_ZONES = [
+    { from: 0, to: 25, opacity: 0.18 }, // Extreme Fear
+    { from: 25, to: 45, opacity: 0.1 }, // Fear
+    { from: 45, to: 55, opacity: 0.04 }, // Neutral
+    { from: 55, to: 75, opacity: 0.1 }, // Greed
+    { from: 75, to: 100, opacity: 0.18 }, // Extreme Greed
+  ];
 
-  function renderDeviationDial(colors) {
-    const chart = getOrInitChart("deviation-dial-chart");
+  function renderMarketSentiment(colors) {
+    const chart = getOrInitChart("market-sentiment-chart");
     if (!chart) return;
-    const dial = modelsDoc.deviation_dial;
+    const series = (BER.histories && BER.histories.fng_daily && BER.histories.fng_daily.series) || [];
+    const points = series.map((r) => [r.date, r.value]);
 
     chart.setOption(
       {
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
+        textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
+        grid: { left: 45, right: 20, top: 20, bottom: 35 },
+        xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
+        yAxis: {
+          type: "value",
+          min: 0,
+          max: 100,
+          axisLine: { lineStyle: { color: colors.border } },
+          axisLabel: { color: colors.inkDim },
+          splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
+        },
         series: [
           {
-            type: "gauge",
-            min: 0,
-            max: 100,
-            startAngle: 200,
-            endAngle: -20,
-            axisLine: {
-              lineStyle: {
-                width: 14,
-                color: [
-                  [0.333, colors.ok],
-                  [0.667, colors.warn],
-                  [1, colors.fail],
-                ],
-              },
+            name: "Fear & Greed",
+            type: "line",
+            showSymbol: false,
+            data: points,
+            lineStyle: { color: colors.accent, width: 1.5 },
+            markArea: {
+              silent: true,
+              data: SENTIMENT_ZONES.map((z) => [
+                { yAxis: z.from, itemStyle: { color: colors.border, opacity: z.opacity } },
+                { yAxis: z.to },
+              ]),
             },
-            pointer: { itemStyle: { color: colors.ink } },
-            axisTick: { show: false },
-            splitLine: { length: 10, lineStyle: { color: colors.inkDim } },
-            axisLabel: { color: colors.inkDim, fontSize: 10, distance: 18 },
-            detail: {
-              valueAnimation: true,
-              formatter: () => dial.label,
-              color: colors.ink,
-              fontFamily: colors.fontData,
-              fontSize: 20,
-              offsetCenter: [0, "70%"],
-            },
-            data: [{ value: dial.score_0_100 }],
           },
         ],
+        tooltip: { trigger: "axis" },
       },
       true
     );
+
+    const statsEl = document.getElementById("market-sentiment-stats");
+    const latest = series.length ? series[series.length - 1] : null;
+    if (statsEl && latest) {
+      statsEl.textContent = `${latest.value} · ${latest.classification} · as of ${latest.date}`;
+    }
   }
 
   // ---------- lifecycle ----------
 
   function renderAll() {
     if (!modelsDoc) return;
-    const colors = themeColors();
+    const colors = colorTokens();
     renderPowerLaw(colors);
     renderCycleOverlay(colors);
     renderMayerAnd200wma(colors);
-    renderDeviationDial(colors);
+    renderMarketSentiment(colors);
   }
 
   function resizeAll() {
@@ -311,13 +329,6 @@
       console.warn("models.json unavailable -- projections section stays empty", e);
       return;
     }
-    renderAll();
-  });
-
-  document.addEventListener("ber:theme-changed", () => {
-    // Re-init (not just setOption) per spec Section 16.1.4 -- cheap at this chart count.
-    Object.values(charts).forEach((c) => c && c.dispose());
-    charts = {};
     renderAll();
   });
 

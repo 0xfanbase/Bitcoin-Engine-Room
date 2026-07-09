@@ -1,59 +1,38 @@
 /* ===========================================================
    BTC Engine Room -- design tokens + component styles.
-   Token-swap architecture (CLAUDE.md Section 6 / spec Section 16.1):
-   every color/font decision references a custom property below.
-   Themes are pure [data-theme="x"] token blocks -- zero component
-   changes per theme. Two themes as of 2026-07-09 (owner decision,
-   Fable director sign-off): engine (default, brand) and matrix
-   (Digital Rain). Light and dark were cut outright, not hidden --
-   see IMPROVEMENT_BACKLOG.md and CLAUDE.md Section 6 for the record.
+   Single-instrument identity as of 2026-07-09 (owner decision, Fable
+   director sign-off): the `engine` theme was cut outright and Digital
+   Rain is no longer an alternate -- it's the whole site. Director framing:
+   "a green-phosphor terminal watching the Bitcoin network, standing in a
+   room full of falling code. Cinema behind the glass, instrumentation on
+   the glass." Every pixel that encodes data (numerals, badges, sources,
+   disclaimers) must read as if the rain weren't there; every pixel that
+   encodes nothing may be as cinematic as the frame budget allows. `engine`
+   is not preserved in code -- recoverable from git history, same as the
+   earlier `light` theme cut -- see IMPROVEMENT_BACKLOG.md.
    =========================================================== */
 
-/* ---------- Engine ("Nothing Stops This Train" spirit, no tagline) ---------- */
-:root,
-[data-theme="engine"] {
-  --bg: #0c0f12;
-  --panel: #151a20;
-  --panel-border: #232b33;
-  --ink: #e8e3d5;
-  --ink-dim: #9aa1a6;
-  --accent: #ffb000;       /* instrument amber -- DATA color only, never a surface (director rule) */
-  --ok: #2fd97b;
-  --warn: #ffb000;
-  --fail: #ff4747;
-  --hairline: #4a3c26;     /* brass, dimmed for use as a border, not a highlight */
-  --focus-ring: #ffb000;
-  --glow-on: 1;            /* status lamps are the only glow on the page */
-  --font-display: "Archivo Black", "Archivo Expanded", sans-serif;
-  --font-data: "IBM Plex Mono", ui-monospace, monospace;
-  --font-label: "IBM Plex Sans", sans-serif;
-}
-
-/* ---------- Matrix ("Digital Rain") -- phosphor green, canvas glyph rain.
-   Accent generalizes rule 4: the theme's single accent is a data color,
-   never a surface, in every theme -- amber in engine, phosphor green here.
-   Panel is near-opaque (not backdrop-filter) so rain never fights text. ---------- */
-[data-theme="matrix"] {
+:root {
   --bg: #020804;
   --panel: rgba(4, 16, 8, 0.92);
   --panel-border: #123322;
   --ink: #cfe8d4;
   --ink-dim: #5f8a6c;
-  --accent: #33ff66;
+  --accent: #33ff66;       /* phosphor green -- DATA color only, never a surface (director rule) */
   --ok: #33ff66;
   --warn: #d0e64a;
-  --fail: #ff4747;         /* faults stay red in every theme, non-negotiable */
+  --fail: #ff4747;         /* faults stay red, non-negotiable */
   --hairline: #1a4028;
   --focus-ring: #33ff66;
-  --glow-on: 1;
-  --font-display: "Archivo Black", "Archivo Expanded", sans-serif;
+  --glow-on: 1;            /* status lamps are the only glow on DOM text -- rain heads' glow is color-contrast only */
   --font-data: "IBM Plex Mono", ui-monospace, monospace;
   --font-label: "IBM Plex Sans", sans-serif;
-  /* rain-only tokens, read by rain.js via getComputedStyle at start + on
-     ber:theme-changed -- not used by any DOM component. */
+  /* rain-only tokens, read by rain.js via getComputedStyle at start --
+     not used by any DOM component. */
   --rain-head: #e6ffe6;
+  --rain-head2: #9dffb0;
   --rain-trail: #00b33c;
-  --rain-fade: rgba(2, 8, 4, 0.07);
+  --rain-fade: rgba(2, 8, 4, 0.055);
 }
 
 /* ---------- Reset & base ---------- */
@@ -63,40 +42,36 @@
 
 html {
   color-scheme: dark;
+  /* Guards against the full-bleed masthead's 100vw technique introducing a
+     horizontal scrollbar sliver when a vertical scrollbar is present --
+     standard, low-risk safety net for this technique. */
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  /* Transparent so the fixed, z-index:-1 rain canvas shows through -- an
+     opaque body background would hide it completely. */
+  background: transparent;
   color: var(--ink);
   font-family: var(--font-label);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Matrix theme's body goes transparent so the fixed, z-index:-1 rain canvas
-   shows through -- an opaque body background would hide it completely. */
-[data-theme="matrix"] body {
-  background: transparent;
-}
-
-#matrix-rain-canvas {
+#digital-rain-canvas {
   position: fixed;
   inset: 0;
   /* canvas is a replaced element -- inset alone doesn't stretch it to fill
      the viewport the way it would a non-replaced box, so explicit 100%
-     dimensions are required. This matters most under prefers-reduced-motion,
-     where rain.js's resize() (which otherwise sets this via the width/height
-     IDL attributes) never runs -- without this rule the flat fallback fill
-     below only covered the canvas's default 300x150 intrinsic size. */
+     dimensions are required. This matters most under prefers-reduced-motion
+     or with rain toggled off, where rain.js's resize() never runs --
+     without this rule the flat fallback fill below only covers the
+     canvas's default 300x150 intrinsic size. */
   width: 100%;
   height: 100%;
   z-index: -1;
-  display: none;
-  background: var(--bg); /* flat fallback under reduced-motion, before first draw, and while paused */
-}
-[data-theme="matrix"] #matrix-rain-canvas {
-  display: block;
+  background: var(--bg); /* flat fallback under reduced-motion/rain-off, before first draw, and while paused */
 }
 
 img,
@@ -127,19 +102,27 @@ a {
   padding: 0 1rem 3rem;
 }
 
+/* Panel-backed per the readability law (director ruling): no DOM text ever
+   sits directly over live rain. A plate is a physical object -- it should
+   have a surface. Text moved from --ink-dim to --ink: at only 4.9:1 on a
+   bare background it was too thin to serve as the site's wayfinding, and
+   the new terminal-chrome direction wants headings to read as machine
+   output, not de-emphasized chrome. */
 .plate {
-  font-family: var(--font-label);
-  font-weight: 700;
+  font-family: var(--font-data);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   font-size: 0.75rem;
-  color: var(--ink-dim);
-  border-top: 1px solid var(--hairline);
-  padding-top: 0.5rem;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 0.5rem 0.75rem;
   margin: 2.5rem 0 1rem;
 }
 
-/* ---------- Sticky header / theme switcher ---------- */
+/* ---------- Sticky header / rain toggle ---------- */
 .site-header {
   position: sticky;
   top: 0;
@@ -150,41 +133,38 @@ a {
   justify-content: space-between;
   gap: 0.5rem 1rem;
   padding: 0.75rem 1rem;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(6px);
+  /* Opaque, no backdrop-filter (director ruling: cheaper than blurring a
+     constantly-repainting canvas on every viewport, and the readability
+     law requires solid backing regardless). */
+  background: var(--panel);
   border-bottom: 1px solid var(--panel-border);
 }
 
-/* Matrix theme drops backdrop-filter entirely (director ruling: stricter
-   than a mobile-only ban -- an opaque panel is cheaper than blurring a
-   constantly-repainting canvas on every viewport). */
-[data-theme="matrix"] .site-header {
-  backdrop-filter: none;
-  background: var(--panel);
-}
-
 .brand {
-  font-family: var(--font-display);
+  font-family: var(--font-data);
+  font-weight: 600;
   font-size: 1.1rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   color: var(--ink);
   text-decoration: none;
   white-space: nowrap;
 }
 
-/* Two-position rocker, not a chip row (director ruling: a binary theme
-   choice reads as one instrument switch flipped to a side, not a set of
-   peer options). Same role="group"/aria-pressed markup as before -- only
-   the visual treatment changes. */
-.theme-switcher {
+/* Two-position rocker: now a Digital Rain ON/OFF switch, not a theme
+   picker (director ruling -- with a single visual identity, the switcher's
+   old job is gone, but committing the whole page to an animated
+   background is only responsible if a visitor can stop it without losing
+   the site). Same visual treatment as the old theme rocker -- an
+   instrument switch flipped to a side, not a chip row. */
+.rain-switcher {
   display: flex;
-  border-radius: 6px;
+  border-radius: 3px;
   border: 1px solid var(--panel-border);
   background: var(--panel);
   overflow: hidden;
 }
 
-.theme-chip {
+.rain-chip {
   font-family: var(--font-data);
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -197,13 +177,13 @@ a {
   white-space: nowrap;
 }
 
-.theme-chip + .theme-chip {
+.rain-chip + .rain-chip {
   border-left: 1px solid var(--panel-border);
 }
 
 /* Inverted fill for the engaged position -- an instrument-switch look, not
    the accent color (rule 4: accent is a data color, never a surface). */
-.theme-chip[aria-pressed="true"] {
+.rain-chip[aria-pressed="true"] {
   background: var(--ink);
   color: var(--bg);
 }
@@ -218,16 +198,45 @@ a {
   white-space: nowrap;
 }
 
-/* ---------- Masthead ---------- */
+/* ---------- Masthead ----------
+   Full-bleed scrim, not a card (director ruling): a floating card around
+   the odometer would read as just another gauge; a horizontal band reads
+   as the terminal's fixed header glass, with the rain visibly parting
+   around it. The scrim is flat and fully opaque (0.96) for its ENTIRE
+   height -- every real data element (odometer, price, halving countdown)
+   sits on solid backing, satisfying the readability law uniformly. The
+   feathered fade lives in a separate strip BELOW the masthead's own box
+   (the ::after), in the page gutter where there's no text to protect --
+   "the rain's showcase is everywhere text isn't." */
 .masthead {
-  padding: 2rem 0 1rem;
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: 2rem 1rem 2.5rem;
   text-align: center;
+  background: rgba(2, 8, 4, 0.96);
 }
 
+.masthead::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 3rem;
+  background: linear-gradient(to bottom, rgba(2, 8, 4, 0.96), transparent);
+  pointer-events: none;
+}
+
+/* The site's own name as terminal output (director ruling: Archivo Black
+   retired site-wide). */
 .masthead h1 {
-  font-family: var(--font-display);
+  font-family: var(--font-data);
+  font-weight: 600;
+  text-transform: uppercase;
   font-size: clamp(1.4rem, 4vw, 2rem);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.1em;
   margin: 0 0 1.5rem;
   color: var(--ink);
 }
@@ -274,22 +283,20 @@ a {
   color: var(--ink-dim);
 }
 
-/* ---------- Block Rail (engine theme only) ----------
+/* ---------- Block Rail ----------
    The train's horizontal position IS elapsed time since the last block --
-   an instrument, not decoration (director ruling amending rule 2: block
-   arrival is the page's one theatrical event, expressed jointly by the
-   odometer and this rail; both fire together, both silent between events).
-   Hidden entirely in the matrix theme -- see rain.js for its own effect. */
+   an instrument, not decoration (director ruling: block arrival is the
+   page's one theatrical event, expressed jointly by the odometer, this
+   rail, and rain.js's block-arrival surge; all three fire together, all
+   silent between events). Sits on the masthead's opaque scrim like
+   everything else in it. */
 .block-rail {
-  display: none;
+  display: block;
   position: relative;
   width: 100%;
   max-width: 320px;
   height: 16px;
   margin: 0.6rem auto 0;
-}
-[data-theme="engine"] .block-rail {
-  display: block;
 }
 
 .block-rail-track {
@@ -404,30 +411,16 @@ a {
   gap: 1rem;
 }
 
+/* Terminal chrome, not brand-engine skeuomorphism (director ruling: the
+   riveted-corner rivets are retired -- they were engine-brand whisper-
+   volume detail; the new chrome is 1px hairlines and near-sharp corners
+   on --panel surfaces, with the rain itself supplying the texture). */
 .gauge-card {
   background: var(--panel);
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 1rem;
   position: relative;
-}
-
-/* Whisper-volume skeuomorphism: pure-CSS riveted corners, only noticeable up close (director rule #6). */
-[data-theme="engine"] .gauge-card::before,
-[data-theme="engine"] .gauge-card::after {
-  content: "";
-  position: absolute;
-  top: 6px;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--hairline);
-}
-[data-theme="engine"] .gauge-card::before {
-  left: 6px;
-}
-[data-theme="engine"] .gauge-card::after {
-  right: 6px;
 }
 
 .gauge-card h3 {
@@ -519,7 +512,7 @@ a {
 .chart-card {
   background: var(--panel);
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 1rem;
   margin-bottom: 1rem;
 }
@@ -570,7 +563,7 @@ a {
   font-family: var(--font-data);
   font-size: 0.75rem;
   padding: 0.25rem 0.55rem;
-  border-radius: 5px;
+  border-radius: 2px;
   border: 1px solid var(--panel-border);
   background: transparent;
   color: var(--ink-dim);
@@ -615,7 +608,7 @@ a {
   gap: 0.5rem;
   background: var(--panel);
   border: 1px solid var(--panel-border);
-  border-radius: 6px;
+  border-radius: 3px;
   padding: 0.6rem 0.8rem;
   font-size: 0.85rem;
   min-width: 0; /* allow the row itself to shrink inside a narrow grid track */
@@ -636,7 +629,7 @@ a {
 .audit-panel {
   background: var(--panel);
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 0.75rem 1rem;
   margin-top: 0.75rem;
 }
@@ -677,7 +670,7 @@ a {
 .audit-findings li {
   font-size: 0.8rem;
   padding: 0.4rem 0.6rem;
-  border-radius: 5px;
+  border-radius: 2px;
   background: var(--bg);
   border-left: 3px solid var(--warn);
 }
@@ -770,8 +763,14 @@ a {
   color: var(--ink-dim);
 }
 
+/* Panel-backed per the readability law -- this stands alone outside any
+   gauge/chart card, directly under a bare-background .plate heading. */
 .info-disclosure {
   margin: 0.5rem 0 1rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 0.6rem 0.8rem;
 }
 
 .info-disclosure summary {
@@ -816,19 +815,27 @@ a {
   margin-top: 0.5rem;
 }
 
-/* Nested glossary inside the audit panel gets a hairline separator from the
-   result chip above it, since it isn't the first thing in the disclosure. */
+/* Nested inside #audit-panel, which is already panel-backed -- reset the
+   general .info-disclosure box treatment to a plain hairline separator so
+   it doesn't read as a panel-within-a-panel. */
 #audit-glossary {
   margin: 0.5rem 0;
-  padding-top: 0.5rem;
+  padding: 0.5rem 0 0;
+  background: transparent;
+  border: none;
   border-top: 1px solid var(--panel-border);
+  border-radius: 0;
 }
 
-/* ---------- Footer / attribution ---------- */
+/* ---------- Footer / attribution ----------
+   Panel-backed per the readability law -- previously sat on bare
+   background with no protection from the rain behind it. */
 .site-footer {
   margin-top: 3rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--hairline);
+  padding: 1.25rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
   font-size: 0.8rem;
   color: var(--ink-dim);
 }

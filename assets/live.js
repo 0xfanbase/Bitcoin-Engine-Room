@@ -86,7 +86,13 @@
     renderOdometer(height, { flash: !isFirstPaint });
     const captionEl = document.getElementById("odometer-caption");
     if (captionEl) captionEl.textContent = "block height · block found " + timeAgo(timestampSec);
-    if (!isFirstPaint) triggerRailArrival();
+    if (!isFirstPaint) {
+      triggerRailArrival();
+      // rain.js listens for this to run its ~4s density/burst surge --
+      // the same genuine-new-block event driving the odometer roll and
+      // Block Rail sweep, never a separate trigger of its own.
+      document.dispatchEvent(new CustomEvent("ber:block", { detail: { height } }));
+    }
   }
 
   // ---------- Block Rail: the train's position is elapsed time since the
@@ -106,17 +112,13 @@
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  function isEngineTheme() {
-    return (document.documentElement.dataset.theme || "engine") === "engine";
-  }
-
   function railTrackWidth() {
     const track = document.getElementById("block-rail-track");
     return track ? track.clientWidth : 0;
   }
 
   function updateRailCrawl() {
-    if (!isEngineTheme() || railAnimating) return;
+    if (railAnimating) return;
     const train = document.getElementById("block-rail-train");
     if (!train) return;
     if (wsDegraded) {
@@ -135,7 +137,6 @@
   }
 
   function triggerRailArrival() {
-    if (!isEngineTheme()) return;
     const train = document.getElementById("block-rail-train");
     if (!train) return;
     if (reducedMotion()) {

@@ -1,5 +1,5 @@
 """Model fitting (P4): power law corridor, 4-year cycle overlay, Mayer
-Multiple, 200-week moving average, and the composite deviation dial.
+Multiple, and 200-week moving average.
 
 Refits daily from data/history/price_daily.json; writes data/models.json.
 Methodology (fit window, sampling, weighting) is pinned in
@@ -295,39 +295,6 @@ def compute_200wma(price_series: list[dict]) -> dict:
 
 
 # --------------------------------------------------------------------------
-# Deviation dial (spec Section 8.5) -- composite, explicitly a "toy"
-# --------------------------------------------------------------------------
-
-
-def compute_deviation_dial(power_law: dict, mayer: dict, cycle: dict) -> dict:
-    power_law_pctile = power_law["current"]["residual_percentile"]
-    mayer_pctile = mayer["current"]["percentile"] if mayer["current"] else None
-    cycle_pctile = cycle["current_epoch"]["cycle_percentile_vs_prior_epochs"] if cycle["current_epoch"] else None
-
-    components = {
-        "power_law_residual_percentile": power_law_pctile,
-        "mayer_multiple_percentile": mayer_pctile,
-        "cycle_position_percentile": cycle_pctile,
-    }
-    available = [v for v in components.values() if v is not None]
-    score = round(sum(available) / len(available), 1) if available else 50.0
-
-    if score < 33.3:
-        label = "Idle"
-    elif score < 66.7:
-        label = "Cruise"
-    else:
-        label = "Redline"
-
-    return {
-        "score_0_100": score,
-        "label": label,
-        "components": components,
-        "methodology_note": "Simple average of three empirical percentile ranks (power-law fit residual, Mayer Multiple, cycle-position vs. the 3 prior halving epochs at the same days-since-halving offset). A toy composite -- not a valuation model. Published here so the math is exactly as visible as the number.",
-    }
-
-
-# --------------------------------------------------------------------------
 # Orchestration
 # --------------------------------------------------------------------------
 
@@ -342,7 +309,6 @@ def run_fit(*, dry_run: bool = False) -> dict:
     cycle_overlay = compute_cycle_overlay(price_series, constants)
     mayer_multiple = compute_mayer_multiple(price_series)
     wma_200 = compute_200wma(price_series)
-    deviation_dial = compute_deviation_dial(power_law, mayer_multiple, cycle_overlay)
 
     document = {
         "schema_version": 1,
@@ -351,7 +317,6 @@ def run_fit(*, dry_run: bool = False) -> dict:
         "cycle_overlay": cycle_overlay,
         "mayer_multiple": mayer_multiple,
         "wma_200": wma_200,
-        "deviation_dial": deviation_dial,
     }
 
     if not dry_run:
@@ -371,7 +336,6 @@ def main() -> None:
     pl = document["power_law"]["params"]
     print(f"power_law: a={pl['a']} b={pl['b']} r2={pl['r_squared']} sigma={pl['sigma']} n={pl['n_points']}")
     print(f"current deviation: {document['power_law']['current']['deviation_pct']}% (z={document['power_law']['current']['z_score']})")
-    print(f"deviation_dial: {document['deviation_dial']['score_0_100']} ({document['deviation_dial']['label']})")
 
 
 if __name__ == "__main__":

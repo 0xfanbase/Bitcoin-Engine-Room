@@ -3,7 +3,7 @@
   "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/models.schema.json",
   "title": "models.json",
   "type": "object",
-  "required": ["schema_version", "generated_at", "power_law", "cycle_overlay", "mayer_multiple", "wma_200", "deviation_dial"],
+  "required": ["schema_version", "generated_at", "power_law", "cycle_overlay", "mayer_multiple", "wma_200"],
   "properties": {
     "schema_version": {"type": "integer", "const": 1},
     "generated_at": {"type": "string", "format": "date-time"},
@@ -44,10 +44,6 @@
     "wma_200": {
       "type": "object",
       "required": ["current", "series"]
-    },
-    "deviation_dial": {
-      "type": "object",
-      "required": ["score_0_100", "label", "components"]
     }
   }
 }
