@@ -159,6 +159,14 @@
   <div class="health-summary" id="health-summary">Loading health report&hellip;</div>
   <div class="health-grid" id="health-grid"></div>
 
+  <details class="audit-panel" id="audit-panel">
+    <summary>
+      <span class="status-chip" data-status="STALE" id="audit-result-chip"><span class="status-dot"></span><span id="audit-result-text">loading&hellip;</span></span>
+      <span id="audit-generated-at" class="numeral audit-generated-at"></span>
+    </summary>
+    <ul id="audit-findings" class="audit-findings"></ul>
+  </details>
+
   <footer class="site-footer">
     <p><strong>Data sources:</strong> Price, fees, mempool and difficulty-adjustment data by <a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a>. Historical price/hash-rate/supply backfill and daily fallback by <a href="https://www.blockchain.com/explorer/charts" target="_blank" rel="noopener">blockchain.com</a>. Price cross-check by <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a> and <a href="https://www.coinbase.com" target="_blank" rel="noopener">Coinbase</a>. Fear &amp; Greed data by <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener">alternative.me</a>. Historical data cross-referenced against <a href="https://coinmetrics.io" target="_blank" rel="noopener">Coin Metrics Community</a>.</p>
     <p class="disclaimer">Educational tool. Not financial advice. Models are curve fits, not guarantees.</p>

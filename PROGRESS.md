@@ -8,10 +8,20 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 - [x] P2 — Daily pipeline
 - [x] P3 — Frontend core
 - [x] P4 — Models & charts
-- [ ] P5 — Audit & health panel
+- [x] P5 — Audit & health panel
 - [ ] P6 — Polish
 
 ## Log
+
+### 2026-07-09 — Phase 5 complete
+
+- Built `pipeline/audit.py` per spec Section 11's six checks: continuity (no missing dates -- `difficulty_daily` deliberately excluded since its P1-sparse/P2-dense split isn't a real gap, documented in its own schema), cross-source variance (surfaces `health.json`'s `price_daily.cross_source_variance_warn`; hashrate cross-checking logged as a known limitation since only one source's value is ever stored per day), model drift (diffs `models.json`'s `previous_params` -- `b` >0.5% day-over-day or R² drop >0.01), staleness (WARN >24h, FAIL >72h since `stale_since`), sanity replay (last 30 days against `backfill_absolute`), and site integrity (index.html parses, local asset links resolve, JSON payload vs. the 2MB budget). Aggregates to PASS/WARN/FAIL, writes `data/audit/latest.json` + a dated copy (pruning anything older than 90 days), auto-appends WARN/FAIL findings to `IMPROVEMENT_BACKLOG.md`, opens/updates/closes a GitHub issue on FAIL/recovery. `pipeline/schemas/audit.schema.json` added.
+- Generalized `gh_issues.py` into shared find/open-or-update/close helpers so the new audit-fail issue type (`auto`+`audit-fail` labels) doesn't duplicate the data-outage issue logic; both `fetch_snapshot.py` and `audit.py` now use the same mechanics.
+- 34 new pytest tests, including an integration test matching the P5 acceptance criterion verbatim ("injected bad datum → audit FAIL + issue opened"): a negative price row triggers `sanity_replay` FAIL, `run_audit` reports FAIL, and a GitHub issue POST fires with the `audit-fail` label. 114/114 total passing.
+- Ran for real against the committed data: result `WARN`, with real findings -- continuity gaps in `hashrate_daily` (Nov 2025), `supply_daily`, and `fng_daily` (2018), plus the already-known JSON payload budget overage. Spot-checked the `supply_daily` gap (2009-01-03 → 2009-01-09): genuine Bitcoin history, not a data bug -- the network mined no blocks for about six days right after the genesis block. `IMPROVEMENT_BACKLOG.md` got 4 real `audit-auto` entries appended automatically, exactly as designed.
+- Extended the Engine Health panel (`assets/health.js`, `index.html`, `assets/style.css`): "last snapshot age" now shown (flagged red past 48h, per the spec's own cron-caveat mitigation), plus an expandable `<details>` audit panel (native HTML, no extra JS) showing the PASS/WARN/FAIL chip and the full findings list. Verified in a real browser: correct chip colors, expand/collapse, and content.
+- Extended `daily.yml` to run the full pipeline chain (`fetch_snapshot` → `fit_models` → `audit`) matching spec Section 3's diagram, and fixed the commit step to also stage `IMPROVEMENT_BACKLOG.md` (audit's auto-appended findings live there, not under `data/`).
+- Next: P6 (polish) -- expand `README.md`'s own data-source/disclaimer copy, audit `prefers-reduced-motion` coverage, Lighthouse ≥90 perf/a11y pass, `.claude/commands/improve.md` + `/health-report.md`.
 
 ### 2026-07-09 — Phase 4 complete
 

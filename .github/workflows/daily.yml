@@ -27,11 +27,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python -m pipeline.fetch_snapshot
 
+      - name: Refit models
+        run: python -m pipeline.fit_models
+
+      - name: Run audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python -m pipeline.audit
+
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add data/ IMPROVEMENT_BACKLOG.md
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else

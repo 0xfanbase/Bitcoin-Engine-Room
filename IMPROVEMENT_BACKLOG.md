@@ -134,3 +134,28 @@ Suggested fix: same as the P3 frontend-testing entry -- revisit in P5/P6 if a st
 Source: manual (observed running `fit_models.py` against the real committed price history)
 Description: The real fit against committed `price_daily.json` (100% blockchain.info-sourced since Coin Metrics is 401'd, see the P1 backlog entry) gives `b=5.621, a=-16.271, R²=0.960` -- `b` and `a` fall just outside `model_constants.json`'s `expected_range` (`b: [5.7, 5.9]`, `a: [-17.0, -16.5]`, taken from the published Santostasi reference fits) but comfortably inside the wider `audit_drift_thresholds.b_warn_outside_range` band (`[5.4, 6.1]`) that P5's audit is meant to actually gate on. `R²=0.96` clears the `r_squared_min: 0.95` floor.
 Suggested fix: none needed -- this is exactly the situation `model_constants.json`'s own documentation anticipates ("a sanity band for the fit process, not a target to reverse-engineer into"). Plausible explanation: fitting against a single-source (blockchain.info) price series likely differs slightly from whatever blended/curated dataset the published reference fits used. Worth revisiting if/when the Coin Metrics 401 is resolved and price backfill again blends multiple sources -- `b` may shift back toward the tighter reference range.
+
+### [audit] continuity (hashrate_daily) -- WARN (2026-07-09)
+Source: audit-auto
+Description: 1 gap(s) in daily series, first at 2025-11-12 -> 2025-11-16
+Suggested fix: (fill in during the next /improve pass)
+
+### [audit] continuity (supply_daily) -- WARN (2026-07-09)
+Source: audit-auto
+Description: 1 gap(s) in daily series, first at 2009-01-03 -> 2009-01-09
+Suggested fix: (fill in during the next /improve pass)
+
+### [audit] continuity (fng_daily) -- WARN (2026-07-09)
+Source: audit-auto
+Description: 2 gap(s) in daily series, first at 2018-04-13 -> 2018-04-17
+Suggested fix: (fill in during the next /improve pass)
+
+### [audit] site_integrity -- WARN (2026-07-09)
+Source: audit-auto
+Description: committed JSON payload is 3.49 MB, over the 2 MB budget (spec Section 11.6) -- see IMPROVEMENT_BACKLOG.md's P4 entry
+Suggested fix: (fill in during the next /improve pass)
+
+### [P5] Hashrate cross-source variance cannot currently be audited (2026-07-09)
+Source: manual (design limitation noticed while writing `audit.py`'s cross_source_variance check)
+Description: Spec Section 11.2 calls for auditing "price/hashrate agreement within thresholds," but the committed history schema only stores ONE value (with one `source` tag) per metric per day -- there's no stored second reading to compare against. `fetch_snapshot.py` does compute a live price cross-check (mempool.space vs CoinGecko) and records it as `cross_source_variance_warn` in `health.json`, which `audit.py` surfaces, but no equivalent exists for hashrate.
+Suggested fix: not implemented. Would require `fetch_snapshot.py` to fetch a second hashrate reading purely for comparison (e.g. blockchain.info alongside mempool.space) and store the variance flag in `health.json` the same way price already does -- a real feature addition, not a bug fix. Worth a `/improve` pass if the audit's hashrate coverage matters enough to justify the extra daily API call.

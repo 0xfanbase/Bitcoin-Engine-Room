@@ -328,12 +328,14 @@ a {
   border-radius: 50%;
 }
 
-.status-chip[data-status="LIVE"] .status-dot {
+.status-chip[data-status="LIVE"] .status-dot,
+.status-chip[data-status="PASS"] .status-dot {
   background: var(--ok);
   box-shadow: calc(var(--glow-on) * 0px) 0 calc(var(--glow-on) * 6px) var(--ok);
 }
 .status-chip[data-status="DELAYED"] .status-dot,
-.status-chip[data-status="STALE"] .status-dot {
+.status-chip[data-status="STALE"] .status-dot,
+.status-chip[data-status="WARN"] .status-dot {
   background: var(--warn);
   box-shadow: calc(var(--glow-on) * 0px) 0 calc(var(--glow-on) * 6px) var(--warn);
 }
@@ -343,11 +345,13 @@ a {
   box-shadow: calc(var(--glow-on) * 0px) 0 calc(var(--glow-on) * 6px) var(--fail);
 }
 
-.status-chip[data-status="LIVE"] {
+.status-chip[data-status="LIVE"],
+.status-chip[data-status="PASS"] {
   color: var(--ok);
 }
 .status-chip[data-status="DELAYED"],
-.status-chip[data-status="STALE"] {
+.status-chip[data-status="STALE"],
+.status-chip[data-status="WARN"] {
   color: var(--warn);
 }
 .status-chip[data-status="OFFLINE"],
@@ -465,6 +469,67 @@ a {
 .health-row .status-chip {
   min-width: 0;
   margin-top: 0;
+}
+
+/* ---------- Audit panel (expandable, spec Section 9: "latest audit
+   pass/fail with expandable detail") ---------- */
+.audit-panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.audit-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.audit-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.audit-generated-at {
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+/* "last snapshot age" shown in red if stale beyond the site's own
+   red-flag threshold -- CLAUDE.md/spec Section 6's cron-caveat mitigation. */
+.audit-generated-at.is-overdue {
+  color: var(--fail);
+}
+
+.audit-findings {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.audit-findings li {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  background: var(--bg);
+  border-left: 3px solid var(--warn);
+}
+
+.audit-findings li[data-severity="FAIL"] {
+  border-left-color: var(--fail);
+}
+
+.audit-findings .finding-check {
+  font-family: var(--font-data);
+  color: var(--ink-dim);
+  margin-right: 0.4rem;
 }
 
 .health-row .status-chip span:last-child {

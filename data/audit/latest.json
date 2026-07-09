@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-09T03:03:59Z",
+  "result": "WARN",
+  "findings": [
+    {
+      "check": "continuity",
+      "severity": "WARN",
+      "metric": "hashrate_daily",
+      "detail": "1 gap(s) in daily series, first at 2025-11-12 -> 2025-11-16"
+    },
+    {
+      "check": "continuity",
+      "severity": "WARN",
+      "metric": "supply_daily",
+      "detail": "1 gap(s) in daily series, first at 2009-01-03 -> 2009-01-09"
+    },
+    {
+      "check": "continuity",
+      "severity": "WARN",
+      "metric": "fng_daily",
+      "detail": "2 gap(s) in daily series, first at 2018-04-13 -> 2018-04-17"
+    },
+    {
+      "check": "site_integrity",
+      "severity": "WARN",
+      "metric": null,
+      "detail": "committed JSON payload is 3.49 MB, over the 2 MB budget (spec Section 11.6) -- see IMPROVEMENT_BACKLOG.md's P4 entry"
+    }
+  ]
+}
