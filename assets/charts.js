@@ -78,11 +78,20 @@
     return ticks;
   }
 
+  // Zoom/pan (director-minimal: `inside` dataZoom adds no visible chrome --
+  // mouse wheel + drag on desktop, pinch + drag on touch -- and a
+  // double-click resets the view. No slider/toolbox, so the screensaver
+  // test still applies cleanly; the .chart-canvas title attribute (set in
+  // index.html) is the sole hint that the interaction exists.
   function getOrInitChart(id) {
     if (!charts[id]) {
       const el = document.getElementById(id);
       if (!el || typeof echarts === "undefined") return null;
-      charts[id] = echarts.init(el);
+      const chart = echarts.init(el);
+      el.addEventListener("dblclick", () => {
+        chart.dispatchAction({ type: "dataZoom", start: 0, end: 100 });
+      });
+      charts[id] = chart;
     }
     return charts[id];
   }
@@ -205,6 +214,10 @@
             return `${formatDateShort(dateFromDays(day, genesis))}<br/>${rows}`;
           },
         },
+        dataZoom: [
+          { type: "inside", xAxisIndex: 0, filterMode: "none" },
+          { type: "inside", yAxisIndex: 0, filterMode: "none" },
+        ],
       },
       true
     );
@@ -314,6 +327,10 @@
         },
         series,
         tooltip: { trigger: "axis", valueFormatter: (v) => v.toFixed(1) + "%" },
+        dataZoom: [
+          { type: "inside", xAxisIndex: 0, filterMode: "none" },
+          { type: "inside", yAxisIndex: 0, filterMode: "none" },
+        ],
       },
       true
     );
@@ -350,6 +367,7 @@
           { name: "200WMA distance", type: "line", showSymbol: false, data: wmaDistanceSeries, lineStyle: { color: colors.ink, width: 1 }, yAxisIndex: 1 },
         ],
         tooltip: { trigger: "axis" },
+        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none" }],
       },
       true
     );
@@ -417,6 +435,7 @@
           },
         ],
         tooltip: { trigger: "axis" },
+        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none" }],
       },
       true
     );
