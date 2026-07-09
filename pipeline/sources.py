@@ -180,8 +180,10 @@ class BlockchainInfoChartsClient:
     SOURCE_NAME = "blockchain_info"
 
     # Native units returned by blockchain.info; converted to canonical units on parse.
+    # Verified live (2026-07): the API's own "unit" field reports "Hash Rate TH/s",
+    # not GH/s -- confirmed against a real network-hashrate magnitude check.
     UNIT_CONVERSIONS = {
-        "hash-rate": lambda gh_s: gh_s / 1e9,  # GH/s -> EH/s
+        "hash-rate": lambda th_s: th_s / 1e6,  # TH/s -> EH/s
     }
 
     def fetch_chart(self, chart: str, *, request_fn=request_with_retry) -> list[dict]:
@@ -207,7 +209,16 @@ class BlockchainInfoChartsClient:
                     "source": cls.SOURCE_NAME,
                 }
             )
-        return rows
+        # Some charts (e.g. total-bitcoins) are natively per-block, not per-day,
+        # even with sampled=false. Collapse to one row per date, keeping the
+        # last (latest) value of that UTC day -- a no-op for genuinely daily
+        # charts, essential for higher-frequency ones.
+        return cls._dedupe_keep_last_per_date(rows)
+
+    @staticmethod
+    def _dedupe_keep_last_per_date(rows: list[dict]) -> list[dict]:
+        by_date = {row["date"]: row for row in rows}
+        return sorted(by_date.values(), key=lambda r: r["date"])
 
 
 class AlternativeMeFngClient:

@@ -43,7 +43,7 @@ CM_START_TIME = "2010-01-01"
 METRIC_CONFIG = {
     "price": {"file": "price_daily", "unit": "USD", "cm_metric": "PriceUSD", "bi_chart": "market-price"},
     "hashrate": {"file": "hashrate_daily", "unit": "EH/s", "cm_metric": "HashRate", "bi_chart": "hash-rate"},
-    "supply": {"file": "supply_daily", "unit": "BTC", "cm_metric": "SplyCur", "bi_chart": "total-bc"},
+    "supply": {"file": "supply_daily", "unit": "BTC", "cm_metric": "SplyCur", "bi_chart": "total-bitcoins"},
     "difficulty": {"file": "difficulty_daily", "unit": "raw_difficulty", "cm_metric": None, "bi_chart": "difficulty"},
     "fng": {"file": "fng_daily", "unit": "index_0_100", "cm_metric": None, "bi_chart": None},
 }
@@ -63,6 +63,34 @@ def merge_series(primary: list[dict], fallback: list[dict]) -> list[dict]:
     return sorted(by_date.values(), key=lambda r: r["date"])
 
 
+def _fetch_coinmetrics_rows(cm_rows_cache: dict) -> list[dict]:
+    """Fetch (and cache) the combined Coin Metrics rows for price/hashrate/supply.
+
+    Coin Metrics' community asset-metrics endpoint has, as of this writing,
+    started returning 401 Unauthorized even without an API key -- contradicting
+    the spec's original assumption. Treated as a total primary-source failure:
+    log it once and fall through to blockchain.info for all three metrics,
+    rather than letting the whole backfill run crash.
+    """
+    if "rows" in cm_rows_cache:
+        return cm_rows_cache["rows"]
+
+    try:
+        cm_rows_cache["rows"] = CoinMetricsClient().fetch_asset_metrics(
+            metrics=[METRIC_CONFIG[m]["cm_metric"] for m in COIN_METRICS_BACKED],
+            start_time=CM_START_TIME,
+        )
+    except Exception as exc:  # noqa: BLE001 -- deliberate broad catch, this is a source-failover boundary
+        print(
+            f"WARNING: Coin Metrics primary fetch failed ({exc}); "
+            "falling back to blockchain.info for price/hashrate/supply",
+            file=sys.stderr,
+        )
+        cm_rows_cache["rows"] = []
+
+    return cm_rows_cache["rows"]
+
+
 def build_series_for_metric(name: str, *, cm_rows_cache: dict) -> list[dict]:
     config = METRIC_CONFIG[name]
 
@@ -70,17 +98,24 @@ def build_series_for_metric(name: str, *, cm_rows_cache: dict) -> list[dict]:
         return AlternativeMeFngClient().fetch_full_history()
 
     if name == "difficulty":
-        return BlockchainInfoChartsClient().fetch_chart(config["bi_chart"])
+        series = BlockchainInfoChartsClient().fetch_chart(config["bi_chart"])
+        # Same placeholder-zero issue as price: real difficulty has been >=1
+        # since genesis, so a 0.0 row is a data artifact, not an observation.
+        return [row for row in series if row["value"] > 0]
 
     # price / hashrate / supply share one paginated Coin Metrics call.
-    if "rows" not in cm_rows_cache:
-        cm_rows_cache["rows"] = CoinMetricsClient().fetch_asset_metrics(
-            metrics=[METRIC_CONFIG[m]["cm_metric"] for m in COIN_METRICS_BACKED],
-            start_time=CM_START_TIME,
-        )
-    primary = CoinMetricsClient.split_metric_series(cm_rows_cache["rows"], config["cm_metric"])
+    cm_rows = _fetch_coinmetrics_rows(cm_rows_cache)
+    primary = CoinMetricsClient.split_metric_series(cm_rows, config["cm_metric"]) if cm_rows else []
     fallback = BlockchainInfoChartsClient().fetch_chart(config["bi_chart"])
-    return merge_series(primary, fallback)
+    series = merge_series(primary, fallback)
+
+    if name == "price":
+        # blockchain.info's market-price series carries placeholder 0.0 rows
+        # before Bitcoin had an exchange-traded price (pre-mid-2010) -- not a
+        # real observation, and disallowed by the schema's exclusiveMinimum.
+        series = [row for row in series if row["value"] > 0]
+
+    return series
 
 
 def load_schema(file_metric: str) -> dict:

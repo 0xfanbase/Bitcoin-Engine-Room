@@ -45,7 +45,8 @@
       "min": 1,
       "max": null,
       "series_is_sparse_step_function": true,
-      "max_pct_change_between_distinct_values": 0.30
+      "max_pct_change_between_distinct_values": null,
+      "max_pct_change_note": "Left unenforced for backfill (unlike live_snapshot's 30% bound). Verified against real blockchain.info data during the P1 backfill run: 2009-2013 retargets legitimately swung 30-300%+ per period during the CPU->GPU->FPGA->ASIC hardware transitions -- real history, not corruption. A single fixed threshold can't fit both that era and the stable modern one, so this is a WARN-never check for backfilled history; min/max bounds plus the schema's exclusiveMinimum are what catch actual corruption here."
     },
     "supply_btc": {
       "min": 0,

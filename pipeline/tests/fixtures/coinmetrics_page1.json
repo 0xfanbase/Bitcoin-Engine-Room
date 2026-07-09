@@ -1,0 +1,7 @@
+{
+  "data": [
+    {"asset": "btc", "time": "2010-07-17T00:00:00.000000000Z", "PriceUSD": "0.04951", "HashRate": null, "SplyCur": "2500150"},
+    {"asset": "btc", "time": "2010-07-18T00:00:00.000000000Z", "PriceUSD": "0.0858", "HashRate": null, "SplyCur": "2500200"}
+  ],
+  "next_page_url": "https://api.coinmetrics.io/v4/timeseries/asset-metrics?page=2"
+}

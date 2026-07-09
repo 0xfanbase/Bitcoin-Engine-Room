@@ -15,18 +15,20 @@ BTC Engine Room is a free, public Bitcoin fundamentals + price-model dashboard: 
 
 Stack: GitHub Pages (hosting) + GitHub Actions (automation) + Python 3.12 (`requests`, `numpy`, `jsonschema` — no pandas) for the pipeline + vanilla HTML/CSS/JS + Apache ECharts (CDN) for the frontend, no framework, no build step.
 
-## 3. Data source chains (corrected)
+## 3. Data source chains (corrected, then live-verified)
 
-| Metric | Primary | Fallback | Notes |
+| Metric | Primary (as designed) | Fallback | Notes |
 |---|---|---|---|
-| Price backfill | Coin Metrics Community (`PriceUSD`) | blockchain.com Charts `market-price` | Corrected from spec Section 4 — see director corrections |
-| Hash rate backfill | Coin Metrics Community (`HashRate`) | blockchain.com Charts `hash-rate` | Canonical unit is EH/s; convert on ingest |
-| Supply backfill | Coin Metrics Community (`SplyCur`) | blockchain.com Charts `total-bc` | Monotonic, ≤ 21,000,000 |
-| Difficulty backfill | blockchain.com Charts `difficulty` | — (single source) | No Coin Metrics community equivalent; sparse step-function series, not daily |
+| Price backfill | Coin Metrics Community (`PriceUSD`) | blockchain.com Charts `market-price` | **Coin Metrics is currently returning 401 Unauthorized even without a key** (live-verified 2026-07-09, contradicts the spec's assumption) — `backfill.py` catches this and falls through entirely to blockchain.info. Current committed `price_daily.json` is 100% `blockchain_info`-sourced. See `IMPROVEMENT_BACKLOG.md`. Positive-value rows only (pre-2010-08 placeholder zeros filtered). |
+| Hash rate backfill | Coin Metrics Community (`HashRate`) | blockchain.com Charts `hash-rate` | Same Coin Metrics 401 as above — currently 100% blockchain.info. Canonical unit EH/s; blockchain.info's native unit is **TH/s** (verified against its own `unit` field and a real-magnitude check), not GH/s — divide by 1e6, not 1e9. |
+| Supply backfill | Coin Metrics Community (`SplyCur`) | blockchain.com Charts `total-bitcoins` | Same Coin Metrics 401 — currently 100% blockchain.info. Chart name is `total-bitcoins`, not `total-bc` (404s). Native granularity is per-block, not per-day, even with `sampled=false` — collapsed to one row per date (last value of the day). Monotonic, ≤ 21,000,000. |
+| Difficulty backfill | blockchain.com Charts `difficulty` | — (single source) | No Coin Metrics community equivalent; sparse step-function series, not daily. Positive-value rows only. Backfill sanity check does not enforce a max-swing threshold — 2009-2013 retargets legitimately moved 30-300%+. |
 | Fear & Greed backfill | alternative.me `?limit=0` | — | Data starts ~2018-02-01, not genesis |
 | Block height (live, P2+) | mempool.space WS `blocks` | mempool.space REST → blockchain.info `/q/getblockcount` | Not backfilled as history in P1 |
 | Price (live, P2+) | mempool.space `/api/v1/prices` | CoinGecko → Coinbase | |
 | Fees (live, P2+) | mempool.space `/api/v1/fees/recommended` | — (mark stale) | No fallback per spec |
+
+**Follow-up (logged in `IMPROVEMENT_BACKLOG.md`):** either obtain a free Coin Metrics API key and wire it into `CoinMetricsClient`, or formally demote Coin Metrics to documented-fallback status in this table.
 
 Live/failover-per-request chains (`fetch_snapshot.py`) are P2 scope — not implemented yet. `pipeline/sources.py` in P1 only implements the full-history backfill fetchers listed above.
 
