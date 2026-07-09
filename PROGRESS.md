@@ -13,6 +13,10 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 
 ## Log
 
+### 2026-07-09 — CI job hang guard added after an unexplained cancelled run
+
+The `CI` and `pages build and deployment` runs for PR #9's merge commit (`0aa15d3`) both sat "in progress" for ~15 minutes (vs. the usual <1 minute) and were cancelled at the same instant with no logs or error output retained by GitHub -- a runner/infra flake, not a real test failure. Confirmed the code itself is fine: PR #9 touched only `assets/*.js`, `style.css`, and `index.html` (no `pipeline/` changes), and `pytest pipeline/tests -v` passes 115/115 locally in ~41s, matching the last known-good CI timing exactly. Added `timeout-minutes: 10` to `ci.yml`'s `test` job so a future hang fails fast with a clear timeout instead of silently running long and needing a manual cancel. `pages build and deployment` has no workflow file in this repo (GitHub's own system workflow) so there's nothing there to add a guard to; re-ran both cancelled checks against `main` to clear the red X.
+
 ### 2026-07-09 — Audit WARNs cleared, Power Law + Cycle Overlay chart UX redesigned, end-to-end UI/UX audit, info-toggle icons shrunk
 
 Owner feedback after using the live site: info-toggle icons felt intrusive, the Power Law chart's X-axis labels were too sparse/uneven with no way to spot "today," the 4-Year Cycle Overlay was "too hard to read," and a request to fix the 3 continuity WARNs plus do a full pixel-by-pixel UI/UX pass.
