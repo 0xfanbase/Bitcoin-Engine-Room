@@ -4,7 +4,7 @@
 
 BTC Engine Room is a free, public Bitcoin fundamentals + price-model dashboard: block height, hash rate, difficulty, mempool, fees, supply, plus long-horizon price models (power law corridor, 4-year halving cycle overlay, Mayer Multiple, 200WMA). The differentiator is radical transparency — every gauge shows its data source, freshness, validation status, and failover state, and the site publishes its own daily audit report. Total running cost is $0 beyond an existing Claude subscription.
 
-**Current phase:** P3 (Frontend core) complete; P4 (Models & charts) next. Check `PROGRESS.md`'s phase checklist for live status before starting work. Source of truth for everything below: `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` (the full spec) and `docs/PHASE1_DIRECTOR_CORRECTIONS.md` (the corrections layered on top of it — read both, the corrections supersede the spec where they conflict). `IMPROVEMENT_BACKLOG.md` records every subsequent real-world correction found while building P2/P3 — check it too before trusting any endpoint or message-shape detail below at face value.
+**Current phase:** P4 (Models & charts) complete; P5 (Audit & health panel) next. Check `PROGRESS.md`'s phase checklist for live status before starting work. Source of truth for everything below: `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` (the full spec) and `docs/PHASE1_DIRECTOR_CORRECTIONS.md` (the corrections layered on top of it — read both, the corrections supersede the spec where they conflict). `IMPROVEMENT_BACKLOG.md` records every subsequent real-world correction found while building P2/P3/P4 — check it too before trusting any endpoint, message-shape, or chart-axis detail below at face value. Known open item: committed JSON already exceeds spec Section 11.6's <2MB payload budget (see `IMPROVEMENT_BACKLOG.md`'s P4 entry) — P5's audit check should report this honestly, not paper over it.
 
 ## 2. Architecture summary
 
@@ -53,9 +53,9 @@ Stack: GitHub Pages (hosting) + GitHub Actions (automation) + Python 3.12 (`requ
 bitcoin-engine-room/
 ├── CLAUDE.md, PROGRESS.md, IMPROVEMENT_BACKLOG.md, README.md, LICENSE   # P1
 ├── docs/                          # P1 — spec + director corrections
-├── index.html, assets/            # P3 — frontend, not built yet
+├── index.html, assets/            # P3 (style.css, app.js, live.js, health.js) + P4 (charts.js)
 ├── data/history/*.json            # P1 backfilled, P2 appends one row/day live
-├── data/models.json               # P4 — not built yet
+├── data/models.json               # P4
 ├── data/health.json               # P2
 ├── data/audit/                    # P5 — not built yet
 ├── pipeline/
@@ -65,12 +65,12 @@ bitcoin-engine-room/
 │   ├── gh_issues.py                # P2 — data-outage issue automation
 │   ├── backfill.py                # P1
 │   ├── fetch_snapshot.py          # P2
-│   ├── fit_models.py              # P4 — not built yet
+│   ├── fit_models.py              # P4 — power law/cycle/Mayer/200WMA/deviation dial
 │   ├── audit.py                   # P5 — not built yet
 │   ├── sanity_rules.json          # P1 (live_snapshot) + P2 (consumed by fetch_snapshot.py)
-│   ├── model_constants.json, MODEL_METHODOLOGY.md   # P1 (pinned for P4's fit_models.py)
-│   ├── schemas/                   # P1 + P2 (health.schema.json)
-│   └── tests/                     # P1 + P2
+│   ├── model_constants.json, MODEL_METHODOLOGY.md   # P1, consumed by P4's fit_models.py
+│   ├── schemas/                   # P1 + P2 (health.schema.json) + P4 (models.schema.json)
+│   └── tests/                     # P1 + P2 + P4
 └── .github/workflows/
     ├── ci.yml                     # P1
     └── daily.yml                  # P2

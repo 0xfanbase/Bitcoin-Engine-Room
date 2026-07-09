@@ -111,6 +111,50 @@
 
   </div>
 
+  <h2 class="plate">Projections</h2>
+
+  <div class="chart-card chart-card--hero" id="power-law-card">
+    <div class="chart-plate">
+      <h3>Power Law Corridor</h3>
+      <div class="chart-plate-stats numeral" id="power-law-stats">&mdash;</div>
+    </div>
+    <div class="chart-controls" role="group" aria-label="Power law chart timeframe">
+      <button class="chip-btn" data-power-law-range="1y">1Y</button>
+      <button class="chip-btn" data-power-law-range="4y">4Y</button>
+      <button class="chip-btn is-active" data-power-law-range="all">ALL</button>
+    </div>
+    <div id="power-law-chart" class="chart-canvas chart-canvas--hero"></div>
+    <p class="chart-caption">Model family published by Giovanni Santostasi. Bands are descriptive envelopes from historical fit residuals (±2σ in log10 space), not statistical confidence intervals. <a href="#power-law-card">#power-law</a></p>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card" id="cycle-overlay-card">
+      <div class="chart-plate">
+        <h3>4-Year Cycle Overlay</h3>
+        <div class="chart-plate-stats numeral" id="cycle-overlay-stats">&mdash;</div>
+      </div>
+      <div id="cycle-overlay-chart" class="chart-canvas"></div>
+      <p class="chart-caption">% performance vs. days since halving, each epoch normalized to its halving-day price. <a href="#cycle-overlay-card">#cycle</a></p>
+    </div>
+
+    <div class="chart-card" id="deviation-dial-card">
+      <div class="chart-plate">
+        <h3>Deviation Dial</h3>
+      </div>
+      <div id="deviation-dial-chart" class="chart-canvas"></div>
+      <p class="chart-caption">Toy composite: average of the power-law residual, Mayer Multiple, and cycle-position percentiles. Not a valuation model. <a href="#deviation-dial-card">#dial</a></p>
+    </div>
+  </div>
+
+  <div class="chart-card" id="mayer-200wma-card">
+    <div class="chart-plate">
+      <h3>Mayer Multiple &middot; 200-Week MA</h3>
+      <div class="chart-plate-stats numeral" id="mayer-200wma-stats">&mdash;</div>
+    </div>
+    <div id="mayer-200wma-chart" class="chart-canvas"></div>
+    <p class="chart-caption">Mayer Multiple = price / 200-day SMA. 200WMA = 200-week simple moving average. <a href="#mayer-200wma-card">#mayer</a></p>
+  </div>
+
   <h2 class="plate">Engine Health</h2>
   <div class="health-summary" id="health-summary">Loading health report&hellip;</div>
   <div class="health-grid" id="health-grid"></div>
@@ -123,8 +167,10 @@
 
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 <script src="assets/app.js" defer></script>
 <script src="assets/live.js" defer></script>
 <script src="assets/health.js" defer></script>
+<script src="assets/charts.js" defer></script>
 </body>
 </html>

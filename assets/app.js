@@ -72,6 +72,9 @@
       const isActive = chip.dataset.themeChoice === theme;
       chip.setAttribute("aria-pressed", String(isActive));
     });
+    // charts.js listens for this to dispose + re-init with the new theme's
+    // token colors (spec Section 16.1.4).
+    document.dispatchEvent(new CustomEvent("ber:theme-changed", { detail: { theme } }));
   }
 
   function initThemeSwitcher() {

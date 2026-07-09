@@ -355,6 +355,88 @@ a {
   color: var(--fail);
 }
 
+/* ---------- Projections / charts ---------- */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.chart-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-plate {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.chart-plate h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+
+/* Fit stats "printed on the chart face like an instrument calibration
+   plate" (director rule #7) -- an HTML overlay caption, not baked into the
+   chart canvas, so it stays crisp and accessible at any zoom level. */
+.chart-plate-stats {
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.chart-controls {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.chip-btn {
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 5px;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+
+.chip-btn.is-active {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 260px;
+}
+
+.chart-canvas--hero {
+  height: 380px;
+}
+
+.chart-caption {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+.chart-caption a {
+  color: var(--ink-dim);
+}
+
 /* ---------- Engine Health panel ---------- */
 .health-grid {
   display: grid;

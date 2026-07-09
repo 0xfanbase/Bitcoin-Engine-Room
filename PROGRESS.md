@@ -7,11 +7,21 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 - [x] P1 — Skeleton & backfill
 - [x] P2 — Daily pipeline
 - [x] P3 — Frontend core
-- [ ] P4 — Models & charts
+- [x] P4 — Models & charts
 - [ ] P5 — Audit & health panel
 - [ ] P6 — Polish
 
 ## Log
+
+### 2026-07-09 — Phase 4 complete
+
+- Built `pipeline/fit_models.py`: power law corridor (OLS in log10-log10 space per the pinned `model_constants.json` methodology), 4-year cycle overlay (halving-epoch slicing + normalization + cross-epoch percentile), Mayer Multiple (200-day SMA + full historical percentile), 200-week moving average (manual ISO-week bucketing, no pandas), and the deviation dial (toy composite of the three percentiles). Stock-to-Flow explicitly skipped per spec Section 8.6. Writes `data/models.json`; `pipeline/schemas/models.schema.json` added.
+- 20 new pytest tests against synthetic data with known closed-form answers (e.g. a perfect power-law series recovers exact `a`/`b`/`R²=1`/`σ=0`; a constant-price series gives Mayer Multiple ≡ 1.0). 94/94 total passing.
+- Ran for real against the committed `price_daily.json`: `b=5.621, a=-16.271, R²=0.960, σ=0.301` -- `R²` clears the 0.95 floor; `b`/`a` sit just outside `model_constants.json`'s tight reference range but comfortably inside the wider audit-drift band that's the actual gate (logged in `IMPROVEMENT_BACKLOG.md` with a plausible explanation: single-source blockchain.info price data, since Coin Metrics is still 401'd). Verified the drift-tracking mechanism (`previous_params`) correctly carries the prior run's fit forward on a second run.
+- Built the PROJECTIONS section: `assets/charts.js` (Apache ECharts via CDN) rendering the power-law corridor as the full-width hero chart (log-log, translucent amber band, "Redline/Cruise/Idle" labels, fit stats printed as an HTML overlay "calibration plate" per creative-direction bullet #7), the 4-year cycle overlay (current epoch highlighted), a Mayer Multiple / 200WMA strip, and the deviation dial (ECharts gauge). 1Y/4Y/ALL timeframe chips on the power-law chart; charts re-theme (dispose + re-init) on theme switch per spec Section 16.1.4, reading colors directly from the CSS custom properties -- no separate hardcoded ECharts theme registrations.
+- Verified in a real headless-Chromium browser. The CDN itself (`cdn.jsdelivr.net`) is blocked by this sandbox's egress policy (same pattern as `fonts.googleapis.com` in P3) -- substituted a local `npm install`ed copy of the exact same ECharts version for testing only, `index.html` still correctly targets the real CDN. This caught a real bug before it shipped: ECharts' log-axis auto-scaling snapped the power-law chart's x-axis out to a "nice" power-of-10 tick at day 100,000 (year **2282**), stretching the whole corridor into a distorted wedge -- fixed with explicit axis `min`/`max`. Confirmed the fix, timeframe filtering, and theme re-rendering all work via before/after screenshots.
+- Found (but did not fix, logged in `IMPROVEMENT_BACKLOG.md` for P5/P6) that committed JSON already exceeds spec Section 11.6's <2MB payload budget: `data/history/*.json` alone is ~2.9 MB pretty-printed, before `models.json`'s ~340 KB. Root cause is architectural (the frontend fetches full history just to paint the latest gauge value) rather than simple bloat; minifying was considered and rejected since it would destroy the clean one-line-per-day git diff that's part of the project's transparency story. Real fix needs a "latest values" summary artifact or a budget-vs-transparency tradeoff decision -- flagged for the project owner, not made unilaterally.
+- Next: P5 (audit & health panel) -- `pipeline/audit.py` (continuity/variance/drift/staleness/sanity-replay/site-integrity checks per spec Section 11, including the payload-budget check that will now honestly report the finding above), `data/audit/*.json`, extending the on-site Engine Health panel with real audit pass/fail detail, auto-issue + backlog-append wiring.
 
 ### 2026-07-09 — Phase 3 complete
 

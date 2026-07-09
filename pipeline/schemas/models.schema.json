@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/models.schema.json",
+  "title": "models.json",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "power_law", "cycle_overlay", "mayer_multiple", "wma_200", "deviation_dial"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "power_law": {
+      "type": "object",
+      "required": ["params", "previous_params", "current", "bands", "projections"],
+      "properties": {
+        "params": {
+          "type": "object",
+          "required": ["a", "b", "r_squared", "sigma", "fit_start_date", "n_points"],
+          "properties": {
+            "b": {"type": "number"},
+            "a": {"type": "number"},
+            "r_squared": {"type": "number", "minimum": 0, "maximum": 1}
+          }
+        },
+        "current": {
+          "type": "object",
+          "required": ["date", "price", "trend_price", "deviation_pct", "z_score", "residual_percentile"]
+        },
+        "projections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["date", "floor", "trend", "ceiling"]
+          }
+        }
+      }
+    },
+    "cycle_overlay": {
+      "type": "object",
+      "required": ["epochs", "current_epoch"]
+    },
+    "mayer_multiple": {
+      "type": "object",
+      "required": ["current", "series"]
+    },
+    "wma_200": {
+      "type": "object",
+      "required": ["current", "series"]
+    },
+    "deviation_dial": {
+      "type": "object",
+      "required": ["score_0_100", "label", "components"]
+    }
+  }
+}
