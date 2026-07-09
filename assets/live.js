@@ -74,11 +74,97 @@
 
   function onNewBlock(height, timestampSec) {
     const isFirstPaint = lastBlockHeight === null;
+    // REST polling fallback (startHeightPolling) calls this every tick
+    // regardless of whether the height actually changed, passing Date.now()
+    // as an approximate timestamp. Without this guard the odometer would
+    // flash and the block rail would "arrive" every poll interval even with
+    // no new block -- a false theatrical signal the transparency rule
+    // exists to prevent.
+    if (!isFirstPaint && height === lastBlockHeight) return;
     lastBlockHeight = height;
     lastBlockTimestamp = timestampSec;
     renderOdometer(height, { flash: !isFirstPaint });
     const captionEl = document.getElementById("odometer-caption");
     if (captionEl) captionEl.textContent = "block height · block found " + timeAgo(timestampSec);
+    if (!isFirstPaint) triggerRailArrival();
+  }
+
+  // ---------- Block Rail: the train's position is elapsed time since the
+  // last block (director spec, CLAUDE.md Section 6 rule 2 amendment). Crawls
+  // ~0.1-0.2px/s between blocks (imperceptible -- passes the screensaver
+  // test by construction) and only visibly moves once per block, as a
+  // ~4.5s run-off/re-entry sweep synced to the odometer roll above.
+
+  const RAIL_EXPECTED_SECONDS = 600; // 10min average block time
+  const RAIL_MAX_FRACTION = 0.96;
+  const RAIL_TRAIN_WIDTH = 24;
+
+  let railAnimating = false;
+  let railTicker = null;
+
+  function reducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function isEngineTheme() {
+    return (document.documentElement.dataset.theme || "engine") === "engine";
+  }
+
+  function railTrackWidth() {
+    const track = document.getElementById("block-rail-track");
+    return track ? track.clientWidth : 0;
+  }
+
+  function updateRailCrawl() {
+    if (!isEngineTheme() || railAnimating) return;
+    const train = document.getElementById("block-rail-train");
+    if (!train) return;
+    if (wsDegraded) {
+      // Block height data isn't real-time under REST-only fallback -- freeze
+      // the crawl and dim it rather than show a needle moving on stale data.
+      train.style.opacity = "0.4";
+      return;
+    }
+    train.style.opacity = "1";
+    if (lastBlockTimestamp == null) return;
+    const elapsed = Math.max(0, Date.now() / 1000 - lastBlockTimestamp);
+    const fraction = Math.min(elapsed / RAIL_EXPECTED_SECONDS, RAIL_MAX_FRACTION);
+    const px = fraction * Math.max(railTrackWidth() - RAIL_TRAIN_WIDTH, 0);
+    train.style.transition = reducedMotion() ? "none" : "transform 1s linear";
+    train.style.transform = `translateX(${px}px)`;
+  }
+
+  function triggerRailArrival() {
+    if (!isEngineTheme()) return;
+    const train = document.getElementById("block-rail-train");
+    if (!train) return;
+    if (reducedMotion()) {
+      train.style.transition = "none";
+      train.style.transform = "translateX(0px)";
+      return;
+    }
+    railAnimating = true;
+    setTimeout(() => {
+      const runoffPx = railTrackWidth() + RAIL_TRAIN_WIDTH;
+      train.style.transition = "transform 3.5s cubic-bezier(0.4, 0, 1, 1)";
+      train.style.transform = `translateX(${runoffPx}px)`;
+      setTimeout(() => {
+        train.style.transition = "none";
+        train.style.transform = `translateX(${-RAIL_TRAIN_WIDTH}px)`;
+        void train.offsetWidth; // force reflow so the re-entry transition below actually animates
+        train.style.transition = "transform 1s linear";
+        train.style.transform = "translateX(0px)";
+        setTimeout(() => {
+          railAnimating = false;
+        }, 1000);
+      }, 3500);
+    }, 250);
+  }
+
+  function startRailTicker() {
+    if (railTicker) return;
+    updateRailCrawl();
+    railTicker = setInterval(updateRailCrawl, 1000);
   }
 
   function timeAgo(timestampSec) {
@@ -317,6 +403,7 @@
     pollPrice();
     pollFees();
     pollDifficultyAdjustment();
+    startRailTicker();
     setInterval(pollPrice, PRICE_POLL_MS);
     setInterval(pollFees, PRICE_POLL_MS);
     setInterval(pollDifficultyAdjustment, DIFFICULTY_POLL_MS);

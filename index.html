@@ -8,12 +8,19 @@
 
 <!-- Inline pre-paint theme script: must run before CSS paints to avoid a
      flash of the wrong theme. Default is 'engine' unless the visitor
-     already chose otherwise (localStorage, not a cookie -- a static site
-     never reads a cookie server-side). No prefers-color-scheme override:
-     engine wins unless the user explicitly picked something else. -->
+     already chose 'matrix' (localStorage, not a cookie -- a static site
+     never reads a cookie server-side). Sanitized against a fixed allow-list:
+     returning visitors who previously picked the now-removed 'light'/'dark'
+     themes fall back to 'engine' instead of inheriting a dead theme value
+     with no token block behind it. No prefers-color-scheme override: engine
+     wins unless the user explicitly picked matrix. -->
 <script>
 (function () {
-  var theme = localStorage.getItem('ber_theme') || 'engine';
+  var theme = localStorage.getItem('ber_theme');
+  if (theme !== 'engine' && theme !== 'matrix') {
+    theme = 'engine';
+    localStorage.setItem('ber_theme', theme); // self-heal a stale pre-2026-07-09 light/dark value
+  }
   document.documentElement.dataset.theme = theme;
 })();
 </script>
@@ -23,13 +30,17 @@
 <!-- Non-blocking font load (standard loadCSS pattern): the page's own
      style.css stays render-blocking (needed for layout/theme correctness),
      but the Google Fonts stylesheet shouldn't hold up first paint --
-     display=swap on the font URL already avoids invisible text either way. -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap" />
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-<noscript><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap" rel="stylesheet" /></noscript>
+     display=swap on the font URL already avoids invisible text either way.
+     Source Serif 4 dropped: it existed only for the now-removed light
+     theme's serif masthead. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
+
+<canvas id="matrix-rain-canvas" aria-hidden="true"></canvas>
 
 <header class="site-header">
   <a class="brand" href="#top">BTC ENGINE ROOM</a>
@@ -37,10 +48,11 @@
     <span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--ink-dim);" id="engine-status-dot"></span>
     <span id="engine-status-text">checking&hellip;</span>
   </div>
+  <!-- Two-position rocker, not a chip row (director ruling: a binary choice
+       reads as one instrument switch, not three peer options). -->
   <div class="theme-switcher" role="group" aria-label="Theme">
-    <button class="theme-chip" data-theme-choice="light" aria-pressed="false">&#9728; Light</button>
-    <button class="theme-chip" data-theme-choice="dark" aria-pressed="false">&#9679; Dark</button>
-    <button class="theme-chip" data-theme-choice="engine" aria-pressed="true">&#128674; Engine</button>
+    <button class="theme-chip" data-theme-choice="engine" aria-pressed="true">Engine</button>
+    <button class="theme-chip" data-theme-choice="matrix" aria-pressed="false">Digital Rain</button>
   </div>
 </header>
 
@@ -52,6 +64,18 @@
       <span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span>
     </div>
     <div class="odometer-caption" id="odometer-caption">block height &middot; loading&hellip;</div>
+
+    <!-- Block Rail (engine theme only): the train's position IS elapsed time
+         since the last block -- data, not decoration. Crawls imperceptibly
+         (~0.1-0.2px/s) between blocks and only visibly moves once, as a
+         ~4.5s run-off/re-entry sweep synced to the odometer roll on genuine
+         new-block arrival. Director ruling, CLAUDE.md Section 6 rule 2. -->
+    <div class="block-rail" id="block-rail" aria-hidden="true" title="minutes since last block (full rail = 10:00 expected)">
+      <div class="block-rail-track" id="block-rail-track">
+        <div class="block-rail-ticks"></div>
+      </div>
+      <div class="block-rail-train" id="block-rail-train"></div>
+    </div>
 
     <div class="masthead-stats">
       <div class="masthead-stat">
@@ -186,5 +210,6 @@
 <script src="assets/live.js" defer></script>
 <script src="assets/health.js" defer></script>
 <script src="assets/charts.js" defer></script>
+<script src="assets/rain.js" defer></script>
 </body>
 </html>
