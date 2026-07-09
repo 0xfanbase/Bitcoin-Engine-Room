@@ -9,9 +9,21 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 - [x] P3 — Frontend core
 - [x] P4 — Models & charts
 - [x] P5 — Audit & health panel
-- [ ] P6 — Polish
+- [x] P6 — Polish
 
 ## Log
+
+### 2026-07-09 — Phase 6 complete: all six build phases done
+
+- Expanded `README.md` with the USP, architecture summary, full data-source attribution, and disclaimer, per spec Section 5.
+- Audited `prefers-reduced-motion` coverage across the whole site: the odometer flash animation and transition were already covered (P3); added `animation: !prefersReducedMotion()` to all four ECharts option objects in `charts.js` (P4's charts had no reduced-motion handling until now). Verified with Playwright's `reducedMotion: 'reduce'` emulation.
+- Ran a real Lighthouse audit locally: initial scores were perf=78, a11y=100, best-practices=96, seo=100. Deferred the ECharts CDN script (previously the only non-deferred script tag, barely moved the needle). The real fix was the Google Fonts stylesheet, which was render-blocking on an external round-trip -- switched to the standard non-blocking `preload`+`onload` pattern with a `<noscript>` fallback, which jumped performance to **96**. Clears the P6 acceptance criterion (Lighthouse ≥90 perf/a11y) with real margin. Remaining findings (unminified CSS/JS, cache headers, compression) are either intentional tradeoffs (no build step per CLAUDE.md's hard rule) or local-test-environment artifacts that should be re-checked against the real GitHub Pages deployment. Full detail in `IMPROVEMENT_BACKLOG.md`.
+- Added `.claude/commands/improve.md` (the weekly self-improvement ritual per spec Section 12, with all four non-negotiable guardrails from Section 12.4 spelled out explicitly: never weaken sanity bounds, never add a paid dependency, never increase polling frequency, never touch workflow files/attribution footer as a side effect) and `.claude/commands/health-report.md` (read-only 5-line digest from audit history).
+- `pytest pipeline/tests -v`: 114/114 passing throughout.
+
+**All six build phases (P1–P6) from the spec are now complete.** The site has: a 15+ year backfilled history across 5 metrics; a daily self-healing pipeline with real failover chains and GitHub issue automation; a full frontend with three themes, a live WebSocket/REST layer, and never-blank gauges; a complete model suite (power law, cycle overlay, Mayer Multiple, 200WMA, deviation dial) with real chart visualizations; a daily self-audit with an on-site expandable panel; and a Lighthouse-verified, reduced-motion-aware, accessible UI. Every phase was verified against real live APIs and/or a real browser, not just unit-tested in isolation -- this caught and fixed a genuine bug in nearly every phase (see `IMPROVEMENT_BACKLOG.md` for the full list, roughly a dozen real-world corrections across P1–P6).
+
+Ongoing work from here is the weekly `/improve` ritual against the backlog (see `IMPROVEMENT_BACKLOG.md` for what's open), not a new phase.
 
 ### 2026-07-09 — Phase 5 complete
 

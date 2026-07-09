@@ -20,6 +20,10 @@
     });
   }
 
+  function prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
   function themeColors() {
     const style = getComputedStyle(document.documentElement);
     const get = (name) => style.getPropertyValue(name).trim();
@@ -96,6 +100,7 @@
     chart.setOption(
       {
         backgroundColor: "transparent",
+        animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
         grid: { left: 60, right: 20, top: 20, bottom: 40 },
         xAxis: {
@@ -166,6 +171,7 @@
     chart.setOption(
       {
         backgroundColor: "transparent",
+        animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
         grid: { left: 55, right: 15, top: 30, bottom: 35 },
         legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 } },
@@ -208,6 +214,7 @@
     chart.setOption(
       {
         backgroundColor: "transparent",
+        animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
         grid: { left: 50, right: 50, top: 30, bottom: 35 },
         legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 } },
@@ -243,6 +250,7 @@
     chart.setOption(
       {
         backgroundColor: "transparent",
+        animation: !prefersReducedMotion(),
         series: [
           {
             type: "gauge",

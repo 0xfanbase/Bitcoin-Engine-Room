@@ -4,7 +4,7 @@
 
 BTC Engine Room is a free, public Bitcoin fundamentals + price-model dashboard: block height, hash rate, difficulty, mempool, fees, supply, plus long-horizon price models (power law corridor, 4-year halving cycle overlay, Mayer Multiple, 200WMA). The differentiator is radical transparency — every gauge shows its data source, freshness, validation status, and failover state, and the site publishes its own daily audit report. Total running cost is $0 beyond an existing Claude subscription.
 
-**Current phase:** P5 (Audit & health panel) complete; P6 (Polish) next. Check `PROGRESS.md`'s phase checklist for live status before starting work. Source of truth for everything below: `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` (the full spec) and `docs/PHASE1_DIRECTOR_CORRECTIONS.md` (the corrections layered on top of it — read both, the corrections supersede the spec where they conflict). `IMPROVEMENT_BACKLOG.md` records every subsequent real-world correction found while building P2–P5 — check it too before trusting any endpoint, message-shape, or chart-axis detail below at face value. Known open items (both honestly surfaced by `audit.py`, not hidden): committed JSON exceeds spec Section 11.6's <2MB payload budget, and hashrate has no cross-source variance check (only price does) — see `IMPROVEMENT_BACKLOG.md`'s P4/P5 entries.
+**Current phase:** P6 (Polish) complete — all six build phases (P1–P6) are done. Check `PROGRESS.md`'s phase checklist and log for live status before starting new work. Source of truth for everything below: `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` (the full spec) and `docs/PHASE1_DIRECTOR_CORRECTIONS.md` (the corrections layered on top of it — read both, the corrections supersede the spec where they conflict). `IMPROVEMENT_BACKLOG.md` records every subsequent real-world correction found while building — check it too before trusting any endpoint, message-shape, or chart-axis detail below at face value. Known open items (all honestly surfaced by `audit.py`, not hidden): committed JSON exceeds spec Section 11.6's <2MB payload budget, hashrate has no cross-source variance check (only price does), and CSS/JS are intentionally unminified (CLAUDE.md's own hard rule forbids a build step without explicit owner approval) — see `IMPROVEMENT_BACKLOG.md`'s P4/P5/P6 entries. Ongoing work from here is the weekly `/improve` ritual against the backlog, not a new phase.
 
 ## 2. Architecture summary
 
@@ -71,10 +71,13 @@ bitcoin-engine-room/
 │   ├── model_constants.json, MODEL_METHODOLOGY.md   # P1, consumed by P4's fit_models.py
 │   ├── schemas/                   # P1 + P2 (health.schema.json) + P4 (models.schema.json) + P5 (audit.schema.json)
 │   └── tests/                     # P1 + P2 + P4 + P5
+├── .claude/commands/               # P6 — improve.md + health-report.md
 └── .github/workflows/
     ├── ci.yml                     # P1
     └── daily.yml                  # P2, extended P5 to run fetch_snapshot -> fit_models -> audit
 ```
+
+All six phases (P1–P6) are complete as of this writing. There is no P7 in the spec — from here, work is either the weekly `/improve` ritual against `IMPROVEMENT_BACKLOG.md`, or a deliberate new feature the project owner asks for (e.g. resolving the Coin Metrics 401, the JSON payload budget, hashrate cross-source variance, or the post-v1 Matrix/Digital-Rain theme).
 
 Do not create stub files for anything marked as a later phase — an absent file is the clearest signal of what's in scope right now.
 
@@ -106,9 +109,11 @@ Produced by an independent director-level review before Phase 1 began (full writ
 ## 8. Project memory pointers
 
 - `PROGRESS.md` — session-to-session log and phase checklist; read it first.
-- `IMPROVEMENT_BACKLOG.md` — audit-fed (from P5) + manually logged ideas and judgment calls.
-- `data/audit/` — daily audit reports (P5+).
+- `IMPROVEMENT_BACKLOG.md` — audit-fed + manually logged ideas and judgment calls.
+- `data/audit/` — daily audit reports (`latest.json` + one dated copy per day, 90-day retention).
 - `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` + `docs/PHASE1_DIRECTOR_CORRECTIONS.md` — full spec and the corrections layered on it.
+- `.claude/commands/improve.md` — the weekly self-improvement ritual (spec Section 12): reads the backlog + audit history + health.json, picks one item, implements, verifies, commits on approval. Guardrails (never weaken sanity bounds, never add a paid dependency, never increase polling frequency, never touch workflow files/attribution footer as a side effect) are non-negotiable and spelled out there.
+- `.claude/commands/health-report.md` — read-only 5-line status digest from audit history.
 
 ## 9. Environment notes
 
