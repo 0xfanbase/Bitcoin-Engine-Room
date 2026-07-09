@@ -50,6 +50,34 @@
     return new Date(g + days * 86400000).getUTCFullYear();
   }
 
+  function dateFromDays(days, genesis) {
+    const g = Date.parse(genesis + "T00:00:00Z");
+    return new Date(g + days * 86400000);
+  }
+
+  const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function formatDateShort(d) {
+    return `${MONTH_ABBR[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  }
+
+  // One evenly-spaced tick per calendar year, keyed by exact day-offset so the
+  // formatter can look values up directly (ECharts drops the `index` arg it'd
+  // otherwise pass a formatter once `customValues` is set). Log-scale compresses
+  // recent years into a shrinking fraction of the axis width as day-numbers grow,
+  // so per-year is already the practical ceiling for *static* label density near
+  // "today" -- the tooltip formatter below carries exact month/day precision on
+  // hover instead of cramming more static labels into that compressed region.
+  function buildYearTicks(minDay, maxDay, genesis) {
+    const startYear = yearFromDays(minDay, genesis);
+    const endYear = yearFromDays(maxDay, genesis);
+    const ticks = new Map();
+    for (let y = startYear; y <= endYear; y++) {
+      const day = daysSinceGenesis(`${y}-01-01`, genesis);
+      if (day >= minDay && day <= maxDay) ticks.set(day, String(y));
+    }
+    return ticks;
+  }
+
   function getOrInitChart(id) {
     if (!charts[id]) {
       const el = document.getElementById(id);
@@ -77,6 +105,7 @@
       filtered = priceHistory.filter((r) => r.date >= cutoffStr);
     }
     const actualPoints = filtered.map((r) => [daysSinceGenesis(r.date, genesis), r.value]);
+    const todayDay = daysSinceGenesis(pl.current.date, genesis);
 
     const { a, b, sigma } = pl.params;
     const minDay = Math.max(actualPoints.length ? actualPoints[0][0] : 1, 1);
@@ -95,7 +124,8 @@
       bandPoints.push([d, ceiling - floor]);
     }
 
-    const yearFormatter = (val) => String(yearFromDays(val, genesis));
+    const yearTicks = buildYearTicks(minDay, maxDay, genesis);
+    const yearTickValues = Array.from(yearTicks.keys());
 
     chart.setOption(
       {
@@ -108,7 +138,13 @@
           min: minDay,
           max: maxDay,
           axisLine: { lineStyle: { color: colors.border } },
-          axisLabel: { color: colors.inkDim, formatter: yearFormatter },
+          axisLabel: {
+            color: colors.inkDim,
+            customValues: yearTickValues,
+            formatter: (val) => yearTicks.get(val) || "",
+            hideOverlap: true,
+          },
+          axisTick: { customValues: yearTickValues },
           splitLine: { show: false },
         },
         yAxis: {
@@ -123,13 +159,51 @@
           { name: "Idle (floor)", type: "line", data: floorPoints, showSymbol: false, lineStyle: { opacity: 0 }, stack: "band", silent: true },
           { name: "Redline band", type: "line", data: bandPoints, showSymbol: false, lineStyle: { opacity: 0 }, areaStyle: { color: colors.accent, opacity: 0.12 }, stack: "band", silent: true },
           { name: "Cruise (trend)", type: "line", data: trendPoints, showSymbol: false, lineStyle: { color: colors.accent, width: 1.5, type: "dashed" } },
-          { name: "Price", type: "line", data: actualPoints, showSymbol: false, lineStyle: { color: colors.ink, width: 2 } },
+          {
+            name: "Price",
+            type: "line",
+            data: actualPoints,
+            showSymbol: false,
+            lineStyle: { color: colors.ink, width: 2 },
+            markLine: {
+              silent: true,
+              symbol: "none",
+              label: {
+                formatter: "Today",
+                color: colors.inkDim,
+                fontFamily: colors.fontData,
+                fontSize: 10,
+                position: "insideEndTop",
+              },
+              lineStyle: { type: "dashed", color: colors.inkDim, opacity: 0.6, width: 1 },
+              data: [{ xAxis: todayDay }],
+            },
+            markPoint: {
+              silent: true,
+              symbol: "circle",
+              symbolSize: 8,
+              itemStyle: { color: colors.ink, borderColor: colors.accent, borderWidth: 1.5 },
+              label: { show: false },
+              data: [{ coord: [todayDay, pl.current.price] }],
+            },
+          },
         ],
         tooltip: {
           trigger: "axis",
           backgroundColor: colors.ink,
           textStyle: { color: colors.inkDim },
-          valueFormatter: (v) => "$" + Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }),
+          formatter: (params) => {
+            if (!params || !params.length) return "";
+            const day = params[0].axisValue;
+            const rows = params
+              .filter((p) => p.seriesName === "Cruise (trend)" || p.seriesName === "Price")
+              .map(
+                (p) =>
+                  `${p.marker} ${p.seriesName}: $${Number(p.data[1]).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+              )
+              .join("<br/>");
+            return `${formatDateShort(dateFromDays(day, genesis))}<br/>${rows}`;
+          },
         },
       },
       true
@@ -157,24 +231,72 @@
     const chart = getOrInitChart("cycle-overlay-chart");
     if (!chart) return;
     const epochs = modelsDoc.cycle_overlay.epochs;
-    const palette = [colors.inkDim, colors.border === colors.inkDim ? colors.warn : colors.warn, colors.ok, colors.accent];
 
-    const series = epochs.map((epoch, i) => ({
-      name: epoch.halving_date.slice(0, 4),
-      type: "line",
-      showSymbol: false,
-      data: epoch.days_since_halving.map((d, j) => [d, epoch.pct_performance[j]]),
-      lineStyle: { width: epoch.is_current ? 2.5 : 1, color: epoch.is_current ? colors.accent : palette[i % palette.length] },
-      z: epoch.is_current ? 10 : 1,
-    }));
+    // Historical cycles all render in the same muted --ink-dim tone, dimmer
+    // for older cycles and brighter for more recent ones (an ordinal recency
+    // ramp, not a hue-per-index palette) -- the old palette assigned --ok to
+    // one historical line, and --ok is literally the same hex as --accent, so
+    // that cycle and the live one were rendering in an identical color.
+    const historicalEpochs = epochs.filter((e) => !e.is_current);
+    const historicalOpacity = (epoch) => {
+      const i = historicalEpochs.indexOf(epoch);
+      const n = Math.max(historicalEpochs.length - 1, 1);
+      return 0.35 + (0.4 * i) / n;
+    };
+
+    const series = epochs.map((epoch) => {
+      const year = epoch.halving_date.slice(0, 4);
+      const color = epoch.is_current ? colors.accent : colors.inkDim;
+      const opacity = epoch.is_current ? 1 : historicalOpacity(epoch);
+      const lastIdx = epoch.days_since_halving.length - 1;
+      const s = {
+        name: year,
+        type: "line",
+        showSymbol: false,
+        data: epoch.days_since_halving.map((d, j) => [d, epoch.pct_performance[j]]),
+        lineStyle: { width: epoch.is_current ? 2.5 : 1.25, color, opacity },
+        itemStyle: { color },
+        z: epoch.is_current ? 10 : 1,
+        endLabel: {
+          show: true,
+          formatter: () => year,
+          color,
+          opacity: epoch.is_current ? 1 : Math.min(opacity + 0.25, 1),
+          fontFamily: colors.fontData,
+          fontSize: 11,
+        },
+        emphasis: { focus: "series", lineStyle: { opacity: 1, width: epoch.is_current ? 2.5 : 2 } },
+        blur: { lineStyle: { opacity: 0.12 } },
+      };
+      if (epoch.is_current) {
+        s.markPoint = {
+          silent: true,
+          symbol: "circle",
+          symbolSize: 9,
+          itemStyle: { color: colors.accent, borderColor: colors.ink, borderWidth: 1.5 },
+          label: {
+            show: true,
+            formatter: () => `${epoch.pct_performance[lastIdx].toFixed(0)}%`,
+            color: colors.ink,
+            fontFamily: colors.fontData,
+            fontSize: 11,
+            position: "top",
+            distance: 6,
+          },
+          data: [{ coord: [epoch.days_since_halving[lastIdx], epoch.pct_performance[lastIdx]] }],
+        };
+      }
+      return s;
+    });
 
     chart.setOption(
       {
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 55, right: 15, top: 30, bottom: 35 },
+        grid: { left: 55, right: 45, top: 30, bottom: 35 },
         legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 } },
+        labelLayout: { moveOverlap: "shiftY" },
         xAxis: {
           type: "value",
           name: "days since halving",
