@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://fandamentals.github.io/bitcoin-engine-room/schemas/difficulty_daily.schema.json",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/difficulty_daily.schema.json",
   "title": "difficulty_daily history file",
-  "description": "Difficulty only changes at retarget boundaries (~every 2016 blocks). This series is a sparse step function: one row per retarget change, not one row per calendar day.",
+  "description": "P1 backfill portion is a sparse step function (one row per retarget change). From P2 onward, fetch_snapshot.py appends one row per calendar day (repeating the same value between retargets), so later portions of this series are dense.",
   "type": "object",
   "required": ["metric", "unit", "schema_version", "generated_at", "series"],
   "additionalProperties": false,
@@ -21,7 +21,7 @@
         "properties": {
           "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
           "value": {"type": "number", "exclusiveMinimum": 0},
-          "source": {"type": "string", "enum": ["blockchain_info"]}
+          "source": {"type": "string", "enum": ["blockchain_info", "mempool_space"]}
         }
       }
     }

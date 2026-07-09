@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://fandamentals.github.io/bitcoin-engine-room/schemas/model_constants.schema.json",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/model_constants.schema.json",
   "title": "model_constants.json",
   "type": "object",
   "required": ["schema_version", "power_law", "cycle_overlay"],

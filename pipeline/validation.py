@@ -1,10 +1,12 @@
 """Shared sanity-bound and cross-source-variance checks.
 
-Used by backfill.py (P1), and will be reused by fetch_snapshot.py (P2) and
-audit.py (P5) so this logic exists in exactly one place rather than three.
+Used by backfill.py (P1), fetch_snapshot.py (P2), and audit.py (P5) so this
+logic exists in exactly one place rather than three.
 """
 
 from __future__ import annotations
+
+import statistics
 
 METRIC_TO_SANITY_KEY = {
     "price_daily": "price_usd",
@@ -110,3 +112,60 @@ def check_cross_source_variance(value_a: float, value_b: float, max_pct: float) 
         return True
     baseline = max(abs(value_a), abs(value_b))
     return abs(value_a - value_b) / baseline <= max_pct
+
+
+# --- live_snapshot checks (P2, fetch_snapshot.py) -------------------------
+# Each returns a list of violation strings; empty means the candidate value
+# passes and its source should be accepted. A non-empty list means
+# fetch_snapshot.py should reject this source's value and try the next one
+# in the chain (spec Section 6: "if not passes_sanity(...): raise SanityError").
+
+
+def check_price_live(value: float, prev_value: float | None, rules: dict) -> list[str]:
+    violations = []
+    if value < rules["min"] or value > rules["max"]:
+        violations.append(f"{value} outside [{rules['min']}, {rules['max']}]")
+    if prev_value is not None and prev_value != 0:
+        pct = abs(value - prev_value) / prev_value
+        if pct > rules["max_day_over_day_pct_change"]:
+            violations.append(f"day-over-day change {pct:.1%} exceeds {rules['max_day_over_day_pct_change']:.0%}")
+    return violations
+
+
+def check_hashrate_live(value: float, history_series: list[dict], rules: dict) -> list[str]:
+    trailing = [row["value"] for row in history_series[-30:]]
+    if not trailing:
+        return []  # no history yet to compare against
+    median = statistics.median(trailing)
+    if median == 0:
+        return []
+    deviation = abs(value - median) / median
+    if deviation > rules["max_pct_dev_from_trailing_30d_median"]:
+        return [f"deviates {deviation:.1%} from trailing 30-day median {median}"]
+    return []
+
+
+def check_difficulty_live(value: float, prev_value: float | None, rules: dict) -> list[str]:
+    if prev_value is None or value == prev_value:
+        return []  # most days: no retarget, value unchanged -- always fine
+    pct = abs(value - prev_value) / prev_value
+    if pct > rules["max_pct_change_per_retarget"]:
+        return [f"retarget change {pct:.1%} exceeds {rules['max_pct_change_per_retarget']:.0%}"]
+    return []
+
+
+def check_supply_live(
+    value: float, prev_value: float | None, rules: dict, *, estimated_from_height: float | None = None
+) -> list[str]:
+    violations = []
+    if prev_value is not None and value < prev_value:
+        violations.append(f"supply decreased from {prev_value} to {value}")
+    if value > rules["max_btc"]:
+        violations.append(f"{value} exceeds max supply {rules['max_btc']}")
+    if estimated_from_height is not None and estimated_from_height != 0:
+        deviation = abs(value - estimated_from_height) / estimated_from_height
+        if deviation > rules["max_pct_dev_from_subsidy_schedule"]:
+            violations.append(
+                f"deviates {deviation:.4%} from subsidy-schedule estimate {estimated_from_height}"
+            )
+    return violations

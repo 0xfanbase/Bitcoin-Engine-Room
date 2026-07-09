@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://fandamentals.github.io/bitcoin-engine-room/schemas/sanity_rules.schema.json",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/sanity_rules.schema.json",
   "title": "sanity_rules.json",
   "type": "object",
   "required": ["schema_version", "live_snapshot", "backfill_absolute"],

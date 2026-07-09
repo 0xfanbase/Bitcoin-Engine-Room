@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BTC Engine Room</title>
+<meta name="description" content="A free, self-auditing Bitcoin fundamentals dashboard. Every gauge shows its data source, freshness, and validation status." />
+
+<!-- Inline pre-paint theme script: must run before CSS paints to avoid a
+     flash of the wrong theme. Default is 'engine' unless the visitor
+     already chose otherwise (localStorage, not a cookie -- a static site
+     never reads a cookie server-side). No prefers-color-scheme override:
+     engine wins unless the user explicitly picked something else. -->
+<script>
+(function () {
+  var theme = localStorage.getItem('ber_theme') || 'engine';
+  document.documentElement.dataset.theme = theme;
+})();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- Non-blocking font load (standard loadCSS pattern): the page's own
+     style.css stays render-blocking (needed for layout/theme correctness),
+     but the Google Fonts stylesheet shouldn't hold up first paint --
+     display=swap on the font URL already avoids invisible text either way. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap" rel="stylesheet" /></noscript>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="#top">BTC ENGINE ROOM</a>
+  <div class="engine-status-lamp" id="engine-status-lamp">
+    <span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--ink-dim);" id="engine-status-dot"></span>
+    <span id="engine-status-text">checking&hellip;</span>
+  </div>
+  <div class="theme-switcher" role="group" aria-label="Theme">
+    <button class="theme-chip" data-theme-choice="light" aria-pressed="false">&#9728; Light</button>
+    <button class="theme-chip" data-theme-choice="dark" aria-pressed="false">&#9679; Dark</button>
+    <button class="theme-chip" data-theme-choice="engine" aria-pressed="true">&#128674; Engine</button>
+  </div>
+</header>
+
+<main class="page" id="top">
+
+  <section class="masthead">
+    <h1>Bitcoin Engine Room</h1>
+    <div class="odometer" id="odometer" aria-label="Current block height">
+      <span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span>
+    </div>
+    <div class="odometer-caption" id="odometer-caption">block height &middot; loading&hellip;</div>
+
+    <div class="masthead-stats">
+      <div class="masthead-stat">
+        <div class="value numeral" id="stat-price">&mdash;</div>
+        <div class="label">Price (USD)</div>
+        <div class="status-chip" data-status="STALE" id="chip-price"><span class="status-dot"></span><span>&mdash;</span></div>
+      </div>
+      <div class="masthead-stat">
+        <div class="value numeral" id="stat-halving-blocks">&mdash;</div>
+        <div class="label">Blocks to halving</div>
+      </div>
+      <div class="masthead-stat">
+        <div class="value numeral" id="stat-halving-eta">&mdash;</div>
+        <div class="label">Est. halving date</div>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="plate">Gauges</h2>
+  <div class="gauges-grid">
+
+    <div class="gauge-card">
+      <h3>Hash Rate</h3>
+      <div class="gauge-value numeral" id="gauge-hashrate">&mdash;</div>
+      <div class="gauge-sub" id="gauge-hashrate-sub">&mdash;</div>
+      <div class="status-chip" data-status="STALE" id="chip-hashrate"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Difficulty &middot; Retarget</h3>
+      <div class="gauge-value numeral" id="gauge-difficulty">&mdash;</div>
+      <div class="gauge-sub" id="gauge-difficulty-sub">&mdash;</div>
+      <div class="status-chip" data-status="STALE" id="chip-difficulty"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Fees (sat/vB)</h3>
+      <div class="gauge-value numeral" id="gauge-fees">&mdash;</div>
+      <div class="gauge-sub" id="gauge-fees-sub">fastest &middot; 30min &middot; economy</div>
+      <div class="status-chip" data-status="STALE" id="chip-fees"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Mempool</h3>
+      <div class="gauge-value numeral" id="gauge-mempool">&mdash;</div>
+      <div class="gauge-sub" id="gauge-mempool-sub">pending transactions</div>
+      <div class="status-chip" data-status="STALE" id="chip-mempool"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Circulating Supply</h3>
+      <div class="gauge-value numeral" id="gauge-supply">&mdash;</div>
+      <div class="gauge-sub" id="gauge-supply-sub">&mdash;</div>
+      <div class="status-chip" data-status="STALE" id="chip-supply"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Fear &amp; Greed</h3>
+      <div class="gauge-value numeral" id="gauge-fng">&mdash;</div>
+      <div class="gauge-sub" id="gauge-fng-sub">&mdash;</div>
+      <div class="status-chip" data-status="STALE" id="chip-fng"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+  </div>
+
+  <h2 class="plate">Projections</h2>
+
+  <div class="chart-card chart-card--hero" id="power-law-card">
+    <div class="chart-plate">
+      <h3>Power Law Corridor</h3>
+      <div class="chart-plate-stats numeral" id="power-law-stats">&mdash;</div>
+    </div>
+    <div class="chart-controls" role="group" aria-label="Power law chart timeframe">
+      <button class="chip-btn" data-power-law-range="1y">1Y</button>
+      <button class="chip-btn" data-power-law-range="4y">4Y</button>
+      <button class="chip-btn is-active" data-power-law-range="all">ALL</button>
+    </div>
+    <div id="power-law-chart" class="chart-canvas chart-canvas--hero"></div>
+    <p class="chart-caption">Model family published by Giovanni Santostasi. Bands are descriptive envelopes from historical fit residuals (±2σ in log10 space), not statistical confidence intervals. <a href="#power-law-card">#power-law</a></p>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card" id="cycle-overlay-card">
+      <div class="chart-plate">
+        <h3>4-Year Cycle Overlay</h3>
+        <div class="chart-plate-stats numeral" id="cycle-overlay-stats">&mdash;</div>
+      </div>
+      <div id="cycle-overlay-chart" class="chart-canvas"></div>
+      <p class="chart-caption">% performance vs. days since halving, each epoch normalized to its halving-day price. <a href="#cycle-overlay-card">#cycle</a></p>
+    </div>
+
+    <div class="chart-card" id="deviation-dial-card">
+      <div class="chart-plate">
+        <h3>Deviation Dial</h3>
+      </div>
+      <div id="deviation-dial-chart" class="chart-canvas"></div>
+      <p class="chart-caption">Toy composite: average of the power-law residual, Mayer Multiple, and cycle-position percentiles. Not a valuation model. <a href="#deviation-dial-card">#dial</a></p>
+    </div>
+  </div>
+
+  <div class="chart-card" id="mayer-200wma-card">
+    <div class="chart-plate">
+      <h3>Mayer Multiple &middot; 200-Week MA</h3>
+      <div class="chart-plate-stats numeral" id="mayer-200wma-stats">&mdash;</div>
+    </div>
+    <div id="mayer-200wma-chart" class="chart-canvas"></div>
+    <p class="chart-caption">Mayer Multiple = price / 200-day SMA. 200WMA = 200-week simple moving average. <a href="#mayer-200wma-card">#mayer</a></p>
+  </div>
+
+  <h2 class="plate">Engine Health</h2>
+  <div class="health-summary" id="health-summary">Loading health report&hellip;</div>
+  <div class="health-grid" id="health-grid"></div>
+
+  <details class="audit-panel" id="audit-panel">
+    <summary>
+      <span class="status-chip" data-status="STALE" id="audit-result-chip"><span class="status-dot"></span><span id="audit-result-text">loading&hellip;</span></span>
+      <span id="audit-generated-at" class="numeral audit-generated-at"></span>
+    </summary>
+    <ul id="audit-findings" class="audit-findings"></ul>
+  </details>
+
+  <footer class="site-footer">
+    <p><strong>Data sources:</strong> Price, fees, mempool and difficulty-adjustment data by <a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a>. Historical price/hash-rate/supply backfill and daily fallback by <a href="https://www.blockchain.com/explorer/charts" target="_blank" rel="noopener">blockchain.com</a>. Price cross-check by <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a> and <a href="https://www.coinbase.com" target="_blank" rel="noopener">Coinbase</a>. Fear &amp; Greed data by <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener">alternative.me</a>. Historical data cross-referenced against <a href="https://coinmetrics.io" target="_blank" rel="noopener">Coin Metrics Community</a>.</p>
+    <p class="disclaimer">Educational tool. Not financial advice. Models are curve fits, not guarantees.</p>
+    <p><a href="https://github.com/0xfanbase/Bitcoin-Engine-Room" target="_blank" rel="noopener">Source on GitHub</a> &middot; MIT licensed</p>
+  </footer>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
+<script src="assets/app.js" defer></script>
+<script src="assets/live.js" defer></script>
+<script src="assets/health.js" defer></script>
+<script src="assets/charts.js" defer></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://fandamentals.github.io/bitcoin-engine-room/schemas/fng_daily.schema.json",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/fng_daily.schema.json",
   "title": "fng_daily history file",
   "description": "alternative.me's Fear & Greed index. Data begins ~2018-02-01, not Bitcoin's genesis.",
   "type": "object",

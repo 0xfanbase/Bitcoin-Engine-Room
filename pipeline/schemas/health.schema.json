@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/health.schema.json",
+  "title": "health.json",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "metrics"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "metrics": {
+      "type": "object",
+      "propertyNames": {
+        "enum": ["price_daily", "hashrate_daily", "difficulty_daily", "supply_daily", "fng_daily"]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["source", "status", "latency_ms", "consecutive_failures", "last_success_date", "stale_since"],
+        "additionalProperties": false,
+        "properties": {
+          "source": {"type": ["string", "null"]},
+          "status": {"type": "string", "enum": ["OK", "STALE"]},
+          "latency_ms": {"type": ["number", "null"], "minimum": 0},
+          "consecutive_failures": {"type": "integer", "minimum": 0},
+          "last_success_date": {"type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+          "stale_since": {"type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+          "cross_source_variance_warn": {
+            "type": "boolean",
+            "description": "price_daily only, per spec Section 6: mempool.space vs CoinGecko price disagreement beyond threshold. Primary value is still recorded either way."
+          }
+        }
+      }
+    }
+  }
+}

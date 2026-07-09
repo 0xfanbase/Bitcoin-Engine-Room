@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/audit.schema.json",
+  "title": "audit report (data/audit/*.json)",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "result", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "result": {"type": "string", "enum": ["PASS", "WARN", "FAIL"]},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check", "severity", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "check": {
+            "type": "string",
+            "enum": ["continuity", "cross_source_variance", "model_drift", "staleness", "sanity_replay", "site_integrity"]
+          },
+          "severity": {"type": "string", "enum": ["WARN", "FAIL"]},
+          "metric": {"type": ["string", "null"]},
+          "detail": {"type": "string"}
+        }
+      }
+    }
+  }
+}
