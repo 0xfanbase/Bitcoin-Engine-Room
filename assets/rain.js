@@ -22,11 +22,8 @@
  * reads as glow. Capped at 20fps -- the choppiness IS the aesthetic, not a
  * compromise (raising it would smooth away the film's stepped look and
  * cost more battery for a worse effect). Paused on hidden tab. Fully
- * disabled under prefers-reduced-motion, and user-togglable via the Rain
- * ON/OFF rocker (localStorage `ber_rain`, default on) -- committing the
- * entire visual identity to an animated background is only responsible
- * if a visitor can stop the animation without losing the site (rule 2's
- * screensaver-test exemption is deliberate and opt-out-able).
+ * disabled under prefers-reduced-motion -- the site's one on/off signal;
+ * there is no separate in-app rocker (removed 2026-07-09, owner request).
  *
  * IP note (director ruling): the falling-glyph-on-black trope is generic
  * and unprotectable, reimplemented thousands of times since 1999 without
@@ -55,7 +52,6 @@
   const HISTORY_LENGTH = 10; // trail cells eligible for in-place mutation
   const SURGE_HOLD_MS = 2000;
   const SURGE_DECAY_MS = 2000;
-  const RAIN_STORAGE_KEY = "ber_rain";
 
   let canvas = null;
   let ctx = null;
@@ -66,11 +62,6 @@
 
   function reducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }
-
-  function rainPreference() {
-    const stored = localStorage.getItem(RAIN_STORAGE_KEY);
-    return stored !== "off"; // default on
   }
 
   function randomGlyph() {
@@ -206,7 +197,7 @@
   }
 
   function start() {
-    if (running || reducedMotion() || !rainPreference()) return;
+    if (running || reducedMotion()) return;
     if (!canvas) {
       canvas = document.getElementById("digital-rain-canvas");
       if (!canvas) return;
@@ -230,19 +221,9 @@
   }
 
   function sync() {
-    if (rainPreference() && !reducedMotion()) start();
-    else stop();
+    if (reducedMotion()) stop();
+    else start();
   }
-
-  function setRainOn(on) {
-    localStorage.setItem(RAIN_STORAGE_KEY, on ? "on" : "off");
-    sync();
-    document.dispatchEvent(new CustomEvent("ber:rain-changed", { detail: { on } }));
-  }
-
-  window.BER = window.BER || {};
-  window.BER.setRainOn = setRainOn;
-  window.BER.isRainOn = rainPreference;
 
   window.addEventListener("resize", () => {
     if (running) resize();

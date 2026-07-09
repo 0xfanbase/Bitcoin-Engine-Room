@@ -99,7 +99,11 @@
   // last block (director spec, CLAUDE.md Section 6 rule 2 amendment). Crawls
   // ~0.1-0.2px/s between blocks (imperceptible -- passes the screensaver
   // test by construction) and only visibly moves once per block, as a
-  // ~4.5s run-off/re-entry sweep synced to the odometer roll above.
+  // ~4.5s run-off/re-entry sweep synced to the odometer roll above. Because
+  // that crawl is genuinely too slow to notice on its own, the fill bar
+  // behind the ticks and the live "Xm Ys" reading in the caption below are
+  // what make the elapsed time legible every second, not just on arrival --
+  // fixed 2026-07-09 after real user feedback that the rail looked stuck.
 
   const RAIL_EXPECTED_SECONDS = 600; // 10min average block time
   const RAIL_MAX_FRACTION = 0.96;
@@ -117,9 +121,30 @@
     return track ? track.clientWidth : 0;
   }
 
+  function formatElapsed(totalSeconds) {
+    const s = Math.max(0, Math.floor(totalSeconds));
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${String(sec).padStart(2, "0")}s` : `${sec}s`;
+  }
+
   function updateRailCrawl() {
+    const heightCaption = document.getElementById("odometer-caption");
+    if (heightCaption && lastBlockTimestamp != null) {
+      heightCaption.textContent = "block height · block found " + timeAgo(lastBlockTimestamp);
+    }
+
+    const railCaption = document.getElementById("block-rail-caption");
+    if (railCaption) {
+      railCaption.textContent =
+        lastBlockTimestamp == null
+          ? "time since last block"
+          : "time since last block · " + formatElapsed(Date.now() / 1000 - lastBlockTimestamp);
+    }
+
     if (railAnimating) return;
     const train = document.getElementById("block-rail-train");
+    const fill = document.getElementById("block-rail-fill");
     if (!train) return;
     if (wsDegraded) {
       // Block height data isn't real-time under REST-only fallback -- freeze
@@ -131,27 +156,46 @@
     if (lastBlockTimestamp == null) return;
     const elapsed = Math.max(0, Date.now() / 1000 - lastBlockTimestamp);
     const fraction = Math.min(elapsed / RAIL_EXPECTED_SECONDS, RAIL_MAX_FRACTION);
-    const px = fraction * Math.max(railTrackWidth() - RAIL_TRAIN_WIDTH, 0);
+    const trackWidth = railTrackWidth();
+    const px = fraction * Math.max(trackWidth - RAIL_TRAIN_WIDTH, 0);
     train.style.transition = reducedMotion() ? "none" : "transform 1s linear";
     train.style.transform = `translateX(${px}px)`;
+    if (fill) {
+      fill.style.transition = reducedMotion() ? "none" : "width 1s linear";
+      fill.style.width = Math.min(px + RAIL_TRAIN_WIDTH, trackWidth) + "px";
+    }
   }
 
   function triggerRailArrival() {
     const train = document.getElementById("block-rail-train");
+    const fill = document.getElementById("block-rail-fill");
     if (!train) return;
     if (reducedMotion()) {
       train.style.transition = "none";
       train.style.transform = "translateX(0px)";
+      if (fill) {
+        fill.style.transition = "none";
+        fill.style.width = "0px";
+      }
       return;
     }
     railAnimating = true;
     setTimeout(() => {
-      const runoffPx = railTrackWidth() + RAIL_TRAIN_WIDTH;
+      const trackWidth = railTrackWidth();
+      const runoffPx = trackWidth + RAIL_TRAIN_WIDTH;
       train.style.transition = "transform 3.5s cubic-bezier(0.4, 0, 1, 1)";
       train.style.transform = `translateX(${runoffPx}px)`;
+      if (fill) {
+        fill.style.transition = "width 3.5s cubic-bezier(0.4, 0, 1, 1)";
+        fill.style.width = trackWidth + "px";
+      }
       setTimeout(() => {
         train.style.transition = "none";
         train.style.transform = `translateX(${-RAIL_TRAIN_WIDTH}px)`;
+        if (fill) {
+          fill.style.transition = "none";
+          fill.style.width = "0px";
+        }
         void train.offsetWidth; // force reflow so the re-entry transition below actually animates
         train.style.transition = "transform 1s linear";
         train.style.transform = "translateX(0px)";
@@ -192,7 +236,6 @@
       wsDegraded = false;
       stopHeightPolling();
       ws.send(JSON.stringify({ action: "want", data: ["blocks", "stats", "mempool-blocks"] }));
-      setEngineStatus("LIVE", "live feed: connected");
     });
 
     ws.addEventListener("message", (event) => {
@@ -245,7 +288,6 @@
 
   function degradeToPolling() {
     wsDegraded = true;
-    setEngineStatus("DELAYED", "live feed: polling (WebSocket unavailable)");
     startHeightPolling();
     // Keep trying to recover the WebSocket in the background at the capped interval.
     setTimeout(connectWebSocket, WS_MAX_BACKOFF_MS);
@@ -365,18 +407,6 @@
     } finally {
       difficultyInFlight = false;
     }
-  }
-
-  // ---------- engine status lamp ----------
-
-  function setEngineStatus(status, text) {
-    const dot = document.getElementById("engine-status-dot");
-    const label = document.getElementById("engine-status-text");
-    if (!dot || !label) return;
-    const color =
-      status === "LIVE" ? "var(--ok)" : status === "DELAYED" ? "var(--warn)" : "var(--fail)";
-    dot.style.background = color;
-    label.textContent = text;
   }
 
   // ---------- lifecycle ----------

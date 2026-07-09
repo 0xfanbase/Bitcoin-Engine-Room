@@ -24,25 +24,16 @@
 
 <canvas id="digital-rain-canvas" aria-hidden="true"></canvas>
 
-<header class="site-header">
-  <div class="engine-status-lamp" id="engine-status-lamp" title="Live browser connection status -- separate from the daily Engine Health report further down the page">
-    <span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--ink-dim);" id="engine-status-dot"></span>
-    <span id="engine-status-text">connecting&hellip;</span>
-  </div>
-  <!-- Digital Rain ON/OFF, not a theme picker (director ruling: with one
-       visual identity, committing the whole page to an animated background
-       is only responsible if a visitor can stop it without losing the
-       site). Same two-position rocker treatment as the retired theme
-       switcher. -->
-  <div class="rain-switcher" role="group" aria-label="Digital Rain">
-    <button class="rain-chip" type="button" data-rain-choice="on" aria-pressed="true">Rain On</button>
-    <button class="rain-chip" type="button" data-rain-choice="off" aria-pressed="false">Rain Off</button>
-  </div>
-</header>
-
 <main class="page" id="top">
 
   <section class="masthead">
+    <!-- .masthead-inner is the actual opaque scrim, narrower than the
+         full-bleed 100vw outer section and feathered at its own left/right
+         edges -- everywhere outside it (and the feather itself) is fully
+         transparent, so the rain shows on the sides where there's no
+         wording. Every real text element still lives inside this box, so
+         the readability law (CLAUDE.md Section 6 rule 10) still holds. -->
+    <div class="masthead-inner">
     <h1 id="site-title">Bitcoin Engine Room</h1>
     <div class="odometer" id="odometer" aria-label="Current block height">
       <span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span>
@@ -60,9 +51,14 @@
          block -- data, not decoration. Crawls imperceptibly between blocks
          and only visibly moves once, as a run-off/re-entry sweep synced to
          the odometer roll and rain.js's block-arrival surge on genuine new-
-         block arrival. Director ruling, CLAUDE.md Section 6 rule 2. -->
+         block arrival. Director ruling, CLAUDE.md Section 6 rule 2. The
+         fill bar (behind the ticks) and the live "Xm Ys" reading in the
+         caption below are what make that elapsed time legible at a glance
+         instead of relying on a ~0.5px/s crawl a viewer has to stare at to
+         even notice is moving. -->
     <div class="block-rail" id="block-rail" aria-hidden="true">
       <div class="block-rail-track" id="block-rail-track">
+        <div class="block-rail-fill" id="block-rail-fill"></div>
         <div class="block-rail-ticks"></div>
       </div>
       <div class="block-rail-train" id="block-rail-train"></div>
@@ -70,13 +66,15 @@
     <!-- The rail itself stays aria-hidden (a decorative sweep, no discrete
          value a screen reader could read out) -- this caption row is its
          accessible, touch-reachable equivalent, matching every other
-         instrument's info-toggle instead of relying on a hover-only title. -->
+         instrument's info-toggle instead of relying on a hover-only title.
+         Its text ticks up live (updateRailCrawl() in live.js), same as the
+         block-height caption above it. -->
     <div class="odometer-caption-row">
-      <div class="odometer-caption">time since last block</div>
+      <div class="odometer-caption" id="block-rail-caption">time since last block</div>
       <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-block-rail" aria-label="Info">i</button>
     </div>
     <div class="info-panel" id="info-block-rail" hidden>
-      <p>This rail sweeps once for every new block that actually arrives, and otherwise creeps only very slightly between them -- its position is roughly how much of the ~10-minute average block interval has elapsed since the last one. A second read on the same clock the block-height odometer runs on, not a separate metric.</p>
+      <p>This rail sweeps once for every new block that actually arrives, and otherwise creeps only very slightly between them -- its position (and the ticking "Xm Ys" reading next to it) is roughly how much of the ~10-minute average block interval has elapsed since the last one. A second read on the same clock the block-height odometer runs on, not a separate metric.</p>
       <p class="info-source">Source: computed from mempool.space's live block-arrival timestamp</p>
     </div>
 
@@ -111,6 +109,7 @@
           <p class="info-source">Source: computed from live block height + Bitcoin's fixed block-reward schedule</p>
         </div>
       </div>
+    </div>
     </div>
   </section>
 

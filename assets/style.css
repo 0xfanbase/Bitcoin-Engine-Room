@@ -122,93 +122,41 @@ a {
   margin: 2.5rem 0 1rem;
 }
 
-/* ---------- Sticky header / rain toggle ---------- */
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  padding: 0.75rem 1rem;
-  /* Opaque, no backdrop-filter (director ruling: cheaper than blurring a
-     constantly-repainting canvas on every viewport, and the readability
-     law requires solid backing regardless). */
-  background: var(--panel);
-  border-bottom: 1px solid var(--panel-border);
-}
-
-/* Two-position rocker: now a Digital Rain ON/OFF switch, not a theme
-   picker (director ruling -- with a single visual identity, the switcher's
-   old job is gone, but committing the whole page to an animated
-   background is only responsible if a visitor can stop it without losing
-   the site). Same visual treatment as the old theme rocker -- an
-   instrument switch flipped to a side, not a chip row. */
-.rain-switcher {
-  display: flex;
-  border-radius: 3px;
-  border: 1px solid var(--panel-border);
-  background: var(--panel);
-  overflow: hidden;
-}
-
-.rain-chip {
-  font-family: var(--font-data);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.4rem 0.7rem;
-  border: none;
-  background: transparent;
-  color: var(--ink-dim);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.rain-chip + .rain-chip {
-  border-left: 1px solid var(--panel-border);
-}
-
-/* Inverted fill for the engaged position -- an instrument-switch look, not
-   the accent color (rule 4: accent is a data color, never a surface). */
-.rain-chip[aria-pressed="true"] {
-  background: var(--ink);
-  color: var(--bg);
-}
-
-.engine-status-lamp {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: var(--font-data);
-  font-size: 0.75rem;
-  color: var(--ink-dim);
-  white-space: nowrap;
-}
-
 /* ---------- Masthead ----------
-   Full-bleed scrim, not a card (director ruling): a floating card around
-   the odometer would read as just another gauge; a horizontal band reads
-   as the terminal's fixed header glass, with the rain visibly parting
-   around it. The scrim is flat and fully opaque (0.96) for its ENTIRE
-   height -- every real data element (odometer, price, halving countdown)
-   sits on solid backing, satisfying the readability law uniformly. The
-   feathered fade lives in a separate strip BELOW the masthead's own box
-   (the ::after), in the page gutter where there's no text to protect --
-   "the rain's showcase is everywhere text isn't." */
+   No site-wide nav bar (removed by owner request, 2026-07-09 -- one less
+   piece of chrome, and the masthead's own H1 already carries the site
+   identity). The masthead is a full-bleed 100vw section, but the opaque
+   scrim itself now lives on the narrower `.masthead-inner` column, not the
+   full width: solid and flat (0.96) behind every real data element it
+   contains (odometer, price, halving countdown -- satisfying the
+   readability law), feathered to fully transparent at ITS OWN left/right
+   edges so the sides of the masthead, where there's no wording, show the
+   rain running underneath -- "the rain's showcase is everywhere text
+   isn't," now including the masthead's own flanks, not just the page
+   gutter below it. */
 .masthead {
   position: relative;
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  padding: 2rem 1rem 2.5rem;
   text-align: center;
-  background: rgba(2, 8, 4, 0.96);
 }
 
-.masthead::after {
+.masthead-inner {
+  position: relative;
+  max-width: min(94vw, 760px);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 2.5rem;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(2, 8, 4, 0.96) 40px,
+    rgba(2, 8, 4, 0.96) calc(100% - 40px),
+    transparent
+  );
+}
+
+.masthead-inner::after {
   content: "";
   position: absolute;
   left: 0;
@@ -294,9 +242,24 @@ a {
   left: 0;
   right: 0;
   top: 50%;
-  height: 1px;
+  height: 2px;
   background: var(--panel-border);
   transform: translateY(-50%);
+}
+
+/* Fill bar: grows with elapsed time, giving the rail an at-a-glance "how
+   full is the ~10-minute interval" reading that doesn't depend on a viewer
+   noticing a ~0.5px/s crawl -- accent color is legal here under rule 4
+   (it's the data, not surface decoration) at reduced opacity so the tick
+   marks drawn on top of it stay legible. */
+.block-rail-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: var(--accent);
+  opacity: 0.55;
 }
 
 /* Tick marks every 10% of the rail (~1 expected minute each); the stronger
