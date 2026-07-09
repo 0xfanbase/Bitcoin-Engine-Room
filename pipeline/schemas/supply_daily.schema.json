@@ -20,7 +20,7 @@
         "properties": {
           "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
           "value": {"type": "number", "minimum": 0, "maximum": 21000000},
-          "source": {"type": "string", "enum": ["coinmetrics", "blockchain_info"]}
+          "source": {"type": "string", "enum": ["coinmetrics", "blockchain_info", "computed_subsidy_schedule"]}
         }
       }
     }

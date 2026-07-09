@@ -4,7 +4,7 @@
 
 BTC Engine Room is a free, public Bitcoin fundamentals + price-model dashboard: block height, hash rate, difficulty, mempool, fees, supply, plus long-horizon price models (power law corridor, 4-year halving cycle overlay, Mayer Multiple, 200WMA). The differentiator is radical transparency — every gauge shows its data source, freshness, validation status, and failover state, and the site publishes its own daily audit report. Total running cost is $0 beyond an existing Claude subscription.
 
-**Current phase:** P1 (Skeleton & backfill). Check `PROGRESS.md`'s phase checklist for live status before starting work. Source of truth for everything below: `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` (the full spec) and `docs/PHASE1_DIRECTOR_CORRECTIONS.md` (the corrections layered on top of it — read both, the corrections supersede the spec where they conflict).
+**Current phase:** P2 (Daily pipeline) complete; P3 (Frontend core) next. Check `PROGRESS.md`'s phase checklist for live status before starting work. Source of truth for everything below: `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` (the full spec) and `docs/PHASE1_DIRECTOR_CORRECTIONS.md` (the corrections layered on top of it — read both, the corrections supersede the spec where they conflict). `IMPROVEMENT_BACKLOG.md` records every subsequent real-world correction found while building P2 — check it too before trusting any endpoint detail below at face value.
 
 ## 2. Architecture summary
 
@@ -24,13 +24,17 @@ Stack: GitHub Pages (hosting) + GitHub Actions (automation) + Python 3.12 (`requ
 | Supply backfill | Coin Metrics Community (`SplyCur`) | blockchain.com Charts `total-bitcoins` | Same Coin Metrics 401 — currently 100% blockchain.info. Chart name is `total-bitcoins`, not `total-bc` (404s). Native granularity is per-block, not per-day, even with `sampled=false` — collapsed to one row per date (last value of the day). Monotonic, ≤ 21,000,000. |
 | Difficulty backfill | blockchain.com Charts `difficulty` | — (single source) | No Coin Metrics community equivalent; sparse step-function series, not daily. Positive-value rows only. Backfill sanity check does not enforce a max-swing threshold — 2009-2013 retargets legitimately moved 30-300%+. |
 | Fear & Greed backfill | alternative.me `?limit=0` | — | Data starts ~2018-02-01, not genesis |
-| Block height (live, P2+) | mempool.space WS `blocks` | mempool.space REST → blockchain.info `/q/getblockcount` | Not backfilled as history in P1 |
-| Price (live, P2+) | mempool.space `/api/v1/prices` | CoinGecko → Coinbase | |
-| Fees (live, P2+) | mempool.space `/api/v1/fees/recommended` | — (mark stale) | No fallback per spec |
+| Price (live, daily snapshot) | mempool.space `/api/v1/prices` | CoinGecko → Coinbase | Cross-checked against CoinGecko regardless of which wins (`cross_source_variance_warn` in health.json) |
+| Hash rate (live, daily snapshot) | mempool.space `/api/v1/mining/hashrate/3d` (`currentHashrate`, H/s → EH/s ÷1e18) | blockchain.info Charts `hash-rate` (latest point) | |
+| Difficulty (live, daily snapshot) | mempool.space `/api/v1/mining/hashrate/3d` (`currentDifficulty`) | blockchain.info `/q/getdifficulty` (plain-text scientific notation) | **Not** `/v1/difficulty-adjustment` — that endpoint returns retarget progress/ETA fields only, no raw difficulty value, despite its name suggesting otherwise (live-verified 2026-07-09) |
+| Supply (live, daily snapshot) | blockchain.info `/q/totalbc` (satoshis → BTC ÷1e8) | computed from tip height via `pipeline/subsidy.py`'s closed-form subsidy schedule | Coin Metrics dropped from this chain (401, see above); subsidy-schedule fallback matched a real observed value within 0.00006% |
+| Fear & Greed (live, daily snapshot) | alternative.me `?limit=1` | — (sole source) | |
+| Block height | mempool.space WS `blocks` (browser, P3) / REST `/blocks/tip/height` (pipeline, used only as a subsidy-schedule input) | blockchain.info `/q/getblockcount` | Not stored as its own history file — spec Section 5 doesn't list one; it's live-only / a computation input |
+| Fees (live, browser only) | mempool.space `/api/v1/fees/recommended` | — (mark stale) | No fallback per spec; browser-only (P3), not part of the daily pipeline — no history file |
 
-**Follow-up (logged in `IMPROVEMENT_BACKLOG.md`):** either obtain a free Coin Metrics API key and wire it into `CoinMetricsClient`, or formally demote Coin Metrics to documented-fallback status in this table.
+**Follow-up (logged in `IMPROVEMENT_BACKLOG.md`):** either obtain a free Coin Metrics API key and wire it back into `CoinMetricsClient` for backfill AND daily-snapshot chains, or formally demote Coin Metrics to documented-fallback status throughout.
 
-Live/failover-per-request chains (`fetch_snapshot.py`) are P2 scope — not implemented yet. `pipeline/sources.py` in P1 only implements the full-history backfill fetchers listed above.
+`pipeline/fetch_snapshot.py` (P2) implements the live-snapshot chains above: schema + `sanity_rules.json`'s `live_snapshot` profile gate every candidate value; a source that fails validation is treated as a chain failure and the next source is tried (spec Section 6). Total chain failure carries the last known value forward under today's date and marks the metric `STALE` in `data/health.json`, incrementing `consecutive_failures`; 3+ consecutive failures on any metric opens/updates a GitHub issue (`pipeline/gh_issues.py`, labels `auto`+`data-outage`), auto-closed on recovery. Requires `GITHUB_TOKEN` in the environment (present automatically in `daily.yml`'s Actions run via `secrets.GITHUB_TOKEN`); issue automation is skipped silently, not fatal, when absent or non-functional (e.g. local runs).
 
 ## 4. Hard rules (non-negotiable)
 
@@ -50,24 +54,26 @@ bitcoin-engine-room/
 ├── CLAUDE.md, PROGRESS.md, IMPROVEMENT_BACKLOG.md, README.md, LICENSE   # P1
 ├── docs/                          # P1 — spec + director corrections
 ├── index.html, assets/            # P3 — frontend, not built yet
-├── data/history/*.json            # P1 — backfilled here; appended daily from P2
-├── data/models.json               # P4
-├── data/health.json                # P2
-├── data/audit/                    # P5
+├── data/history/*.json            # P1 backfilled, P2 appends one row/day live
+├── data/models.json               # P4 — not built yet
+├── data/health.json               # P2
+├── data/audit/                    # P5 — not built yet
 ├── pipeline/
-│   ├── sources.py                 # P1 (backfill fetchers) — P2 adds live/failover clients
-│   ├── validation.py              # P1 — shared sanity/variance checks, reused by later phases
+│   ├── sources.py                 # P1 backfill fetchers + P2 live/failover clients
+│   ├── validation.py              # P1 backfill checks + P2 live-snapshot checks, reused by P5
+│   ├── subsidy.py                 # P2 — block-subsidy math (supply fallback + halving countdown)
+│   ├── gh_issues.py                # P2 — data-outage issue automation
 │   ├── backfill.py                # P1
-│   ├── fetch_snapshot.py          # P2 — not built yet
+│   ├── fetch_snapshot.py          # P2
 │   ├── fit_models.py              # P4 — not built yet
 │   ├── audit.py                   # P5 — not built yet
-│   ├── sanity_rules.json          # P1
+│   ├── sanity_rules.json          # P1 (live_snapshot) + P2 (consumed by fetch_snapshot.py)
 │   ├── model_constants.json, MODEL_METHODOLOGY.md   # P1 (pinned for P4's fit_models.py)
-│   ├── schemas/                   # P1
-│   └── tests/                     # P1
+│   ├── schemas/                   # P1 + P2 (health.schema.json)
+│   └── tests/                     # P1 + P2
 └── .github/workflows/
     ├── ci.yml                     # P1
-    └── daily.yml                  # P2 — not built yet
+    └── daily.yml                  # P2
 ```
 
 Do not create stub files for anything marked as a later phase — an absent file is the clearest signal of what's in scope right now.

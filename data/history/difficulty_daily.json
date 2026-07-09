@@ -2,7 +2,7 @@
   "metric": "difficulty_daily",
   "unit": "raw_difficulty",
   "schema_version": 1,
-  "generated_at": "2026-07-09T01:31:18Z",
+  "generated_at": "2026-07-09T02:05:07Z",
   "series": [
     {
       "date": "2009-01-03",
@@ -31943,6 +31943,11 @@
       "date": "2026-07-08",
       "value": 133869853540304.5,
       "source": "blockchain_info"
+    },
+    {
+      "date": "2026-07-09",
+      "value": 133869853540305.4,
+      "source": "mempool_space"
     }
   ]
 }

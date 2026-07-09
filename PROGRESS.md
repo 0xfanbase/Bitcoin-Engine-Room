@@ -5,13 +5,23 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 ## Phase checklist
 
 - [x] P1 — Skeleton & backfill
-- [ ] P2 — Daily pipeline
+- [x] P2 — Daily pipeline
 - [ ] P3 — Frontend core
 - [ ] P4 — Models & charts
 - [ ] P5 — Audit & health panel
 - [ ] P6 — Polish
 
 ## Log
+
+### 2026-07-09 — Phase 2 complete
+
+- Built the full P2 scope: `pipeline/subsidy.py` (block-subsidy math, closed-form supply estimator + halving countdown), live source clients added to `sources.py` (`MempoolSpaceClient`, `CoinGeckoClient`, `CoinbaseClient`, `BlockchainInfoSimpleClient`), `pipeline/gh_issues.py` (data-outage issue automation), `pipeline/fetch_snapshot.py` (per-metric failover chain, schema + `live_snapshot` sanity gating, idempotent daily append, `data/health.json` writer), `pipeline/schemas/health.schema.json`, `.github/workflows/daily.yml`. Added live-snapshot check functions to `validation.py`. 38 new pytest tests (80 total), all HTTP-mocked.
+- Verified every P2 live endpoint against the real APIs before coding to it (mempool.space price/fees/difficulty-adjustment/hashrate/tip-height, CoinGecko, Coinbase, blockchain.info `/q/getdifficulty` + `/q/totalbc`) — same discipline as P1's backfill work, and it paid off again: found mempool.space's `difficulty-adjustment` endpoint has no raw difficulty value (it's actually in `/mining/hashrate/3d`), caught an off-by-one in the subsidy math via a pytest test before it ever ran live, and fixed a health-record bug on the idempotent-skip path. All logged in `IMPROVEMENT_BACKLOG.md`.
+- Ran `python -m pipeline.fetch_snapshot` for real against live APIs: all 5 metrics OK (`price_daily` via mempool_space, `hashrate_daily` via mempool_space, `difficulty_daily` via mempool_space, `supply_daily` via blockchain_info, `fng_daily` via alternative_me — already had today from P1's backfill, correctly handled as an idempotent no-op reporting OK). Cross-source price check (mempool.space vs CoinGecko) passed within tolerance. Re-ran same-day: row counts unchanged in all 5 history files, confirming idempotency.
+- `pytest pipeline/tests -v` — 80/80 passing, including a new `test_health_schema.py` validating the real committed `data/health.json`.
+- GitHub issue automation (open/update/close on 3+ consecutive failures) is unit-tested end-to-end but could only be smoke-tested against this sandbox's non-functional `GITHUB_TOKEN` (got a real 403, handled gracefully as designed) — not yet exercised against the live GitHub API in Actions. Worth a manual check the first time `daily.yml` fires for real.
+- Block height and fees confirmed live-only (no history file) per spec Section 5's actual file list, despite Section 6's pseudocode reading as if every metric gets a history append — logged as a judgment call.
+- Next: P3 (frontend core) — `index.html`, `assets/style.css` (design tokens), `assets/live.js` (WebSocket odometer + polling + client failover), `assets/health.js`, three token-only themes (engine default, dark, light — matrix/atmosphere deferred post-v1 per the director review), attribution footer (moved up from P6).
 
 ### 2026-07-09 — Phase 1 complete
 

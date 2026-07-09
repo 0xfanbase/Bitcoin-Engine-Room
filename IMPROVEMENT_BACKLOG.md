@@ -58,3 +58,38 @@ Suggested fix (implemented): `build_series_for_metric` in `backfill.py` filters 
 Source: manual (discovered running `backfill.py` live)
 Description: Applying `live_snapshot`'s 30%-per-retarget bound to the full backfilled series flagged 30+ "violations" from 2010-2013, when Bitcoin's difficulty legitimately swung 30-300%+ per retarget during the CPU->GPU->FPGA->ASIC hardware transitions. A single fixed threshold doesn't fit both that era and the stable modern one.
 Suggested fix (implemented): `backfill_absolute.difficulty.max_pct_change_between_distinct_values` is `null` (unenforced) with the rationale recorded inline in `sanity_rules.json`; the `min`/`max` bounds and schema `exclusiveMinimum` remain the real corruption check for backfilled difficulty data.
+
+### [P2] mempool.space's difficulty-adjustment endpoint has no raw difficulty value (2026-07-09)
+Source: manual (discovered running `fetch_snapshot.py` live)
+Description: `/api/v1/difficulty-adjustment` only returns retarget PROGRESS fields (`progressPercent`, `difficultyChange`, `estimatedRetargetDate`, etc.) despite its name suggesting it might carry the current difficulty. The raw `currentDifficulty` value actually lives in `/api/v1/mining/hashrate/3d`'s payload (which also carries `currentHashrate`).
+Suggested fix (implemented): `MempoolSpaceClient.fetch_difficulty()` now calls `/v1/mining/hashrate/3d` and reads `currentDifficulty` from it, same endpoint `fetch_hashrate()` already used for `currentHashrate`. CLAUDE.md's source table corrected.
+
+### [P2] Idempotent-skip path fabricated a misleading STALE health record (2026-07-09)
+Source: manual (discovered running `fetch_snapshot.py` live -- fng_daily's backfill had already reached today, so its first live run hit the idempotent-skip branch with no prior health.json to reuse)
+Description: When a metric's history already has today's date recorded (skip -- nothing to fetch) and there's no prior `health.json` entry to carry forward, the original code fell back to a hardcoded blank record with `status: "STALE"`. That's wrong: the data present IS valid and current, just not fetched by *this* run.
+Suggested fix (implemented): added `_health_record_from_existing()`, which derives a proper `OK` record (real source, real last-success date) from the already-committed row instead of fabricating STALE.
+
+### [P2] Off-by-one in the subsidy-schedule supply calculation (2026-07-09)
+Source: manual (caught by a self-authored pytest test, `test_supply_after_first_epoch_matches_full_epoch_payout`, before this ever ran live)
+Description: `estimate_supply_at_height()` treated `height` as a block *count* rather than a 0-indexed block *number* -- height 209,999 (the last block before the first halving) was computed as 209,999 x 50 BTC instead of the correct 210,000 x 50 BTC, since blocks 0 through 209,999 inclusive is 210,000 blocks.
+Suggested fix (implemented): `blocks_mined = height + 1` before applying the epoch/remainder math. Re-verified against the real observed supply (~20,053,881 BTC at tip height ~957,246) -- estimate now within 0.00006%.
+
+### [P2] Block height and fees are live-only, not stored as history (2026-07-09)
+Source: manual (design decision, spec is ambiguous)
+Description: Spec Section 6's pipeline pseudocode implies every metric gets `append_to_history()`, but Section 5's repo structure only lists 5 history files (price/hashrate/difficulty/supply/fng) -- no `block_height_daily.json` or `fees_daily.json`. `sanity_rules.json`'s `live_snapshot.block_height` rule was pinned in P1 "for P2" but P2 doesn't actually snapshot block height into its own series.
+Suggested fix (implemented): block height is fetched transiently in `fetch_snapshot.py` only as an input to `supply_daily`'s subsidy-schedule cross-check/fallback (via `MempoolSpaceClient.fetch_tip_height()`), never persisted as its own history file. Fees have no pipeline role at all -- they're browser-only (P3's live.js, polled client-side, never historically stored) per spec Section 4/7. `sanity_rules.json`'s `block_height` rule stays defined for that transient use and for potential P3 client-side reuse.
+
+### [P2] Difficulty transitions from sparse (P1) to dense-daily (P2+) cadence (2026-07-09)
+Source: manual (design decision, spec is silent on this transition)
+Description: P1's backfilled `difficulty_daily.json` is a sparse step function (one row per retarget, per spec Section 5's original intent). From P2 onward, `fetch_snapshot.py` appends one row every calendar day regardless of whether difficulty actually changed (repeating the same value between retargets) -- consistent with every other metric's daily cadence and simpler than tracking "did it change" specially, but does mean the series' row-spacing character changes partway through.
+Suggested fix (implemented): schema's `series` description now notes the P1-sparse/P2-dense split explicitly so it isn't mistaken for a data gap later. No functional issue -- schema and sanity checks handle both densities fine.
+
+### [P2] GitHub issue automation couldn't be fully verified locally (2026-07-09)
+Source: manual (environment limitation, not a code defect)
+Description: This sandbox has a `GITHUB_TOKEN` env var set, but it's not a real GitHub PAT with API access to this repo (a real live call returned `403 Forbidden`) -- `_handle_github_issue()` correctly caught the exception and logged a warning without failing the snapshot, which is the intended graceful-degradation behavior, but the actual open-issue/auto-close flow against a real repo has only been unit-tested (`test_gh_issues.py`, `test_fetch_snapshot.py`'s 3-consecutive-failures case), not exercised against the live GitHub API.
+Suggested fix: none needed for now -- `daily.yml` sets `permissions: issues: write` and passes `secrets.GITHUB_TOKEN`, which should be a properly-scoped token once this runs in real GitHub Actions. Worth a manual check the first time `daily.yml` actually fires (or is triggered via `workflow_dispatch`) that an issue really opens/closes as expected.
+
+### [P2] healthchecks.io ping not implemented (2026-07-09)
+Source: manual
+Description: Spec Section 6 lists an external healthchecks.io ping as an "optional" mitigation for GitHub's cron best-effort/60-day-auto-disable behavior, alongside the on-site "last snapshot age" red-flag (P5) and keeping GitHub email notifications on (a personal account setting, not a repo artifact).
+Suggested fix: not implemented, since it requires an external account signup outside this repo's control. Revisit in P5/P6 if the owner wants the extra safety net -- it's a two-line curl call added to the end of `daily.yml`.
