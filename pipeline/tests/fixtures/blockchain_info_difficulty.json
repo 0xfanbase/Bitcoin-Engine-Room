@@ -1,0 +1,9 @@
+{
+  "status": "ok",
+  "name": "Difficulty",
+  "unit": "Difficulty",
+  "values": [
+    {"x": 1231006505, "y": 1.0},
+    {"x": 1233238014, "y": 1.18}
+  ]
+}

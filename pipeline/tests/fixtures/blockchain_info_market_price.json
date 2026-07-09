@@ -1,0 +1,9 @@
+{
+  "status": "ok",
+  "name": "Market Price (USD)",
+  "unit": "USD",
+  "values": [
+    {"x": 1279324800, "y": 0.05},
+    {"x": 1279411200, "y": 0.06}
+  ]
+}

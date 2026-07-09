@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fandamentals.github.io/bitcoin-engine-room/schemas/hashrate_daily.schema.json",
+  "title": "hashrate_daily history file",
+  "type": "object",
+  "required": ["metric", "unit", "schema_version", "generated_at", "series"],
+  "additionalProperties": false,
+  "properties": {
+    "metric": {"const": "hashrate_daily"},
+    "unit": {"const": "EH/s"},
+    "schema_version": {"type": "integer", "const": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "series": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["date", "value", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+          "value": {"type": "number", "minimum": 0},
+          "source": {"type": "string", "enum": ["coinmetrics", "blockchain_info"]}
+        }
+      }
+    }
+  }
+}

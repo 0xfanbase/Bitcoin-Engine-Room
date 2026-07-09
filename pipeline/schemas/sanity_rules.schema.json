@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fandamentals.github.io/bitcoin-engine-room/schemas/sanity_rules.schema.json",
+  "title": "sanity_rules.json",
+  "type": "object",
+  "required": ["schema_version", "live_snapshot", "backfill_absolute"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "notes": {"type": "string"},
+    "live_snapshot": {
+      "type": "object",
+      "required": [
+        "price_usd", "block_height", "hash_rate_eh_s", "difficulty",
+        "supply_btc", "cross_source_variance"
+      ]
+    },
+    "backfill_absolute": {
+      "type": "object",
+      "required": ["price_usd", "hash_rate_eh_s", "difficulty", "supply_btc"]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "power_law": {
+    "genesis_date": "2009-01-03",
+    "fit_start_date": "2010-07-17",
+    "sampling": "daily, no downsampling",
+    "weighting": "unweighted OLS in log10(price) vs log10(days-since-genesis) space",
+    "price_series_source": "data/history/price_daily.json",
+    "expected_range": {
+      "b": [5.7, 5.9],
+      "a": [-17.0, -16.5],
+      "r_squared_min": 0.95
+    },
+    "audit_drift_thresholds": {
+      "b_warn_outside_range": [5.4, 6.1],
+      "r_squared_drop_warn": 0.01,
+      "b_day_over_day_pct_warn": 0.005
+    }
+  },
+  "cycle_overlay": {
+    "halving_dates": ["2012-11-28", "2016-07-09", "2020-05-11", "2024-04-20"],
+    "next_halving_est_date": "2028-04",
+    "next_halving_height": 1050000
+  }
+}
