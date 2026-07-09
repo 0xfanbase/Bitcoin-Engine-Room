@@ -140,16 +140,6 @@ a {
   border-bottom: 1px solid var(--panel-border);
 }
 
-.brand {
-  font-family: var(--font-data);
-  font-weight: 600;
-  font-size: 1.1rem;
-  letter-spacing: 0.04em;
-  color: var(--ink);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
 /* Two-position rocker: now a Digital Rain ON/OFF switch, not a theme
    picker (director ruling -- with a single visual identity, the switcher's
    old job is gone, but committing the whole page to an animated

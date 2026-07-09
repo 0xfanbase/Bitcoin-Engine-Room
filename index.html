@@ -25,7 +25,6 @@
 <canvas id="digital-rain-canvas" aria-hidden="true"></canvas>
 
 <header class="site-header">
-  <a class="brand" href="#top">BTC ENGINE ROOM</a>
   <div class="engine-status-lamp" id="engine-status-lamp" title="Live browser connection status -- separate from the daily Engine Health report further down the page">
     <span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--ink-dim);" id="engine-status-dot"></span>
     <span id="engine-status-text">connecting&hellip;</span>
@@ -214,7 +213,7 @@
       <button class="chip-btn" data-power-law-range="4y">4Y</button>
       <button class="chip-btn is-active" data-power-law-range="all">ALL</button>
     </div>
-    <div id="power-law-chart" class="chart-canvas chart-canvas--hero"></div>
+    <div id="power-law-chart" class="chart-canvas chart-canvas--hero" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
     <p class="chart-caption">Model family published by Giovanni Santostasi. Bands are descriptive envelopes from historical fit residuals (±2σ in log10 space), not statistical confidence intervals. <a href="#power-law-card">#power-law</a></p>
   </div>
 
@@ -232,7 +231,7 @@
         <p>Bitcoin's four-year halving cycle has historically rhymed with big price cycles &mdash; this is a way to see whether the current cycle is tracking, lagging, or outrunning past ones, not a guarantee it keeps rhyming.</p>
         <p class="info-source">Source: computed from this site's own historical price data, sliced at each halving-epoch boundary</p>
       </div>
-      <div id="cycle-overlay-chart" class="chart-canvas"></div>
+      <div id="cycle-overlay-chart" class="chart-canvas" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
       <p class="chart-caption">% performance vs. days since halving, each epoch normalized to its halving-day price. <a href="#cycle-overlay-card">#cycle</a></p>
     </div>
 
@@ -249,7 +248,7 @@
         <p>This is sentiment, not valuation: it says something about the crowd's mood, not about where price is headed next. The gauge card above shows today's single reading; this chart shows how it's moved.</p>
         <p class="info-source">Source: alternative.me (sole source)</p>
       </div>
-      <div id="market-sentiment-chart" class="chart-canvas"></div>
+      <div id="market-sentiment-chart" class="chart-canvas" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
       <p class="chart-caption">Fear &amp; Greed Index, 0-100, daily. A sentiment gauge, not a price model -- replaced the former "Deviation Dial," which averaged three percentile ranks and was labeled a toy composite even in its own methodology note. <a href="#market-sentiment-card">#sentiment</a></p>
     </div>
   </div>
@@ -267,7 +266,7 @@
       <p>Mayer Multiple has historically flagged overheated (high) or oversold (low) conditions; the 200-week average has historically acted as a long-term floor &mdash; price has rarely stayed below it for long.</p>
       <p class="info-source">Source: computed nightly from this site's own historical price data</p>
     </div>
-    <div id="mayer-200wma-chart" class="chart-canvas"></div>
+    <div id="mayer-200wma-chart" class="chart-canvas" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
     <p class="chart-caption">Mayer Multiple = price / 200-day SMA. 200WMA = 200-week simple moving average. <a href="#mayer-200wma-card">#mayer</a></p>
   </div>
 
