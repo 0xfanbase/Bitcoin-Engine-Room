@@ -63,7 +63,14 @@
     <div class="odometer" id="odometer" aria-label="Current block height">
       <span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span>
     </div>
-    <div class="odometer-caption" id="odometer-caption">block height &middot; loading&hellip;</div>
+    <!-- .odometer-caption-row wraps the caption + info-toggle as siblings
+         (not the button nested inside #odometer-caption) because live.js
+         overwrites that element's textContent on every block arrival --
+         nesting the button there would wipe it out on the next block. -->
+    <div class="odometer-caption-row">
+      <div class="odometer-caption" id="odometer-caption">block height &middot; loading&hellip;</div>
+      <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-block-height" aria-label="Info">i</button>
+    </div>
 
     <!-- Block Rail (engine theme only): the train's position IS elapsed time
          since the last block -- data, not decoration. Crawls imperceptibly
@@ -77,66 +84,115 @@
       <div class="block-rail-train" id="block-rail-train"></div>
     </div>
 
+    <div class="info-panel" id="info-block-height" hidden>
+      <p>Block height counts every block Bitcoin has ever mined, in order &mdash; the number shown is block #N since the very first block in 2009. A new block arrives roughly every 10 minutes on average, and it's the clock the halving countdown runs on.</p>
+      <p class="info-source">Source: mempool.space (live) &middot; blockchain.info (fallback)</p>
+    </div>
+
     <div class="masthead-stats">
       <div class="masthead-stat">
         <div class="value numeral" id="stat-price">&mdash;</div>
-        <div class="label">Price (USD)</div>
-        <div class="status-chip" data-status="STALE" id="chip-price"><span class="status-dot"></span><span>&mdash;</span></div>
+        <div class="label">Price (USD) <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-price" aria-label="Info">i</button></div>
+        <div class="status-chip" data-status="STALE" id="chip-price" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+        <div class="info-panel" id="info-price" hidden>
+          <p>The current market price of one bitcoin in US dollars. This site cross-checks its primary price feed against a second, independent source every time it updates &mdash; if they ever disagree by too much, it's flagged in Engine Health below, not silently hidden.</p>
+          <p class="info-source">Source: mempool.space (live) &middot; CoinGecko / Coinbase (cross-check + fallback)</p>
+        </div>
       </div>
       <div class="masthead-stat">
         <div class="value numeral" id="stat-halving-blocks">&mdash;</div>
-        <div class="label">Blocks to halving</div>
+        <div class="label">Blocks to halving <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-halving-blocks" aria-label="Info">i</button></div>
+        <div class="info-panel" id="info-halving-blocks" hidden>
+          <p>The number of blocks left to mine before the mining reward is cut in half again &mdash; this happens automatically every <span class="numeral">210,000</span> blocks, roughly every four years. It's a countdown built into the protocol itself, not an estimate.</p>
+          <p class="info-source">Source: computed live from the current block height</p>
+        </div>
       </div>
       <div class="masthead-stat">
         <div class="value numeral" id="stat-halving-eta">&mdash;</div>
-        <div class="label">Est. halving date</div>
+        <div class="label">Est. halving date <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-halving-eta" aria-label="Info">i</button></div>
+        <div class="info-panel" id="info-halving-eta" hidden>
+          <p>A calendar-date estimate for when block <span class="numeral">1,050,000</span> will be mined, based on the network's current average block time. Because block times vary block to block, this date is a moving estimate, not a fixed appointment.</p>
+          <p class="info-source">Source: computed from live block height + Bitcoin's fixed block-reward schedule</p>
+        </div>
       </div>
     </div>
   </section>
 
   <h2 class="plate">Gauges</h2>
+  <details class="info-disclosure">
+    <summary>What do the status colors mean?</summary>
+    <div class="info-panel">
+      <p><strong>LIVE</strong> &mdash; streaming in real time over a live connection to the fastest available source.</p>
+      <p><strong>DELAYED</strong> &mdash; still real, current data, just pulled over a slower polled connection, or refreshed once a day rather than continuously.</p>
+      <p><strong>STALE</strong> &mdash; every live source failed; you're looking at the last successfully saved snapshot, with its age shown, not a live number.</p>
+    </div>
+  </details>
   <div class="gauges-grid">
 
     <div class="gauge-card">
-      <h3>Hash Rate</h3>
+      <h3><span>Hash Rate</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-hashrate" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-hashrate">&mdash;</div>
       <div class="gauge-sub" id="gauge-hashrate-sub">&mdash;</div>
-      <div class="status-chip" data-status="STALE" id="chip-hashrate"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-hashrate" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="info-panel" id="info-hashrate" hidden>
+        <p>An estimate of the total computing power miners are pointing at securing the Bitcoin network right now. The higher it is, the more expensive it would be for anyone to attack or rewrite the blockchain &mdash; it's Bitcoin's real-world security budget, made visible.</p>
+        <p class="info-source">Source: mempool.space (live) &middot; blockchain.info (history)</p>
+      </div>
     </div>
 
     <div class="gauge-card">
-      <h3>Difficulty &middot; Retarget</h3>
+      <h3><span>Difficulty &middot; Retarget</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-difficulty" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-difficulty">&mdash;</div>
       <div class="gauge-sub" id="gauge-difficulty-sub">&mdash;</div>
-      <div class="status-chip" data-status="STALE" id="chip-difficulty"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-difficulty" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="info-panel" id="info-difficulty" hidden>
+        <p>Difficulty is a self-adjusting number that keeps new blocks arriving roughly every 10 minutes, no matter how much mining power joins or leaves &mdash; it retargets automatically every <span class="numeral">2,016</span> blocks, about two weeks. Rising difficulty means more miners are competing for the reward.</p>
+        <p class="info-source">Source: mempool.space (live) &middot; blockchain.info (fallback)</p>
+      </div>
     </div>
 
     <div class="gauge-card">
-      <h3>Fees (sat/vB)</h3>
+      <h3><span>Fees (sat/vB)</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-fees" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-fees">&mdash;</div>
       <div class="gauge-sub" id="gauge-fees-sub">fastest &middot; 30min &middot; economy</div>
-      <div class="status-chip" data-status="STALE" id="chip-fees"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-fees" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="info-panel" id="info-fees" hidden>
+        <p>What you pay, in satoshis per virtual byte, to get a transaction into the next block. The three tiers shown are the fee levels needed to hit fastest / 30-minute / economy confirmation times &mdash; fees rise and fall with how crowded the mempool is.</p>
+        <p class="info-source">Source: mempool.space (live only, no fallback)</p>
+      </div>
     </div>
 
     <div class="gauge-card">
-      <h3>Mempool</h3>
+      <h3><span>Mempool</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-mempool" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-mempool">&mdash;</div>
       <div class="gauge-sub" id="gauge-mempool-sub">pending transactions</div>
-      <div class="status-chip" data-status="STALE" id="chip-mempool"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-mempool" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="info-panel" id="info-mempool" hidden>
+        <p>The waiting room: every valid transaction that's been broadcast but not yet confirmed in a block sits here until a miner picks it up. A big mempool usually means the network is busy and fees are rising to compete for the next block's limited space.</p>
+        <p class="info-source">Source: mempool.space, live WebSocket feed</p>
+      </div>
     </div>
 
     <div class="gauge-card">
-      <h3>Circulating Supply</h3>
+      <h3><span>Circulating Supply</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-supply" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-supply">&mdash;</div>
       <div class="gauge-sub" id="gauge-supply-sub">&mdash;</div>
-      <div class="status-chip" data-status="STALE" id="chip-supply"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-supply" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="info-panel" id="info-supply" hidden>
+        <p>How many bitcoin have been mined so far, out of the hard-capped <span class="numeral">21,000,000</span> that will ever exist. New issuance is cut in half at every halving, so the pace of new coins entering circulation keeps shrinking on a fixed, published schedule.</p>
+        <p class="info-source">Source: blockchain.info (live + history) &middot; block-subsidy schedule (last-resort fallback)</p>
+      </div>
     </div>
 
     <div class="gauge-card">
-      <h3>Fear &amp; Greed</h3>
+      <h3><span>Fear &amp; Greed</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-fng" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-fng">&mdash;</div>
       <div class="gauge-sub" id="gauge-fng-sub">&mdash;</div>
-      <div class="status-chip" data-status="STALE" id="chip-fng"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-fng" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="info-panel" id="info-fng" hidden>
+        <p>A 0-100 score built from volatility, momentum, social-media buzz, and other market-sentiment signals &mdash; low means the market is fearful, high means it's greedy. It's a sentiment gauge, not a price model.</p>
+        <p class="info-source">Source: alternative.me (sole source)</p>
+      </div>
     </div>
 
   </div>
@@ -145,8 +201,16 @@
 
   <div class="chart-card chart-card--hero" id="power-law-card">
     <div class="chart-plate">
-      <h3>Power Law Corridor</h3>
+      <div class="chart-plate-heading">
+        <h3>Power Law Corridor</h3>
+        <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-power-law" aria-label="Info">i</button>
+      </div>
       <div class="chart-plate-stats numeral" id="power-law-stats">&mdash;</div>
+    </div>
+    <div class="info-panel" id="info-power-law" hidden>
+      <p>A long-running model, published by Giovanni Santostasi, that fits Bitcoin's price history to a power-law curve in log-log space &mdash; the idea is that price has grown at a roughly steady rate of deceleration over time.</p>
+      <p>The colored bands (Idle &rarr; Cruise &rarr; Redline) show where today's price sits relative to that long-run trend &mdash; but they're descriptive envelopes from historical fit residuals, not statistical confidence intervals, and not a prediction of where price goes next.</p>
+      <p class="info-source">Source: model published by Giovanni Santostasi; refit nightly against this site's own historical price data</p>
     </div>
     <div class="chart-controls" role="group" aria-label="Power law chart timeframe">
       <button class="chip-btn" data-power-law-range="1y">1Y</button>
@@ -160,8 +224,16 @@
   <div class="chart-grid">
     <div class="chart-card" id="cycle-overlay-card">
       <div class="chart-plate">
-        <h3>4-Year Cycle Overlay</h3>
+        <div class="chart-plate-heading">
+          <h3>4-Year Cycle Overlay</h3>
+          <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-cycle-overlay" aria-label="Info">i</button>
+        </div>
         <div class="chart-plate-stats numeral" id="cycle-overlay-stats">&mdash;</div>
+      </div>
+      <div class="info-panel" id="info-cycle-overlay" hidden>
+        <p>Stacks each Bitcoin halving cycle on top of the others, plotting % price performance against days since that cycle's own halving, so different cycles land on the same chart, comparably.</p>
+        <p>Bitcoin's four-year halving cycle has historically rhymed with big price cycles &mdash; this is a way to see whether the current cycle is tracking, lagging, or outrunning past ones, not a guarantee it keeps rhyming.</p>
+        <p class="info-source">Source: computed from this site's own historical price data, sliced at each halving-epoch boundary</p>
       </div>
       <div id="cycle-overlay-chart" class="chart-canvas"></div>
       <p class="chart-caption">% performance vs. days since halving, each epoch normalized to its halving-day price. <a href="#cycle-overlay-card">#cycle</a></p>
@@ -169,7 +241,15 @@
 
     <div class="chart-card" id="deviation-dial-card">
       <div class="chart-plate">
-        <h3>Deviation Dial</h3>
+        <div class="chart-plate-heading">
+          <h3>Deviation Dial</h3>
+          <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-deviation-dial" aria-label="Info">i</button>
+        </div>
+      </div>
+      <div class="info-panel" id="info-deviation-dial" hidden>
+        <p>A single needle that averages three separate percentile readings: how stretched price is from the power-law trend, the Mayer Multiple, and where the current halving cycle sits versus past cycles.</p>
+        <p>It's a quick, at-a-glance temperature check, deliberately built as a simple toy composite &mdash; not a valuation model. Don't treat the needle position as investment advice.</p>
+        <p class="info-source">Source: computed nightly from the three models above</p>
       </div>
       <div id="deviation-dial-chart" class="chart-canvas"></div>
       <p class="chart-caption">Toy composite: average of the power-law residual, Mayer Multiple, and cycle-position percentiles. Not a valuation model. <a href="#deviation-dial-card">#dial</a></p>
@@ -178,8 +258,16 @@
 
   <div class="chart-card" id="mayer-200wma-card">
     <div class="chart-plate">
-      <h3>Mayer Multiple &middot; 200-Week MA</h3>
+      <div class="chart-plate-heading">
+        <h3>Mayer Multiple &middot; 200-Week MA</h3>
+        <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-mayer-200wma" aria-label="Info">i</button>
+      </div>
       <div class="chart-plate-stats numeral" id="mayer-200wma-stats">&mdash;</div>
+    </div>
+    <div class="info-panel" id="info-mayer-200wma" hidden>
+      <p>Mayer Multiple is today's price divided by its own 200-day moving average &mdash; 1.0 means price sits exactly at that average; well above means it's run up fast, well below means it's pulled back hard. The 200-week moving average is a much slower version of the same idea, using 200 weeks instead of 200 days.</p>
+      <p>Mayer Multiple has historically flagged overheated (high) or oversold (low) conditions; the 200-week average has historically acted as a long-term floor &mdash; price has rarely stayed below it for long.</p>
+      <p class="info-source">Source: computed nightly from this site's own historical price data</p>
     </div>
     <div id="mayer-200wma-chart" class="chart-canvas"></div>
     <p class="chart-caption">Mayer Multiple = price / 200-day SMA. 200WMA = 200-week simple moving average. <a href="#mayer-200wma-card">#mayer</a></p>
@@ -194,6 +282,18 @@
       <span class="status-chip" data-status="STALE" id="audit-result-chip"><span class="status-dot"></span><span id="audit-result-text">loading&hellip;</span></span>
       <span id="audit-generated-at" class="numeral audit-generated-at"></span>
     </summary>
+    <details class="info-disclosure" id="audit-glossary">
+      <summary>What do these checks mean?</summary>
+      <div class="info-panel">
+        <p>Every day this site runs six automated checks against its own data before publishing. A findings list only appears above when a check flags something &mdash; a clean day shows none. Here's what each one actually looks for:</p>
+        <p><strong>continuity</strong> &mdash; is there a gap in the daily history, a date with no saved snapshot?</p>
+        <p><strong>cross_source_variance</strong> &mdash; do two independent price sources agree with each other today?</p>
+        <p><strong>model_drift</strong> &mdash; did last night's price-model refit change suspiciously overnight? (Usually bad input data, not a broken market.)</p>
+        <p><strong>staleness</strong> &mdash; how long has any gauge been showing old, non-live data instead of a fresh reading?</p>
+        <p><strong>sanity_replay</strong> &mdash; re-checking the last month of saved data for impossible values, in case something slipped through the day it was saved.</p>
+        <p><strong>site_integrity</strong> &mdash; is the site itself intact &mdash; no broken files, no missing pages, no runaway file sizes?</p>
+      </div>
+    </details>
     <ul id="audit-findings" class="audit-findings"></ul>
   </details>
 
@@ -211,5 +311,6 @@
 <script src="assets/health.js" defer></script>
 <script src="assets/charts.js" defer></script>
 <script src="assets/rain.js" defer></script>
+<script src="assets/info.js" defer></script>
 </body>
 </html>

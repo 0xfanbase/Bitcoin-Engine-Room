@@ -260,8 +260,15 @@ a {
   }
 }
 
-.odometer-caption {
+.odometer-caption-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   margin-top: 0.4rem;
+}
+
+.odometer-caption {
   font-family: var(--font-data);
   font-size: 0.85rem;
   color: var(--ink-dim);
@@ -383,6 +390,13 @@ a {
   letter-spacing: 0.08em;
 }
 
+.masthead-stat .info-panel {
+  max-width: 220px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+
 /* ---------- Gauges grid ---------- */
 .gauges-grid {
   display: grid;
@@ -417,6 +431,9 @@ a {
 }
 
 .gauge-card h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin: 0 0 0.5rem;
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -523,6 +540,16 @@ a {
   letter-spacing: 0.08em;
   color: var(--ink-dim);
   font-weight: 600;
+}
+
+/* Wraps <h3> + the info-toggle so .chart-plate's space-between still only
+   ever sees two children (this wrapper, .chart-plate-stats) -- adding the
+   button as a bare third flex child would pull .chart-plate-stats away from
+   the right edge, breaking director rule #7's calibration-plate alignment. */
+.chart-plate-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 /* Fit stats "printed on the chart face like an instrument calibration
@@ -676,6 +703,125 @@ a {
   font-size: 0.8rem;
   color: var(--ink-dim);
   margin-bottom: 0.75rem;
+}
+
+/* ---------- Info toggles ("explain-everything" educational tooltips,
+   build spec Section 16 -- every metric label gets a definition + why-it-
+   matters + source). Two mechanisms, one visual language: a custom button
+   + hidden-attribute panel for the 13 per-metric items (a native <details>
+   can't put its trigger inline next to a heading while its revealed
+   content reflows as a full-width block below), and native <details> for
+   the 2 section-level explainers (status-chip vocabulary, audit-checks
+   glossary), which have no such constraint and get full keyboard/touch
+   accessibility for free. Reveal is an instant hidden-attribute toggle --
+   no transition, no motion, so prefers-reduced-motion is a non-issue. ---------- */
+.info-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 6px; /* extends the tap target well past the visible circle */
+  margin-left: 0.35rem;
+  border: 1px solid var(--ink-dim);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-dim);
+  font-family: var(--font-label);
+  font-size: 0.65rem;
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+  box-sizing: content-box;
+  flex-shrink: 0;
+}
+
+.info-toggle:hover,
+.info-toggle:focus-visible {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* Open state stays --ink, not --accent -- the conservative reading of rule 4
+   (accent is a data color, never a surface, no exceptions). */
+.info-toggle[aria-expanded="true"] {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.info-panel {
+  margin-top: 0.5rem;
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.info-panel p {
+  margin: 0 0 0.4rem;
+}
+
+.info-panel p:last-child {
+  margin-bottom: 0;
+}
+
+.info-source {
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+}
+
+.info-disclosure {
+  margin: 0.5rem 0 1rem;
+}
+
+.info-disclosure summary {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  cursor: pointer;
+  list-style: none;
+}
+
+.info-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.info-disclosure summary::before {
+  content: "i";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 0.4rem;
+  border: 1px solid var(--ink-dim);
+  border-radius: 50%;
+  font-style: italic;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.info-disclosure[open] summary {
+  color: var(--ink);
+}
+
+.info-disclosure[open] summary::before {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.info-disclosure .info-panel {
+  margin-top: 0.5rem;
+}
+
+/* Nested glossary inside the audit panel gets a hairline separator from the
+   result chip above it, since it isn't the first thing in the disclosure. */
+#audit-glossary {
+  margin: 0.5rem 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--panel-border);
 }
 
 /* ---------- Footer / attribution ---------- */
