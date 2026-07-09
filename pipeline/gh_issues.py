@@ -19,7 +19,7 @@ SOURCE_NAME = "github_issues"
 
 
 def repo_slug() -> str:
-    return os.environ.get("GITHUB_REPOSITORY", "fandamentals/bitcoin-engine-room")
+    return os.environ.get("GITHUB_REPOSITORY", "0xfanbase/Bitcoin-Engine-Room")
 
 
 def _auth_headers(token: str) -> dict:

@@ -4,7 +4,7 @@
 
 BTC Engine Room is a free, public Bitcoin fundamentals + price-model dashboard: block height, hash rate, difficulty, mempool, fees, supply, plus long-horizon price models (power law corridor, 4-year halving cycle overlay, Mayer Multiple, 200WMA). The differentiator is radical transparency — every gauge shows its data source, freshness, validation status, and failover state, and the site publishes its own daily audit report. Total running cost is $0 beyond an existing Claude subscription.
 
-**Current phase:** P2 (Daily pipeline) complete; P3 (Frontend core) next. Check `PROGRESS.md`'s phase checklist for live status before starting work. Source of truth for everything below: `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` (the full spec) and `docs/PHASE1_DIRECTOR_CORRECTIONS.md` (the corrections layered on top of it — read both, the corrections supersede the spec where they conflict). `IMPROVEMENT_BACKLOG.md` records every subsequent real-world correction found while building P2 — check it too before trusting any endpoint detail below at face value.
+**Current phase:** P3 (Frontend core) complete; P4 (Models & charts) next. Check `PROGRESS.md`'s phase checklist for live status before starting work. Source of truth for everything below: `docs/BTC_ENGINE_ROOM_BUILD_SPEC.md` (the full spec) and `docs/PHASE1_DIRECTOR_CORRECTIONS.md` (the corrections layered on top of it — read both, the corrections supersede the spec where they conflict). `IMPROVEMENT_BACKLOG.md` records every subsequent real-world correction found while building P2/P3 — check it too before trusting any endpoint or message-shape detail below at face value.
 
 ## 2. Architecture summary
 
@@ -39,13 +39,13 @@ Stack: GitHub Pages (hosting) + GitHub Actions (automation) + Python 3.12 (`requ
 ## 4. Hard rules (non-negotiable)
 
 - Never scrape bitbo or any other dashboard site. Only pull from the APIs defined in `pipeline/sources.py`.
-- Polite-client discipline on every fetcher: descriptive User-Agent (`btc-engine-room/1.0 (+https://github.com/fandamentals/bitcoin-engine-room)`), timeout=15s, max 3 retries with exponential backoff + jitter, honor `429`/`Retry-After`.
+- Polite-client discipline on every fetcher: descriptive User-Agent (`btc-engine-room/1.0 (+https://github.com/0xfanbase/Bitcoin-Engine-Room)`), timeout=15s, max 3 retries with exponential backoff + jitter, honor `429`/`Retry-After`.
 - The attribution footer (CoinGecko, alternative.me, Coin Metrics credits) is load-bearing — it lands in P3 (moved up from the spec's original P6) and must never be removed once built.
 - Sanity bounds (`pipeline/sanity_rules.json`) are law — never weaken them to make a check or an audit pass.
 - $0 constraint: no paid services, keys, or domains, ever, without explicit owner approval.
 - No frameworks or build step without explicit owner approval.
 - License stays MIT (already shipped) — do not switch to PolyForm Noncommercial or anything else.
-- Repo slug is `fandamentals/bitcoin-engine-room`, Pages URL `https://fandamentals.github.io/bitcoin-engine-room/` — already resolved, never propose a rename.
+- Repo slug is `0xfanbase/Bitcoin-Engine-Room`, Pages URL `https://0xfanbase.github.io/Bitcoin-Engine-Room/` — already resolved, never propose a rename. (Corrected 2026-07-09: the repo moved out from under an earlier `fandamentals/...` slug partway through Phase 1; GitHub's own move notice on `git push` was the signal. Every reference — schema `$id`s, the User-Agent string, `gh_issues.py`'s fallback, `index.html`'s footer link — was swept and fixed in one pass. If this ever moves again, grep for the old slug across the whole repo, not just the obvious spots.)
 
 ## 5. Repository layout & phase map
 

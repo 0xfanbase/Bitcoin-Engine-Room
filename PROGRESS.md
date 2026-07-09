@@ -6,12 +6,19 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 
 - [x] P1 — Skeleton & backfill
 - [x] P2 — Daily pipeline
-- [ ] P3 — Frontend core
+- [x] P3 — Frontend core
 - [ ] P4 — Models & charts
 - [ ] P5 — Audit & health panel
 - [ ] P6 — Polish
 
 ## Log
+
+### 2026-07-09 — Phase 3 complete
+
+- Built `index.html`, `assets/style.css` (token-swap architecture, three themes: `engine` default, `dark`, `light` -- matrix/atmosphere canvases correctly deferred post-v1 per the director review), `assets/app.js` (boot-from-committed-data, theme switcher, formatters), `assets/live.js` (WebSocket odometer + REST polling + client price failover), `assets/health.js` (Engine Health panel). Attribution footer + disclaimers included now (moved up from P6 per the director correction).
+- Verified end-to-end in a real headless-Chromium browser (Playwright, driven ad hoc -- not committed, per spec Section 3's Playwright smoke test being explicitly "optional, phase 5"). Confirmed: gauges paint immediately from committed `data/history/*.json` + `data/health.json` before any live data arrives; theme switching + `localStorage` persistence across reload; mobile layout at 375px (found and fixed a real horizontal-overflow bug in the Engine Health panel); the core P3 acceptance criterion -- **unplug network → STALE chips appear, no gauge ever goes blank** -- confirmed by simulating a fully offline browser.
+- This sandbox's proxy doesn't support WebSocket upgrades at all (confirmed in `/root/.ccr/README.md`), so the real `wss://mempool.space/api/v1/ws` couldn't be exercised through headless Chromium here. Used the same discipline as P1/P2 regardless: confirmed the real message shape via a direct (non-proxied) `websockets` connection first, then verified `live.js`'s DOM-update logic deterministically against that real shape by stubbing `WebSocket`/`fetch` in-page. This caught two real bugs before they'd ever have shipped: the spec's assumed `{"block": {...}}` singular message shape doesn't exist (it's `{"blocks": [...]}`, plural array), and `live.js` was double-calling `renderMempool()` with the second (wrong, much smaller) value from `mempool-blocks` overwriting the correct one from `mempoolInfo.size`. Full detail in `IMPROVEMENT_BACKLOG.md`.
+- Next: P4 (models & charts) -- `fit_models.py` (power law OLS fit per the pinned `model_constants.json`, 4-year cycle overlay, Mayer Multiple, 200WMA, deviation dial), `data/models.json`, and the projections section of the frontend (full-width log-log power-law chart via ECharts CDN, per CLAUDE.md's creative-direction bullet #7).
 
 ### 2026-07-09 — Phase 2 complete
 

@@ -1,0 +1,434 @@
+/* ===========================================================
+   BTC Engine Room -- design tokens + component styles.
+   Token-swap architecture (CLAUDE.md Section 6 / spec Section 16.1):
+   every color/font decision references a custom property below.
+   Themes are pure [data-theme="x"] token blocks -- zero component
+   changes per theme. Three token-only themes for v1 (engine default,
+   dark, light); matrix/atmosphere canvases are post-v1 (director
+   correction -- see docs/PHASE1_DIRECTOR_CORRECTIONS.md).
+   =========================================================== */
+
+/* ---------- Engine ("Nothing Stops This Train" spirit, no tagline) ---------- */
+:root,
+[data-theme="engine"] {
+  --bg: #0c0f12;
+  --panel: #151a20;
+  --panel-border: #232b33;
+  --ink: #e8e3d5;
+  --ink-dim: #9aa1a6;
+  --accent: #ffb000;       /* instrument amber -- DATA color only, never a surface (director rule) */
+  --ok: #2fd97b;
+  --warn: #ffb000;
+  --fail: #ff4747;
+  --hairline: #4a3c26;     /* brass, dimmed for use as a border, not a highlight */
+  --focus-ring: #ffb000;
+  --glow-on: 1;            /* status lamps are the only glow on the page */
+  --font-display: "Archivo Black", "Archivo Expanded", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, monospace;
+  --font-label: "IBM Plex Sans", sans-serif;
+}
+
+/* ---------- Dark ("Night Watch") -- neutral pro dark, no amber, no theatrics ---------- */
+[data-theme="dark"] {
+  --bg: #0e1116;
+  --panel: #161b22;
+  --panel-border: #2a313c;
+  --ink: #e6edf3;
+  --ink-dim: #8b949e;
+  --accent: #4c9aff;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --fail: #f85149;
+  --hairline: #2a313c;
+  --focus-ring: #4c9aff;
+  --glow-on: 0;
+  --font-display: "IBM Plex Sans", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, monospace;
+  --font-label: "IBM Plex Sans", sans-serif;
+}
+
+/* ---------- Light ("Daylight") -- warm paper, editorial, zero glow ---------- */
+[data-theme="light"] {
+  --bg: #f4f1ea;
+  --panel: #ffffff;
+  --panel-border: #e5dfd3;
+  --ink: #1f1e1b;
+  --ink-dim: #6b6558;
+  --accent: #c9633e;
+  --ok: #2e7d4f;
+  --warn: #b7791f;
+  --fail: #b23b3b;
+  --hairline: #e5dfd3;
+  --focus-ring: #c9633e;
+  --glow-on: 0;
+  --font-display: "Source Serif 4", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, monospace;
+  --font-label: "IBM Plex Sans", sans-serif;
+}
+
+/* ---------- Reset & base ---------- */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-label);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.numeral {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---------- Layout shell ---------- */
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.plate {
+  font-family: var(--font-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+  border-top: 1px solid var(--hairline);
+  padding-top: 0.5rem;
+  margin: 2.5rem 0 1rem;
+}
+
+/* ---------- Sticky header / theme switcher ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.theme-switcher {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.theme-chip {
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+
+.theme-chip[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.engine-status-lamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+/* ---------- Masthead ---------- */
+.masthead {
+  padding: 2rem 0 1rem;
+  text-align: center;
+}
+
+.masthead h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  letter-spacing: 0.03em;
+  margin: 0 0 1.5rem;
+  color: var(--ink);
+}
+
+/* Block-height odometer: the ONE theatrical element on the page (director rule #2). */
+.odometer {
+  display: flex;
+  justify-content: center;
+  gap: 0.15rem;
+  font-family: var(--font-data);
+  font-size: clamp(2.2rem, 8vw, 3.6rem);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.odometer-digit {
+  display: inline-block;
+  min-width: 0.62em;
+  text-align: center;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.odometer-digit.flash {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .odometer-digit {
+    transition: none;
+  }
+}
+
+.odometer-caption {
+  margin-top: 0.4rem;
+  font-family: var(--font-data);
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.masthead-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem 2.5rem;
+  margin-top: 1.5rem;
+}
+
+.masthead-stat .value {
+  font-family: var(--font-data);
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+
+.masthead-stat .label {
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Gauges grid ---------- */
+.gauges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.gauge-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 1rem;
+  position: relative;
+}
+
+/* Whisper-volume skeuomorphism: pure-CSS riveted corners, only noticeable up close (director rule #6). */
+[data-theme="engine"] .gauge-card::before,
+[data-theme="engine"] .gauge-card::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--hairline);
+}
+[data-theme="engine"] .gauge-card::before {
+  left: 6px;
+}
+[data-theme="engine"] .gauge-card::after {
+  right: 6px;
+}
+
+.gauge-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+
+.gauge-value {
+  font-family: var(--font-data);
+  font-size: 1.6rem;
+  color: var(--ink);
+}
+
+.gauge-value .unit {
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+  margin-left: 0.25rem;
+}
+
+.gauge-sub {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+/* ---------- Status chips (LIVE / DELAYED / STALE) ---------- */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 0.5rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-chip[data-status="LIVE"] .status-dot {
+  background: var(--ok);
+  box-shadow: calc(var(--glow-on) * 0px) 0 calc(var(--glow-on) * 6px) var(--ok);
+}
+.status-chip[data-status="DELAYED"] .status-dot,
+.status-chip[data-status="STALE"] .status-dot {
+  background: var(--warn);
+  box-shadow: calc(var(--glow-on) * 0px) 0 calc(var(--glow-on) * 6px) var(--warn);
+}
+.status-chip[data-status="OFFLINE"] .status-dot,
+.status-chip[data-status="FAIL"] .status-dot {
+  background: var(--fail);
+  box-shadow: calc(var(--glow-on) * 0px) 0 calc(var(--glow-on) * 6px) var(--fail);
+}
+
+.status-chip[data-status="LIVE"] {
+  color: var(--ok);
+}
+.status-chip[data-status="DELAYED"],
+.status-chip[data-status="STALE"] {
+  color: var(--warn);
+}
+.status-chip[data-status="OFFLINE"],
+.status-chip[data-status="FAIL"] {
+  color: var(--fail);
+}
+
+/* ---------- Engine Health panel ---------- */
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.health-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  min-width: 0; /* allow the row itself to shrink inside a narrow grid track */
+}
+
+.health-row .metric-name {
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.health-row .status-chip {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.health-row .status-chip span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.health-summary {
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- Footer / attribution ---------- */
+.site-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hairline);
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.site-footer a {
+  color: var(--ink-dim);
+  text-decoration: underline;
+}
+
+.site-footer .disclaimer {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+  .gauges-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  /* Health rows carry more text (metric name + source name) than a gauge
+     card does -- a 2-col grid overflows on narrow phones, so this panel
+     stays single-column instead of matching the gauges grid. */
+  .health-grid {
+    grid-template-columns: 1fr;
+  }
+  .masthead-stats {
+    gap: 1rem 1.5rem;
+  }
+}

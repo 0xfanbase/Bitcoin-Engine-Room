@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BTC Engine Room</title>
+<meta name="description" content="A free, self-auditing Bitcoin fundamentals dashboard. Every gauge shows its data source, freshness, and validation status." />
+
+<!-- Inline pre-paint theme script: must run before CSS paints to avoid a
+     flash of the wrong theme. Default is 'engine' unless the visitor
+     already chose otherwise (localStorage, not a cookie -- a static site
+     never reads a cookie server-side). No prefers-color-scheme override:
+     engine wins unless the user explicitly picked something else. -->
+<script>
+(function () {
+  var theme = localStorage.getItem('ber_theme') || 'engine';
+  document.documentElement.dataset.theme = theme;
+})();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="#top">BTC ENGINE ROOM</a>
+  <div class="engine-status-lamp" id="engine-status-lamp">
+    <span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--ink-dim);" id="engine-status-dot"></span>
+    <span id="engine-status-text">checking&hellip;</span>
+  </div>
+  <div class="theme-switcher" role="group" aria-label="Theme">
+    <button class="theme-chip" data-theme-choice="light" aria-pressed="false">&#9728; Light</button>
+    <button class="theme-chip" data-theme-choice="dark" aria-pressed="false">&#9679; Dark</button>
+    <button class="theme-chip" data-theme-choice="engine" aria-pressed="true">&#128674; Engine</button>
+  </div>
+</header>
+
+<main class="page" id="top">
+
+  <section class="masthead">
+    <h1>Bitcoin Engine Room</h1>
+    <div class="odometer" id="odometer" aria-label="Current block height">
+      <span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span>
+    </div>
+    <div class="odometer-caption" id="odometer-caption">block height &middot; loading&hellip;</div>
+
+    <div class="masthead-stats">
+      <div class="masthead-stat">
+        <div class="value numeral" id="stat-price">&mdash;</div>
+        <div class="label">Price (USD)</div>
+        <div class="status-chip" data-status="STALE" id="chip-price"><span class="status-dot"></span><span>&mdash;</span></div>
+      </div>
+      <div class="masthead-stat">
+        <div class="value numeral" id="stat-halving-blocks">&mdash;</div>
+        <div class="label">Blocks to halving</div>
+      </div>
+      <div class="masthead-stat">
+        <div class="value numeral" id="stat-halving-eta">&mdash;</div>
+        <div class="label">Est. halving date</div>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="plate">Gauges</h2>
+  <div class="gauges-grid">
+
+    <div class="gauge-card">
+      <h3>Hash Rate</h3>
+      <div class="gauge-value numeral" id="gauge-hashrate">&mdash;</div>
+      <div class="gauge-sub" id="gauge-hashrate-sub">&mdash;</div>
+      <div class="status-chip" data-status="STALE" id="chip-hashrate"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Difficulty &middot; Retarget</h3>
+      <div class="gauge-value numeral" id="gauge-difficulty">&mdash;</div>
+      <div class="gauge-sub" id="gauge-difficulty-sub">&mdash;</div>
+      <div class="status-chip" data-status="STALE" id="chip-difficulty"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Fees (sat/vB)</h3>
+      <div class="gauge-value numeral" id="gauge-fees">&mdash;</div>
+      <div class="gauge-sub" id="gauge-fees-sub">fastest &middot; 30min &middot; economy</div>
+      <div class="status-chip" data-status="STALE" id="chip-fees"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Mempool</h3>
+      <div class="gauge-value numeral" id="gauge-mempool">&mdash;</div>
+      <div class="gauge-sub" id="gauge-mempool-sub">pending transactions</div>
+      <div class="status-chip" data-status="STALE" id="chip-mempool"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Circulating Supply</h3>
+      <div class="gauge-value numeral" id="gauge-supply">&mdash;</div>
+      <div class="gauge-sub" id="gauge-supply-sub">&mdash;</div>
+      <div class="status-chip" data-status="STALE" id="chip-supply"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+    <div class="gauge-card">
+      <h3>Fear &amp; Greed</h3>
+      <div class="gauge-value numeral" id="gauge-fng">&mdash;</div>
+      <div class="gauge-sub" id="gauge-fng-sub">&mdash;</div>
+      <div class="status-chip" data-status="STALE" id="chip-fng"><span class="status-dot"></span><span>&mdash;</span></div>
+    </div>
+
+  </div>
+
+  <h2 class="plate">Engine Health</h2>
+  <div class="health-summary" id="health-summary">Loading health report&hellip;</div>
+  <div class="health-grid" id="health-grid"></div>
+
+  <footer class="site-footer">
+    <p><strong>Data sources:</strong> Price, fees, mempool and difficulty-adjustment data by <a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a>. Historical price/hash-rate/supply backfill and daily fallback by <a href="https://www.blockchain.com/explorer/charts" target="_blank" rel="noopener">blockchain.com</a>. Price cross-check by <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a> and <a href="https://www.coinbase.com" target="_blank" rel="noopener">Coinbase</a>. Fear &amp; Greed data by <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener">alternative.me</a>. Historical data cross-referenced against <a href="https://coinmetrics.io" target="_blank" rel="noopener">Coin Metrics Community</a>.</p>
+    <p class="disclaimer">Educational tool. Not financial advice. Models are curve fits, not guarantees.</p>
+    <p><a href="https://github.com/0xfanbase/Bitcoin-Engine-Room" target="_blank" rel="noopener">Source on GitHub</a> &middot; MIT licensed</p>
+  </footer>
+
+</main>
+
+<script src="assets/app.js" defer></script>
+<script src="assets/live.js" defer></script>
+<script src="assets/health.js" defer></script>
+</body>
+</html>

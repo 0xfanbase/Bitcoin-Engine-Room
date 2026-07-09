@@ -2,7 +2,7 @@ import responses
 
 from pipeline import gh_issues
 
-REPO = "fandamentals/bitcoin-engine-room"
+REPO = "0xfanbase/Bitcoin-Engine-Room"
 ISSUES_URL = f"https://api.github.com/repos/{REPO}/issues"
 
 

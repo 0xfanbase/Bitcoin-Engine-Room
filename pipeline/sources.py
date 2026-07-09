@@ -22,7 +22,7 @@ from typing import Any
 
 import requests
 
-USER_AGENT = "btc-engine-room/1.0 (+https://github.com/fandamentals/bitcoin-engine-room)"
+USER_AGENT = "btc-engine-room/1.0 (+https://github.com/0xfanbase/Bitcoin-Engine-Room)"
 DEFAULT_TIMEOUT = 15
 DEFAULT_MAX_RETRIES = 3
 MAX_RETRY_AFTER_SECONDS = 60
