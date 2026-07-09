@@ -69,7 +69,8 @@ bitcoin-engine-room/
 │   ├── audit.py                   # P5 — continuity/variance/drift/staleness/sanity-replay/site-integrity
 │   ├── sanity_rules.json          # P1 (live_snapshot) + P2 (consumed by fetch_snapshot.py)
 │   ├── model_constants.json, MODEL_METHODOLOGY.md   # P1, consumed by P4's fit_models.py
-│   ├── schemas/                   # P1 + P2 (health.schema.json) + P4 (models.schema.json) + P5 (audit.schema.json)
+│   ├── known_gaps.json            # /improve (2026-07-09) -- verified, cited continuity-gap allowlist, consumed by audit.py
+│   ├── schemas/                   # P1 + P2 (health.schema.json) + P4 (models.schema.json) + P5 (audit.schema.json) + /improve (known_gaps.schema.json)
 │   └── tests/                     # P1 + P2 + P4 + P5
 ├── .claude/commands/               # P6 — improve.md + health-report.md
 └── .github/workflows/

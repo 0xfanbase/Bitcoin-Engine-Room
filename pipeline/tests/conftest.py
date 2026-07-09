@@ -47,3 +47,9 @@ def sanity_rules() -> dict:
 def model_constants() -> dict:
     with open(REPO_ROOT / "pipeline" / "model_constants.json") as f:
         return json.load(f)
+
+
+@pytest.fixture
+def known_gaps() -> dict:
+    with open(REPO_ROOT / "pipeline" / "known_gaps.json") as f:
+        return json.load(f)

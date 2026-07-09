@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/known_gaps.schema.json",
+  "title": "known_gaps.json -- verified, cited exceptions to audit.py's continuity check",
+  "type": "object",
+  "required": ["schema_version", "gaps"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["metric", "gap_start", "gap_end", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "metric": {
+            "type": "string",
+            "enum": ["price_daily", "hashrate_daily", "supply_daily", "fng_daily"]
+          },
+          "gap_start": {"type": "string", "format": "date"},
+          "gap_end": {"type": "string", "format": "date"},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
