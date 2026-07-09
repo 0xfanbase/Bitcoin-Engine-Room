@@ -37,12 +37,16 @@
 
     const chip = document.createElement("span");
     chip.className = "status-chip";
-    const status = record.status === "OK" ? "LIVE" : "STALE";
+    const status = record.status === "OK" ? "OK" : "STALE";
     chip.dataset.status = status;
+    // Label shows the pipeline-success word (matching the rest of the page's
+    // status-chip vocabulary), not the raw source id -- that's still surfaced,
+    // just demoted to a hover detail so it isn't mistaken for the status itself.
+    if (record.source) chip.title = `source: ${record.source}`;
     const dot = document.createElement("span");
     dot.className = "status-dot";
     const label = document.createElement("span");
-    label.textContent = record.source ? record.source : record.status;
+    label.textContent = status;
     chip.appendChild(dot);
     chip.appendChild(label);
 

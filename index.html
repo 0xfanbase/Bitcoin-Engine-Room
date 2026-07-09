@@ -26,9 +26,9 @@
 
 <header class="site-header">
   <a class="brand" href="#top">BTC ENGINE ROOM</a>
-  <div class="engine-status-lamp" id="engine-status-lamp">
+  <div class="engine-status-lamp" id="engine-status-lamp" title="Live browser connection status -- separate from the daily Engine Health report further down the page">
     <span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--ink-dim);" id="engine-status-dot"></span>
-    <span id="engine-status-text">checking&hellip;</span>
+    <span id="engine-status-text">connecting&hellip;</span>
   </div>
   <!-- Digital Rain ON/OFF, not a theme picker (director ruling: with one
        visual identity, committing the whole page to an animated background
@@ -62,11 +62,23 @@
          and only visibly moves once, as a run-off/re-entry sweep synced to
          the odometer roll and rain.js's block-arrival surge on genuine new-
          block arrival. Director ruling, CLAUDE.md Section 6 rule 2. -->
-    <div class="block-rail" id="block-rail" aria-hidden="true" title="minutes since last block (full rail = 10:00 expected)">
+    <div class="block-rail" id="block-rail" aria-hidden="true">
       <div class="block-rail-track" id="block-rail-track">
         <div class="block-rail-ticks"></div>
       </div>
       <div class="block-rail-train" id="block-rail-train"></div>
+    </div>
+    <!-- The rail itself stays aria-hidden (a decorative sweep, no discrete
+         value a screen reader could read out) -- this caption row is its
+         accessible, touch-reachable equivalent, matching every other
+         instrument's info-toggle instead of relying on a hover-only title. -->
+    <div class="odometer-caption-row">
+      <div class="odometer-caption">time since last block</div>
+      <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-block-rail" aria-label="Info">i</button>
+    </div>
+    <div class="info-panel" id="info-block-rail" hidden>
+      <p>This rail sweeps once for every new block that actually arrives, and otherwise creeps only very slightly between them -- its position is roughly how much of the ~10-minute average block interval has elapsed since the last one. A second read on the same clock the block-height odometer runs on, not a separate metric.</p>
+      <p class="info-source">Source: computed from mempool.space's live block-arrival timestamp</p>
     </div>
 
     <div class="info-panel" id="info-block-height" hidden>
@@ -260,6 +272,13 @@
   </div>
 
   <h2 class="plate">Engine Health</h2>
+  <details class="info-disclosure">
+    <summary>What does a source row mean?</summary>
+    <div class="info-panel">
+      <p>Each row below is one metric's <strong>daily pipeline</strong> snapshot, not the live browser feed shown in the Gauges above -- a separate system, checked once a day rather than continuously. <strong>OK</strong> means last night's run saved successfully; <strong>STALE</strong> means it failed and the site is now carrying forward the last good value. The chip also names which source that snapshot actually came from.</p>
+      <p>Fees and mempool aren't listed here -- both are live-only readings with no daily snapshot to check.</p>
+    </div>
+  </details>
   <div class="health-summary" id="health-summary">Loading health report&hellip;</div>
   <div class="health-grid" id="health-grid"></div>
 
@@ -271,7 +290,7 @@
     <details class="info-disclosure" id="audit-glossary">
       <summary>What do these checks mean?</summary>
       <div class="info-panel">
-        <p>Every day this site runs six automated checks against its own data before publishing. A findings list only appears above when a check flags something &mdash; a clean day shows none. Here's what each one actually looks for:</p>
+        <p>Every day this site runs six automated checks against its own data before publishing, rolling up to one overall result shown in the chip above: <strong>PASS</strong> (nothing found), <strong>WARN</strong> (worth a look, not urgent), or <strong>FAIL</strong> (a real problem). A findings list only appears above when a check flags something &mdash; a clean day shows none. Here's what each one actually looks for:</p>
         <p><strong>continuity</strong> &mdash; is there a gap in the daily history, a date with no saved snapshot?</p>
         <p><strong>cross_source_variance</strong> &mdash; do two independent price sources agree with each other today?</p>
         <p><strong>model_drift</strong> &mdash; did last night's price-model refit change suspiciously overnight? (Usually bad input data, not a broken market.)</p>

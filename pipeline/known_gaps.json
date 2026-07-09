@@ -6,6 +6,24 @@
       "gap_start": "2009-01-03",
       "gap_end": "2009-01-09",
       "reason": "No blocks were mined for roughly six days immediately after the genesis block (2009-01-03) -- a genuine historical fact about early Bitcoin, spot-checked against block-explorer data during Phase 5 (2026-07-09, see PROGRESS.md), not a data-source or pipeline defect."
+    },
+    {
+      "metric": "hashrate_daily",
+      "gap_start": "2025-11-12",
+      "gap_end": "2025-11-16",
+      "reason": "Verified 2026-07-09 by calling BlockchainInfoChartsClient().fetch_chart('hash-rate') live: blockchain.info's own hash-rate chart is itself missing 2025-11-13 through 2025-11-15 -- a gap in the upstream source, not a defect in our backfill or pipeline."
+    },
+    {
+      "metric": "fng_daily",
+      "gap_start": "2018-04-13",
+      "gap_end": "2018-04-17",
+      "reason": "Verified 2026-07-09 by calling AlternativeMeFngClient().fetch_full_history() live: alternative.me's own Fear & Greed index is itself missing 2018-04-14 through 2018-04-16 -- a gap in the upstream source, not a defect in our backfill or pipeline."
+    },
+    {
+      "metric": "fng_daily",
+      "gap_start": "2024-10-25",
+      "gap_end": "2024-10-27",
+      "reason": "Verified 2026-07-09 by calling AlternativeMeFngClient().fetch_full_history() live: alternative.me's own Fear & Greed index is itself missing 2024-10-26 -- a gap in the upstream source, not a defect in our backfill or pipeline."
     }
   ]
 }

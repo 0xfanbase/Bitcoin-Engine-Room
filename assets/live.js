@@ -192,7 +192,7 @@
       wsDegraded = false;
       stopHeightPolling();
       ws.send(JSON.stringify({ action: "want", data: ["blocks", "stats", "mempool-blocks"] }));
-      setEngineStatus("LIVE", "engine running");
+      setEngineStatus("LIVE", "live feed: connected");
     });
 
     ws.addEventListener("message", (event) => {
@@ -245,7 +245,7 @@
 
   function degradeToPolling() {
     wsDegraded = true;
-    setEngineStatus("DELAYED", "REST-only (WebSocket unavailable)");
+    setEngineStatus("DELAYED", "live feed: polling (WebSocket unavailable)");
     startHeightPolling();
     // Keep trying to recover the WebSocket in the background at the capped interval.
     setTimeout(connectWebSocket, WS_MAX_BACKOFF_MS);

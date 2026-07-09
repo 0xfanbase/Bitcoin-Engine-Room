@@ -254,7 +254,7 @@ Checks → `data/audit/latest.json` (+ dated copy, keep 90 days), rendered on-si
 3. **Model drift:** power-law `b` moved >0.5% day-over-day, or R² dropped >0.01 → WARN (usually means bad input data, not a broken market).
 4. **Staleness:** any metric STALE >24h → WARN, >72h → FAIL.
 5. **Sanity replay:** re-validate the last 30 days of history against sanity rules.
-6. **Site integrity:** index.html parses; all local asset links resolve; JSON payload total <2MB budget.
+6. **Site integrity:** index.html parses; all local asset links resolve; JSON payload total <5MB budget (revised 2026-07-09 from the original 2MB — a project-owner call once real payload size, ~3.5MB+ across 15+ years of daily history for 5 metrics plus fitted models, was actually measured against the arbitrary original number; see IMPROVEMENT_BACKLOG.md's P4 entry).
 7. Result: `PASS / WARN / FAIL` + findings array. WARN/FAIL findings are **auto-appended to IMPROVEMENT_BACKLOG.md** — the audit literally feeds the improvement loop.
 
 ## 12. Self-improvement loop (honest, $0 design)
