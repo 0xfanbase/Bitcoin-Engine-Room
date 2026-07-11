@@ -43,6 +43,42 @@
     return Math.floor((now - then) / 86400000);
   };
 
+  // ---------- odometer digits + halving countdown (shared with live.js) ----------
+  // Defined here (not live.js) and called by both this module's committed-
+  // data fallback paint and live.js's real-time odometer updates, so the
+  // halving-countdown math has exactly one implementation instead of two
+  // copies that could drift apart.
+
+  const NEXT_HALVING_HEIGHT = 1_050_000;
+  const AVG_BLOCK_MINUTES = 10;
+
+  BER.renderOdometerDigits = function (height) {
+    const digits = String(height).padStart(7, "0").split("");
+    const el = document.getElementById("odometer");
+    if (!el) return;
+    const nodes = el.querySelectorAll(".odometer-digit");
+    digits.forEach((d, i) => {
+      if (nodes[i]) nodes[i].textContent = d;
+    });
+  };
+
+  BER.renderHalvingCountdown = function (height) {
+    const blocksRemaining = Math.max(NEXT_HALVING_HEIGHT - height, 0);
+    const el = document.getElementById("stat-halving-blocks");
+    if (el) el.textContent = blocksRemaining.toLocaleString("en-US");
+
+    const etaEl = document.getElementById("stat-halving-eta");
+    if (etaEl) {
+      if (blocksRemaining === 0) {
+        etaEl.textContent = "any block now";
+      } else {
+        const minutesRemaining = blocksRemaining * AVG_BLOCK_MINUTES;
+        const eta = new Date(Date.now() + minutesRemaining * 60_000);
+        etaEl.textContent = eta.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) + " (est.)";
+      }
+    }
+  };
+
   // ---------- status chip rendering ----------
 
   BER.setChip = function (id, status, label) {
@@ -97,17 +133,23 @@
   // Daily-cadence gauges (hashrate/difficulty/supply/fng) are refreshed once
   // a day by fetch_snapshot.py, not continuously -- their chip reflects
   // health.json's status, not a live connection state (that's live.js's job
-  // for price/fees/mempool/block height).
+  // for price/fees/mempool/block height). A healthy once-a-day refresh gets
+  // its own neutral DAILY status rather than the amber DELAYED used
+  // elsewhere for genuinely degraded live metrics -- amber next to a
+  // perfectly healthy gauge reads as "something's wrong" to a newcomer.
+  // Every chip label leads with the status word itself (DAILY/STALE), same
+  // pattern live.js's pollPrice() now uses (LIVE/DELAYED + source), so the
+  // vocabulary is consistent everywhere a chip appears on the page.
   function paintDailyChip(chipId, health) {
     if (!health) {
-      BER.setChip(chipId, "STALE", "no data");
+      BER.setChip(chipId, "STALE", "STALE · no data");
       return;
     }
     if (health.status === "OK") {
-      BER.setChip(chipId, "DELAYED", "as of " + health.last_success_date);
+      BER.setChip(chipId, "DAILY", "DAILY · as of " + health.last_success_date);
     } else {
       const age = BER.daysAgo(health.stale_since);
-      BER.setChip(chipId, "STALE", age != null ? `stale ${age}d` : "stale");
+      BER.setChip(chipId, "STALE", age != null ? `STALE · stale ${age}d` : "STALE · stale");
     }
   }
 
@@ -123,6 +165,25 @@
       console.warn("health.json unavailable", e);
     }
     BER.health = health;
+
+    // Block height/halving stats: paint from the daily pipeline's committed
+    // tip_height immediately, same "never blank" treatment the 5 history
+    // metrics below already get, so the odometer and halving countdown show
+    // real numbers instead of dashes/"—" forever if mempool.space is
+    // unreachable when the page loads. live.js is free to upgrade this to a
+    // live reading exactly as it already does for price -- its own
+    // onNewBlock() already guards first-paint vs. a real change via its
+    // private `lastBlockHeight` (starts null regardless of what we paint
+    // here), so painting the odometer here first cannot cause a false
+    // flash/rail-arrival/rain-surge "new block" event once live.js connects
+    // and sees the same height.
+    if (health && health.tip_height && typeof health.tip_height.height === "number") {
+      const height = health.tip_height.height;
+      BER.renderOdometerDigits(height);
+      BER.renderHalvingCountdown(height);
+      const captionEl = document.getElementById("odometer-caption");
+      if (captionEl) captionEl.textContent = "block height · as of " + health.tip_height.date;
+    }
 
     const metrics = ["price_daily", "hashrate_daily", "difficulty_daily", "supply_daily", "fng_daily"];
     const histories = {};
@@ -143,28 +204,35 @@
       const priceHealth = health && health.metrics && health.metrics.price_daily;
       // Price is a live.js-owned metric; paint committed value now with a
       // STALE chip, live.js will upgrade it if a live fetch succeeds.
-      BER.setChip("chip-price", "STALE", "as of " + priceRow.date);
+      BER.setChip("chip-price", "STALE", "STALE · as of " + priceRow.date);
       void priceHealth;
     }
 
+    // gauge-*-sub used to read "committed <date>" here, but that's now a
+    // straight duplicate of the DAILY chip's own "DAILY · as of <date>"
+    // text sitting directly below it -- dropped rather than just reworded
+    // ("recorded <date>") so the same date isn't shown twice in a row; the
+    // chip is the single source of truth for that date now. Difficulty's
+    // sub is still overwritten with live retarget progress by live.js's
+    // pollDifficultyAdjustment() when that succeeds -- unaffected here.
     const hashrateRow = lastRow(histories.hashrate_daily);
     if (hashrateRow) {
       document.getElementById("gauge-hashrate").textContent = BER.formatHashrate(hashrateRow.value);
-      document.getElementById("gauge-hashrate-sub").textContent = "committed " + hashrateRow.date;
+      document.getElementById("gauge-hashrate-sub").textContent = ""; // no longer duplicates the DAILY chip's date -- see comment above
       paintDailyChip("chip-hashrate", health && health.metrics && health.metrics.hashrate_daily);
     }
 
     const difficultyRow = lastRow(histories.difficulty_daily);
     if (difficultyRow) {
       document.getElementById("gauge-difficulty").textContent = BER.formatDifficulty(difficultyRow.value);
-      document.getElementById("gauge-difficulty-sub").textContent = "committed " + difficultyRow.date;
+      document.getElementById("gauge-difficulty-sub").textContent = ""; // pollDifficultyAdjustment() fills this with live retarget progress if it succeeds
       paintDailyChip("chip-difficulty", health && health.metrics && health.metrics.difficulty_daily);
     }
 
     const supplyRow = lastRow(histories.supply_daily);
     if (supplyRow) {
       document.getElementById("gauge-supply").textContent = BER.formatSupply(supplyRow.value);
-      document.getElementById("gauge-supply-sub").textContent = "committed " + supplyRow.date;
+      document.getElementById("gauge-supply-sub").textContent = ""; // no longer duplicates the DAILY chip's date -- see comment above
       paintDailyChip("chip-supply", health && health.metrics && health.metrics.supply_daily);
     }
 

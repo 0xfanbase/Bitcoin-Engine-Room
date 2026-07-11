@@ -78,7 +78,7 @@
       });
       expandAllToggle.setAttribute("aria-pressed", String(expanding));
       expandAllToggle.classList.toggle("is-active", expanding);
-      expandAllToggle.textContent = expanding ? "Collapse all descriptions" : "Expand all descriptions";
+      expandAllToggle.textContent = expanding ? "Hide explanations" : "Explain everything";
     });
   }
 })();

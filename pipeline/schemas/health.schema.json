@@ -8,6 +8,16 @@
   "properties": {
     "schema_version": {"type": "integer", "const": 1},
     "generated_at": {"type": "string", "format": "date-time"},
+    "tip_height": {
+      "type": "object",
+      "description": "Chain tip height, fetched once daily as an input to the supply subsidy-schedule fallback/sanity check, persisted here so the frontend masthead odometer/halving stats can paint a committed value on boot instead of blank dashes. Optional: absent only if never successfully fetched (e.g. a fresh repo before the first successful pipeline run).",
+      "required": ["height", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "height": {"type": "integer", "minimum": 0},
+        "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}
+      }
+    },
     "metrics": {
       "type": "object",
       "propertyNames": {

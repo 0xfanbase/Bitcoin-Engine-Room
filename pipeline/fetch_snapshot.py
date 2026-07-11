@@ -296,11 +296,36 @@ def run_snapshot(metrics: list[str], *, dry_run: bool = False) -> dict:
                 }
             )
 
+    _record_tip_height(new_health, prior_health_doc, height_cache)
+
     if not dry_run:
         write_json(HEALTH_PATH, new_health)
         _handle_github_issue(issue_worthy, new_health)
 
     return new_health
+
+
+def _record_tip_height(new_health: dict, prior_health_doc: dict, height_cache: dict) -> None:
+    """Persist the chain tip height (already fetched via `_tip_height` as an
+    input to the supply subsidy-schedule fallback/sanity check above) into
+    health.json under a top-level `tip_height: {height, date}` key, so the
+    frontend's masthead odometer and halving-countdown stats can paint a
+    real committed value on boot instead of blank dashes/"--" when the
+    browser can't reach mempool.space directly (extends the "never blank
+    gauges" rule -- spec Section 10.3 -- from the 5 history metrics to the
+    live-only block-height display).
+
+    Reuses `height_cache` so this never triggers a second network fetch when
+    `supply_daily`'s chain already populated it this run. Carries the last
+    committed value forward under its own original date (not today's) if
+    today's fetch fails and a prior value exists -- never fabricates a fresh
+    reading, mirroring the per-metric carry-forward pattern above.
+    """
+    height = _tip_height(height_cache)
+    if height is not None:
+        new_health["tip_height"] = {"height": height, "date": _today()}
+    elif "tip_height" in prior_health_doc:
+        new_health["tip_height"] = prior_health_doc["tip_height"]
 
 
 def _blank_health_record() -> dict:

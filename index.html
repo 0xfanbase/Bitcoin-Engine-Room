@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BTC Engine Room</title>
+<title>Bitcoin Engine Room</title>
 <meta name="description" content="A free, self-auditing Bitcoin fundamentals dashboard. Every gauge shows its data source, freshness, and validation status." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -35,7 +35,7 @@
          the readability law (CLAUDE.md Section 6 rule 10) still holds. -->
     <div class="masthead-inner">
     <h1 id="site-title">Bitcoin Engine Room</h1>
-    <button class="chip-btn expand-all-toggle" id="expand-all-toggle" type="button" aria-pressed="false">Expand all descriptions</button>
+    <button class="chip-btn expand-all-toggle" id="expand-all-toggle" type="button" aria-pressed="false">Explain everything</button>
     <div class="odometer" id="odometer" aria-label="Current block height" aria-live="polite" aria-atomic="true">
       <span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span>
     </div>
@@ -118,8 +118,9 @@
     <summary>What do the status colors mean?</summary>
     <div class="info-panel">
       <p><strong>LIVE</strong> &mdash; streaming in real time over a live connection to the fastest available source.</p>
-      <p><strong>DELAYED</strong> &mdash; still real, current data, just pulled over a slower polled connection, or refreshed once a day rather than continuously.</p>
-      <p><strong>STALE</strong> &mdash; every live source failed; you're looking at the last successfully saved snapshot, with its age shown, not a live number.</p>
+      <p><strong>DELAYED</strong> &mdash; still real, current data, just pulled over a slower polled or fallback connection instead of the fastest live one.</p>
+      <p><strong>DAILY</strong> &mdash; refreshed once a day by this site's own pipeline rather than continuously &mdash; a healthy, on-schedule reading, not a problem.</p>
+      <p><strong>STALE</strong> &mdash; every source in the chain failed; you're looking at the last successfully saved snapshot, with its age shown, not a live or current number.</p>
     </div>
   </details>
   <div class="gauges-grid">
@@ -128,7 +129,7 @@
       <h3><span>Hash Rate</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-hashrate" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-hashrate">&mdash;</div>
       <div class="gauge-sub" id="gauge-hashrate-sub">&mdash;</div>
-      <div class="status-chip" data-status="STALE" id="chip-hashrate" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-hashrate" title="DAILY: refreshed once a day, on schedule &middot; STALE: pipeline failed, last saved snapshot shown"><span class="status-dot"></span><span>&mdash;</span></div>
       <div class="info-panel" id="info-hashrate" hidden>
         <p>An estimate of the total computing power miners are pointing at securing the Bitcoin network right now. The higher it is, the more expensive it would be for anyone to attack or rewrite the blockchain &mdash; it's Bitcoin's real-world security budget, made visible.</p>
         <p class="info-source">Source: mempool.space (live) &middot; blockchain.info (history)</p>
@@ -139,7 +140,7 @@
       <h3><span>Difficulty &middot; Retarget</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-difficulty" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-difficulty">&mdash;</div>
       <div class="gauge-sub" id="gauge-difficulty-sub">&mdash;</div>
-      <div class="status-chip" data-status="STALE" id="chip-difficulty" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-difficulty" title="DAILY: refreshed once a day, on schedule &middot; STALE: pipeline failed, last saved snapshot shown"><span class="status-dot"></span><span>&mdash;</span></div>
       <div class="info-panel" id="info-difficulty" hidden>
         <p>Difficulty is a self-adjusting number that keeps new blocks arriving roughly every 10 minutes, no matter how much mining power joins or leaves &mdash; it retargets automatically every <span class="numeral">2,016</span> blocks, about two weeks. Rising difficulty means more miners are competing for the reward.</p>
         <p class="info-source">Source: mempool.space (live) &middot; blockchain.info (fallback)</p>
@@ -172,7 +173,7 @@
       <h3><span>Circulating Supply</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-supply" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-supply">&mdash;</div>
       <div class="gauge-sub" id="gauge-supply-sub">&mdash;</div>
-      <div class="status-chip" data-status="STALE" id="chip-supply" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-supply" title="DAILY: refreshed once a day, on schedule &middot; STALE: pipeline failed, last saved snapshot shown"><span class="status-dot"></span><span>&mdash;</span></div>
       <div class="info-panel" id="info-supply" hidden>
         <p>How many bitcoin have been mined so far, out of the hard-capped <span class="numeral">21,000,000</span> that will ever exist. New issuance is cut in half at every halving, so the pace of new coins entering circulation keeps shrinking on a fixed, published schedule.</p>
         <p class="info-source">Source: blockchain.info (live + history) &middot; block-subsidy schedule (last-resort fallback)</p>
@@ -183,7 +184,7 @@
       <h3><span>Fear &amp; Greed</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-fng" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-fng">&mdash;</div>
       <div class="gauge-sub" id="gauge-fng-sub">&mdash;</div>
-      <div class="status-chip" data-status="STALE" id="chip-fng" title="LIVE: real-time &middot; DELAYED: polled, still current &middot; STALE: last saved snapshot"><span class="status-dot"></span><span>&mdash;</span></div>
+      <div class="status-chip" data-status="STALE" id="chip-fng" title="DAILY: refreshed once a day, on schedule &middot; STALE: pipeline failed, last saved snapshot shown"><span class="status-dot"></span><span>&mdash;</span></div>
       <div class="info-panel" id="info-fng" hidden>
         <p>A 0-100 score built from volatility, momentum, social-media buzz, and other market-sentiment signals &mdash; low means the market is fearful, high means it's greedy. It's a sentiment gauge, not a price model.</p>
         <p class="info-source">Source: alternative.me (sole source)</p>
@@ -192,7 +193,7 @@
 
   </div>
 
-  <h2 class="plate">Projections</h2>
+  <h2 class="plate">Price Models</h2>
 
   <div class="chart-card chart-card--hero" id="power-law-card">
     <div class="chart-plate">
@@ -212,8 +213,9 @@
       <button class="chip-btn" type="button" data-power-law-range="4y" aria-pressed="false">4Y</button>
       <button class="chip-btn is-active" type="button" data-power-law-range="all" aria-pressed="true">ALL</button>
     </div>
-    <div id="power-law-chart" class="chart-canvas chart-canvas--hero" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
-    <p class="chart-caption">Model family published by Giovanni Santostasi. Bands are descriptive envelopes from historical fit residuals (±2σ in log10 space), not statistical confidence intervals. <a href="#power-law-card">#power-law</a></p>
+    <div id="power-law-chart" class="chart-canvas chart-canvas--hero" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
+    <p class="chart-plain-summary" id="power-law-summary"></p>
+    <p class="chart-caption">Model family published by Giovanni Santostasi. Bands are descriptive envelopes from historical fit residuals (±2σ in log10 space), not statistical confidence intervals. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#power-law-card" title="Link to this chart">#power-law</a></p>
   </div>
 
   <div class="chart-grid">
@@ -230,8 +232,8 @@
         <p>Bitcoin's four-year halving cycle has historically rhymed with big price cycles &mdash; this is a way to see whether the current cycle is tracking, lagging, or outrunning past ones, not a guarantee it keeps rhyming.</p>
         <p class="info-source">Source: computed from this site's own historical price data, sliced at each halving-epoch boundary</p>
       </div>
-      <div id="cycle-overlay-chart" class="chart-canvas" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
-      <p class="chart-caption">% performance vs. days since halving, each epoch normalized to its halving-day price. <a href="#cycle-overlay-card">#cycle</a></p>
+      <div id="cycle-overlay-chart" class="chart-canvas" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
+      <p class="chart-caption">% performance vs. days since halving, each epoch normalized to its halving-day price. 2012's +10,000% cycle starts toggled off in the legend so the current cycle is readable &mdash; tap its chip to bring it back. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#cycle-overlay-card" title="Link to this chart">#cycle</a></p>
     </div>
 
     <div class="chart-card" id="market-sentiment-card">
@@ -247,8 +249,8 @@
         <p>This is sentiment, not valuation: it says something about the crowd's mood, not about where price is headed next. The gauge card above shows today's single reading; this chart shows how it's moved.</p>
         <p class="info-source">Source: alternative.me (sole source)</p>
       </div>
-      <div id="market-sentiment-chart" class="chart-canvas" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
-      <p class="chart-caption">Fear &amp; Greed Index, 0-100, daily. A sentiment gauge, not a price model -- replaced the former "Deviation Dial," which averaged three percentile ranks and was labeled a toy composite even in its own methodology note. <a href="#market-sentiment-card">#sentiment</a></p>
+      <div id="market-sentiment-chart" class="chart-canvas" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
+      <p class="chart-caption">Fear &amp; Greed Index, 0-100, daily. A sentiment gauge, not a price model -- replaced the former "Deviation Dial," which averaged three percentile ranks and was labeled a toy composite even in its own methodology note. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#market-sentiment-card" title="Link to this chart">#sentiment</a></p>
     </div>
   </div>
 
@@ -265,8 +267,9 @@
       <p>Mayer Multiple has historically flagged overheated (high) or oversold (low) conditions; the 200-week average has historically acted as a long-term floor &mdash; price has rarely stayed below it for long.</p>
       <p class="info-source">Source: computed nightly from this site's own historical price data</p>
     </div>
-    <div id="mayer-200wma-chart" class="chart-canvas" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
-    <p class="chart-caption">Mayer Multiple = price / 200-day SMA. 200WMA = 200-week simple moving average. <a href="#mayer-200wma-card">#mayer</a></p>
+    <div id="mayer-200wma-chart" class="chart-canvas" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
+    <p class="chart-plain-summary" id="mayer-200wma-summary"></p>
+    <p class="chart-caption">Mayer Multiple = price / 200-day SMA. 200WMA = 200-week simple moving average. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#mayer-200wma-card" title="Link to this chart">#mayer</a></p>
   </div>
 
   <h2 class="plate">Engine Health</h2>
