@@ -1,46 +1,46 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-10T10:01:33Z",
+  "generated_at": "2026-07-11T08:20:59Z",
   "metrics": {
     "price_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 461.8,
+      "latency_ms": 738.0,
       "consecutive_failures": 0,
-      "last_success_date": "2026-07-10",
+      "last_success_date": "2026-07-11",
       "stale_since": null,
       "cross_source_variance_warn": false
     },
     "hashrate_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 186.2,
+      "latency_ms": 343.1,
       "consecutive_failures": 0,
-      "last_success_date": "2026-07-10",
+      "last_success_date": "2026-07-11",
       "stale_since": null
     },
     "difficulty_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 187.5,
+      "latency_ms": 342.7,
       "consecutive_failures": 0,
-      "last_success_date": "2026-07-10",
+      "last_success_date": "2026-07-11",
       "stale_since": null
     },
     "supply_daily": {
       "source": "blockchain_info",
       "status": "OK",
-      "latency_ms": 202.0,
+      "latency_ms": 203.8,
       "consecutive_failures": 0,
-      "last_success_date": "2026-07-10",
+      "last_success_date": "2026-07-11",
       "stale_since": null
     },
     "fng_daily": {
       "source": "alternative_me",
       "status": "OK",
-      "latency_ms": 255.6,
+      "latency_ms": 149.3,
       "consecutive_failures": 0,
-      "last_success_date": "2026-07-10",
+      "last_success_date": "2026-07-11",
       "stale_since": null
     }
   }
