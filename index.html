@@ -47,6 +47,10 @@
       <div class="odometer-caption" id="odometer-caption">block height &middot; loading&hellip;</div>
       <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-block-height" aria-label="Info">i</button>
     </div>
+    <div class="info-panel" id="info-block-height" hidden>
+      <p>Block height counts every block Bitcoin has ever mined, in order &mdash; the number shown is block #N since the very first block in 2009. A new block arrives roughly every 10 minutes on average, and it's the clock the halving countdown runs on.</p>
+      <p class="info-source">Source: mempool.space (live) &middot; blockchain.info (fallback)</p>
+    </div>
 
     <!-- Block Rail: the train's position IS elapsed time since the last
          block -- data, not decoration. Crawls imperceptibly between blocks
@@ -77,11 +81,6 @@
     <div class="info-panel" id="info-block-rail" hidden>
       <p>This rail sweeps once for every new block that actually arrives, and otherwise creeps only very slightly between them -- its position (and the ticking "Xm Ys" reading next to it) is roughly how much of the ~10-minute average block interval has elapsed since the last one. A second read on the same clock the block-height odometer runs on, not a separate metric.</p>
       <p class="info-source">Source: computed from mempool.space's live block-arrival timestamp</p>
-    </div>
-
-    <div class="info-panel" id="info-block-height" hidden>
-      <p>Block height counts every block Bitcoin has ever mined, in order &mdash; the number shown is block #N since the very first block in 2009. A new block arrives roughly every 10 minutes on average, and it's the clock the halving countdown runs on.</p>
-      <p class="info-source">Source: mempool.space (live) &middot; blockchain.info (fallback)</p>
     </div>
 
     <div class="masthead-stats">
