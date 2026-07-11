@@ -179,6 +179,13 @@ a {
   color: var(--ink);
 }
 
+/* Single global control for every .info-toggle on the page (info.js) --
+   reuses .chip-btn's terminal-chip visual language rather than inventing a
+   second button style. */
+.expand-all-toggle {
+  margin: 0 0 1.5rem;
+}
+
 /* Block-height odometer: the ONE theatrical element on the page (director rule #2). */
 .odometer {
   display: flex;
@@ -337,6 +344,18 @@ a {
   margin-top: 1.5rem;
 }
 
+/* Fixed width, independent of content or info-panel state. A shrink-to-fit
+   flex item would otherwise get wider the instant its info-panel opened
+   (the panel is wider than the label/value line it sits under), which
+   shifted this whole centered row sideways and could carry the neighboring
+   info-toggle out from under a hovering pointer -- see info.js's header
+   comment for the unending open/close loop that used to cause. A fixed
+   width means opening a panel only ever grows the item's height, never its
+   (or its row's) width. */
+.masthead-stat {
+  width: 205px;
+}
+
 .masthead-stat .value {
   font-family: var(--font-data);
   font-size: 1.4rem;
@@ -351,9 +370,6 @@ a {
 }
 
 .masthead-stat .info-panel {
-  max-width: 220px;
-  margin-left: auto;
-  margin-right: auto;
   text-align: left;
 }
 
