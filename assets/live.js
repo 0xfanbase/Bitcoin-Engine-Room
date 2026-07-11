@@ -26,8 +26,13 @@
   const DIFFICULTY_POLL_MS = 10 * 60_000;
   const WS_MAX_BACKOFF_MS = 60_000;
   const WS_MAX_RECONNECT_ATTEMPTS_BEFORE_DEGRADE = 3;
-  const NEXT_HALVING_HEIGHT = 1_050_000;
-  const AVG_BLOCK_MINUTES = 10;
+  // Mempool has no REST fallback (unlike block height/price) -- if the
+  // WebSocket never delivers a mempoolInfo message within this window
+  // (comfortably past a normal connect + the first few backoff'd reconnect
+  // attempts, ~2s+4s+8s before this module degrades to REST-only for
+  // height), stop leaving the chip at its placeholder "—" forever and mark
+  // it genuinely STALE instead.
+  const MEMPOOL_FALLBACK_TIMEOUT_MS = 20_000;
 
   let ws = null;
   let wsReconnectAttempts = 0;
@@ -35,41 +40,26 @@
   let lastBlockHeight = null;
   let lastBlockTimestamp = null;
   let heightPollTimer = null;
+  let mempoolReceived = false;
 
   // ---------- odometer / block height ----------
 
   function renderOdometer(height, { flash } = {}) {
-    const digits = String(height).padStart(7, "0").split("");
+    // Digit-painting and halving-countdown math live in app.js (BER.render*)
+    // so app.js's committed-data fallback paint and this module's real-time
+    // updates share one implementation instead of two copies that could
+    // drift apart -- flashing is the only part unique to a genuine live
+    // update, so it stays here.
+    BER.renderOdometerDigits(height);
     const el = document.getElementById("odometer");
-    if (!el) return;
-    const nodes = el.querySelectorAll(".odometer-digit");
-    digits.forEach((d, i) => {
-      if (nodes[i]) nodes[i].textContent = d;
-    });
-    if (flash && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (flash && el && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const nodes = el.querySelectorAll(".odometer-digit");
       nodes.forEach((n) => {
         n.classList.add("flash");
         setTimeout(() => n.classList.remove("flash"), 600);
       });
     }
-    renderHalvingCountdown(height);
-  }
-
-  function renderHalvingCountdown(height) {
-    const blocksRemaining = Math.max(NEXT_HALVING_HEIGHT - height, 0);
-    const el = document.getElementById("stat-halving-blocks");
-    if (el) el.textContent = blocksRemaining.toLocaleString("en-US");
-
-    const etaEl = document.getElementById("stat-halving-eta");
-    if (etaEl) {
-      if (blocksRemaining === 0) {
-        etaEl.textContent = "any block now";
-      } else {
-        const minutesRemaining = blocksRemaining * AVG_BLOCK_MINUTES;
-        const eta = new Date(Date.now() + minutesRemaining * 60_000);
-        etaEl.textContent = eta.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) + " (est.)";
-      }
-    }
+    BER.renderHalvingCountdown(height);
   }
 
   function onNewBlock(height, timestampSec) {
@@ -318,9 +308,10 @@
 
   function renderMempool(count) {
     if (count == null) return;
+    mempoolReceived = true;
     const el = document.getElementById("gauge-mempool");
     if (el) el.textContent = Number(count).toLocaleString("en-US");
-    BER.setChip("chip-mempool", "LIVE", "live");
+    BER.setChip("chip-mempool", "LIVE", "LIVE · mempool.space");
   }
 
   // ---------- REST polling: price (with client failover), fees, difficulty ----------
@@ -363,7 +354,11 @@
       const result = await fetchPriceWithFailover();
       if (result) {
         document.getElementById("stat-price").textContent = BER.formatUSD(result.value);
-        BER.setChip("chip-price", result.source === "mempool_space" ? "LIVE" : "DELAYED", result.source);
+        const status = result.source === "mempool_space" ? "LIVE" : "DELAYED";
+        // Status word first, source second -- matches the vocabulary used
+        // everywhere else a chip appears (DAILY · as of <date>, STALE ·
+        // unavailable, etc.) instead of showing the raw source id alone.
+        BER.setChip("chip-price", status, status + " · " + result.source);
       }
       // On total failure, leave the committed-data STALE display from app.js untouched.
     } finally {
@@ -381,9 +376,9 @@
       const fees = await res.json();
       const el = document.getElementById("gauge-fees");
       if (el) el.textContent = `${fees.fastestFee} / ${fees.halfHourFee} / ${fees.economyFee}`;
-      BER.setChip("chip-fees", "LIVE", "live");
+      BER.setChip("chip-fees", "LIVE", "LIVE · mempool.space");
     } catch (e) {
-      BER.setChip("chip-fees", "STALE", "unavailable");
+      BER.setChip("chip-fees", "STALE", "STALE · unavailable");
     } finally {
       feesInFlight = false;
     }
@@ -438,5 +433,8 @@
     setInterval(pollPrice, PRICE_POLL_MS);
     setInterval(pollFees, PRICE_POLL_MS);
     setInterval(pollDifficultyAdjustment, DIFFICULTY_POLL_MS);
+    setTimeout(() => {
+      if (!mempoolReceived) BER.setChip("chip-mempool", "STALE", "STALE · unavailable");
+    }, MEMPOOL_FALLBACK_TIMEOUT_MS);
   });
 })();

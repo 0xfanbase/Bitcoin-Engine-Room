@@ -1,5 +1,7 @@
 import json
+from datetime import datetime, timezone
 
+import jsonschema
 import responses
 
 from pipeline import fetch_snapshot
@@ -152,3 +154,60 @@ def test_supply_falls_through_to_computed_subsidy_schedule(tmp_path, monkeypatch
     assert record["source"] == "computed_subsidy_schedule"
     doc = _load_history(tmp_path, "supply_daily")
     assert doc["series"][-1]["source"] == "computed_subsidy_schedule"
+
+
+@responses.activate
+def test_tip_height_recorded_in_health_even_without_supply_daily(tmp_path, monkeypatch, load_schema):
+    """tip_height should be persisted in health.json regardless of which
+    metrics are being snapshotted this run -- not just as a side effect of
+    supply_daily's own chain/sanity-check needing it -- so the frontend can
+    always paint a real committed block height on boot (spec 'never blank
+    gauges', extended to the masthead odometer).
+    """
+    _seed_history(tmp_path, "price_daily", "USD", [{"date": "2026-07-08", "value": 61000.0, "source": "mempool_space"}])
+    _patch_paths(monkeypatch, tmp_path)
+
+    responses.add(responses.GET, "https://mempool.space/api/v1/prices", json={"USD": 62000}, status=200)
+    responses.add(responses.GET, "https://mempool.space/api/v1/prices", json={"USD": 62000}, status=200)
+    responses.add(
+        responses.GET,
+        "https://api.coingecko.com/api/v3/simple/price",
+        json={"bitcoin": {"usd": 62050}},
+        status=200,
+    )
+    responses.add(responses.GET, "https://mempool.space/api/blocks/tip/height", body="912345", status=200)
+
+    health = fetch_snapshot.run_snapshot(["price_daily"])
+
+    assert health["tip_height"] == {"height": 912345, "date": fetch_snapshot._today()}
+    jsonschema.validate(health, load_schema("health"))
+
+
+@responses.activate
+def test_tip_height_carries_forward_last_known_value_on_fetch_failure(tmp_path, monkeypatch, load_schema):
+    _seed_history(tmp_path, "fng_daily", "index_0_100", [{"date": "2026-07-08", "value": 50, "classification": "Neutral", "source": "alternative_me"}])
+    _patch_paths(monkeypatch, tmp_path)
+
+    (tmp_path / "health.json").write_text(json.dumps({
+        "schema_version": 1,
+        "generated_at": "2026-07-08T06:30:00Z",
+        "tip_height": {"height": 900000, "date": "2026-07-08"},
+        "metrics": {},
+    }))
+
+    today_unix = int(datetime.now(timezone.utc).timestamp())
+    responses.add(
+        responses.GET,
+        "https://api.alternative.me/fng/",
+        json={"data": [{"timestamp": str(today_unix), "value": "55", "value_classification": "Greed"}]},
+        status=200,
+    )
+    for _ in range(4):
+        responses.add(responses.GET, "https://mempool.space/api/blocks/tip/height", status=500)
+
+    health = fetch_snapshot.run_snapshot(["fng_daily"])
+
+    # Today's fetch failed (4x 500s exhausts retries) -- last known height
+    # carried forward under its own original date, not fabricated as today.
+    assert health["tip_height"] == {"height": 900000, "date": "2026-07-08"}
+    jsonschema.validate(health, load_schema("health"))

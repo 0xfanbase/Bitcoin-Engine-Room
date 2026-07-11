@@ -13,6 +13,41 @@
   let modelsDoc = null;
   let powerLawRange = "all";
 
+  // Wheel-to-zoom trap fix: ECharts' "inside" dataZoom prevents the page's
+  // native wheel-scroll the instant a pointer lands on the chart, REGARDLESS
+  // of zoomOnMouseWheel's modifier-key setting -- a long-standing ECharts
+  // bug (apache/echarts#10079), not something zoomOnMouseWheel: "shift"
+  // alone fixes despite that being its documented purpose. Confirmed in
+  // isolation: with `zoomOnMouseWheel: "shift"` alone, a plain (no-shift)
+  // wheel over the chart still doesn't scroll the page at all. The
+  // documented workaround (same GitHub issue) is what's used here instead:
+  // start every chart with zoomLock: true (wheel/drag do nothing chart-side,
+  // so the page scrolls normally), and only flip zoomLock: false for the
+  // instant Shift is actually held, locking again on keyup -- verified this
+  // combination lets a plain wheel scroll the page, a Shift+wheel zoom the
+  // chart without moving the page, and scrolling resume normally the moment
+  // Shift is released. Touch devices (no Shift key to hold) start unlocked
+  // instead, so pinch-zoom keeps working there; moveOnMouseMove: false
+  // separately stops a single-finger drag from being read as chart-pan
+  // (which is what would otherwise trap a touch scroll/swipe).
+  const CHARTS_COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
+
+  function setChartsZoomLock(locked) {
+    Object.values(charts).forEach((c) => {
+      if (!c) return;
+      const dz = c.getOption().dataZoom;
+      if (!dz || !dz.length) return;
+      c.setOption({ dataZoom: dz.map(() => ({ zoomLock: locked })) });
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Shift") setChartsZoomLock(false);
+  });
+  document.addEventListener("keyup", (e) => {
+    if (e.key === "Shift") setChartsZoomLock(true);
+  });
+
   function fetchJSON(path) {
     return fetch(path, { cache: "no-store" }).then((r) => {
       if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
@@ -37,6 +72,23 @@
       border: get("--panel-border"),
       fontData: get("--font-data").split(",")[0].replace(/"/g, ""),
     };
+  }
+
+  // One shared tooltip look across all 4 charts -- previously the power-law
+  // chart had its own custom (and too-low-contrast: --ink-dim text on an
+  // --ink background is ~2.8:1) styling while the other three used
+  // ECharts' default white tooltip, off-identity. `extra` lets a chart add
+  // its own formatter/valueFormatter on top of the shared base.
+  function baseTooltip(colors, extra) {
+    return Object.assign(
+      {
+        backgroundColor: "rgba(4, 16, 8, 0.96)",
+        borderColor: colors.border,
+        borderWidth: 1,
+        textStyle: { color: colors.ink, fontFamily: colors.fontData, fontSize: 12 },
+      },
+      extra
+    );
   }
 
   function daysSinceGenesis(dateStr, genesis) {
@@ -78,11 +130,12 @@
     return ticks;
   }
 
-  // Zoom/pan (director-minimal: `inside` dataZoom adds no visible chrome --
-  // mouse wheel + drag on desktop, pinch + drag on touch -- and a
-  // double-click resets the view. No slider/toolbox, so the screensaver
-  // test still applies cleanly; the .chart-canvas title attribute (set in
-  // index.html) is the sole hint that the interaction exists.
+  // Zoom (director-minimal: `inside` dataZoom adds no visible chrome) --
+  // Shift+wheel or pinch to zoom, double-click/tap resets; see the zoomLock
+  // comment above for why plain wheel/drag no longer get hijacked into
+  // chart-panning. No slider/toolbox, so the screensaver test still applies
+  // cleanly; the interaction hint lives in each chart's caption (visible on
+  // touch, not just a hover-only title attribute).
   function getOrInitChart(id) {
     if (!charts[id]) {
       const el = document.getElementById(id);
@@ -114,7 +167,24 @@
       const cutoffStr = cutoff.toISOString().slice(0, 10);
       filtered = priceHistory.filter((r) => r.date >= cutoffStr);
     }
-    const actualPoints = filtered.map((r) => [daysSinceGenesis(r.date, genesis), r.value]);
+    // Series values are log10(price), not price, plotted on a linear y-axis
+    // (formatted back to dollars for display) rather than a genuine log
+    // y-axis. This is a workaround for a real ECharts 5.5.1 rendering bug,
+    // not a style choice: stacking two areaStyle line series (the standard
+    // "invisible floor + visible band" technique for filling between two
+    // curves) renders a diagonal compositing artifact instead of the
+    // intended band, on ANY axis type, not just log -- confirmed in
+    // isolation with flat, non-log test data (stack: 'x' on two constant
+    // series produces a diagonal wipe between them instead of a clean
+    // boundary; removing `stack` renders correctly; this is the actual bug,
+    // not "log axes can't be stacked"). The corridor is instead drawn by a
+    // single `type: 'custom'` series whose renderItem builds the ceiling
+    // curve forward and the floor curve backward into one closed polygon,
+    // sidestepping stacking entirely. The log10 transform is kept anyway
+    // (rather than reverting to type:"log") because it makes the corridor's
+    // ±2σ width a constant additive offset instead of a multiplicative one,
+    // which is what the model actually defines it as.
+    const actualPoints = filtered.map((r) => [daysSinceGenesis(r.date, genesis), Math.log10(r.value)]);
     const todayDay = daysSinceGenesis(pl.current.date, genesis);
 
     const { a, b, sigma } = pl.params;
@@ -123,15 +193,13 @@
     const steps = 80;
     const trendPoints = [];
     const floorPoints = [];
-    const bandPoints = [];
+    const ceilPoints = [];
     for (let i = 0; i <= steps; i++) {
       const d = minDay * Math.pow(maxDay / minDay, i / steps);
       const trendLog10 = a + b * Math.log10(d);
-      const floor = Math.pow(10, trendLog10 - 2 * sigma);
-      const ceiling = Math.pow(10, trendLog10 + 2 * sigma);
-      trendPoints.push([d, Math.pow(10, trendLog10)]);
-      floorPoints.push([d, floor]);
-      bandPoints.push([d, ceiling - floor]);
+      trendPoints.push([d, trendLog10]);
+      floorPoints.push([d, trendLog10 - 2 * sigma]);
+      ceilPoints.push([d, trendLog10 + 2 * sigma]);
     }
 
     const yearTicks = buildYearTicks(minDay, maxDay, genesis);
@@ -142,7 +210,7 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 60, right: 20, top: 20, bottom: 40 },
+        grid: { left: 60, right: 50, top: 20, bottom: 40 },
         xAxis: {
           type: "log",
           min: minDay,
@@ -158,17 +226,53 @@
           splitLine: { show: false },
         },
         yAxis: {
-          type: "log",
-          min: (val) => Math.pow(10, Math.floor(Math.log10(val.min))),
-          max: (val) => Math.pow(10, Math.ceil(Math.log10(val.max))),
+          type: "value",
+          min: (val) => Math.floor(val.min),
+          max: (val) => Math.ceil(val.max),
+          interval: 1,
           axisLine: { lineStyle: { color: colors.border } },
-          axisLabel: { color: colors.inkDim, formatter: (v) => "$" + Number(v).toLocaleString() },
+          axisLabel: { color: colors.inkDim, formatter: (v) => "$" + Math.round(Math.pow(10, v)).toLocaleString() },
           splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
         },
         series: [
-          { name: "Idle (floor)", type: "line", data: floorPoints, showSymbol: false, lineStyle: { opacity: 0 }, stack: "band", silent: true },
-          { name: "Redline band", type: "line", data: bandPoints, showSymbol: false, lineStyle: { opacity: 0 }, areaStyle: { color: colors.accent, opacity: 0.12 }, stack: "band", silent: true },
-          { name: "Cruise (trend)", type: "line", data: trendPoints, showSymbol: false, lineStyle: { color: colors.accent, width: 1.5, type: "dashed" } },
+          {
+            name: "Idle (floor)",
+            type: "line",
+            data: floorPoints,
+            showSymbol: false,
+            lineStyle: { opacity: 0 },
+            silent: true,
+            endLabel: { show: true, formatter: "Idle", color: colors.inkDim, fontFamily: colors.fontData, fontSize: 10 },
+          },
+          {
+            name: "Redline (ceiling)",
+            type: "line",
+            data: ceilPoints,
+            showSymbol: false,
+            lineStyle: { opacity: 0 },
+            silent: true,
+            endLabel: { show: true, formatter: "Redline", color: colors.inkDim, fontFamily: colors.fontData, fontSize: 10 },
+          },
+          {
+            name: "Corridor band",
+            type: "custom",
+            silent: true,
+            data: [floorPoints[0]],
+            renderItem: function (params, api) {
+              const points = [];
+              for (let i = 0; i < ceilPoints.length; i++) points.push(api.coord(ceilPoints[i]));
+              for (let i = floorPoints.length - 1; i >= 0; i--) points.push(api.coord(floorPoints[i]));
+              return { type: "polygon", shape: { points }, style: { fill: colors.accent, opacity: 0.12 } };
+            },
+          },
+          {
+            name: "Cruise (trend)",
+            type: "line",
+            data: trendPoints,
+            showSymbol: false,
+            lineStyle: { color: colors.accent, width: 1.5, type: "dashed" },
+            endLabel: { show: true, formatter: "Cruise", color: colors.accent, fontFamily: colors.fontData, fontSize: 10 },
+          },
           {
             name: "Price",
             type: "line",
@@ -194,14 +298,12 @@
               symbolSize: 8,
               itemStyle: { color: colors.ink, borderColor: colors.accent, borderWidth: 1.5 },
               label: { show: false },
-              data: [{ coord: [todayDay, pl.current.price] }],
+              data: [{ coord: [todayDay, Math.log10(pl.current.price)] }],
             },
           },
         ],
-        tooltip: {
+        tooltip: baseTooltip(colors, {
           trigger: "axis",
-          backgroundColor: colors.ink,
-          textStyle: { color: colors.inkDim },
           formatter: (params) => {
             if (!params || !params.length) return "";
             const day = params[0].axisValue;
@@ -209,15 +311,15 @@
               .filter((p) => p.seriesName === "Cruise (trend)" || p.seriesName === "Price")
               .map(
                 (p) =>
-                  `${p.marker} ${p.seriesName}: $${Number(p.data[1]).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                  `${p.marker} ${p.seriesName}: $${Math.round(Math.pow(10, p.data[1])).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
               )
               .join("<br/>");
             return `${formatDateShort(dateFromDays(day, genesis))}<br/>${rows}`;
           },
-        },
+        }),
         dataZoom: [
-          { type: "inside", xAxisIndex: 0, filterMode: "none" },
-          { type: "inside", yAxisIndex: 0, filterMode: "none" },
+          { type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false },
+          { type: "inside", yAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false },
         ],
       },
       true
@@ -227,6 +329,27 @@
     if (statsEl) {
       statsEl.textContent = `b=${pl.params.b} · R²=${pl.params.r_squared} · σ=${pl.params.sigma} · last refit ${modelsDoc.generated_at.slice(0, 10)} · ${pl.current.deviation_pct}% vs trend`;
     }
+
+    const summaryEl = document.getElementById("power-law-summary");
+    if (summaryEl) {
+      const dev = pl.current.deviation_pct;
+      const direction = dev >= 0 ? "above" : "below";
+      summaryEl.textContent = `Today: price is about ${Math.abs(dev).toFixed(0)}% ${direction} the long-run trend line -- ${describeCorridorPosition(dev, sigma)}.`;
+    }
+  }
+
+  // Plain-language read of where today's price sits in the corridor, for
+  // readers who aren't going to parse "b=5.62 -51.54% vs trend" -- derived
+  // from the same deviation_pct/sigma the calibration plate already shows,
+  // not a new number.
+  function describeCorridorPosition(deviationPct, sigma) {
+    const logRatio = Math.log10(1 + deviationPct / 100);
+    const fraction = Math.min(Math.max((logRatio + 2 * sigma) / (4 * sigma), 0), 1);
+    if (fraction <= 0.15) return "at the corridor floor (Idle)";
+    if (fraction <= 0.4) return "in the lower half of the corridor";
+    if (fraction <= 0.6) return "near the trend line (Cruise)";
+    if (fraction <= 0.85) return "in the upper half of the corridor";
+    return "at the corridor ceiling (Redline)";
   }
 
   function initPowerLawControls() {
@@ -312,7 +435,12 @@
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
         grid: { left: 55, right: 45, top: 30, bottom: 35 },
-        legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 } },
+        // 2012's +10,000% cycle otherwise owns the whole y-axis, squashing
+        // every later cycle (including the current one) into a flat line
+        // near 0%. Deselected by default, not hidden -- its legend chip is
+        // still there, one tap away, so nothing is actually removed from
+        // the chart, just given sane default axis scale.
+        legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 }, selected: { 2012: false } },
         labelLayout: { moveOverlap: "shiftY" },
         xAxis: {
           type: "value",
@@ -330,10 +458,10 @@
           splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
         },
         series,
-        tooltip: { trigger: "axis", valueFormatter: (v) => v.toFixed(1) + "%" },
+        tooltip: baseTooltip(colors, { trigger: "axis", valueFormatter: (v) => v.toFixed(1) + "%" }),
         dataZoom: [
-          { type: "inside", xAxisIndex: 0, filterMode: "none" },
-          { type: "inside", yAxisIndex: 0, filterMode: "none" },
+          { type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false },
+          { type: "inside", yAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false },
         ],
       },
       true
@@ -342,7 +470,8 @@
     const statsEl = document.getElementById("cycle-overlay-stats");
     const current = modelsDoc.cycle_overlay.current_epoch;
     if (statsEl && current) {
-      statsEl.textContent = `${current.pct_complete_of_avg_epoch}% into epoch · ${current.pct_performance}%`;
+      const sign = current.pct_performance >= 0 ? "+" : "";
+      statsEl.textContent = `${current.pct_complete_of_avg_epoch}% of the way through this cycle · ${sign}${current.pct_performance}% since halving`;
     }
   }
 
@@ -367,11 +496,40 @@
           { type: "value", name: "200WMA dist %", position: "right", axisLabel: { color: colors.inkDim, formatter: "{value}%" }, splitLine: { show: false } },
         ],
         series: [
-          { name: "Mayer Multiple", type: "line", showSymbol: false, data: mayerSeries, lineStyle: { color: colors.accent, width: 1.5 }, yAxisIndex: 0 },
-          { name: "200WMA distance", type: "line", showSymbol: false, data: wmaDistanceSeries, lineStyle: { color: colors.ink, width: 1 }, yAxisIndex: 1 },
+          {
+            name: "Mayer Multiple",
+            type: "line",
+            showSymbol: false,
+            data: mayerSeries,
+            lineStyle: { color: colors.accent, width: 1.5 },
+            itemStyle: { color: colors.accent },
+            yAxisIndex: 0,
+            markLine: {
+              silent: true,
+              symbol: "none",
+              lineStyle: { type: "dashed", color: colors.inkDim, opacity: 0.6, width: 1 },
+              label: {
+                formatter: "price = 200-day avg",
+                color: colors.inkDim,
+                fontFamily: colors.fontData,
+                fontSize: 9,
+                position: "insideEndTop",
+              },
+              data: [{ yAxis: 1 }],
+            },
+          },
+          {
+            name: "200WMA distance",
+            type: "line",
+            showSymbol: false,
+            data: wmaDistanceSeries,
+            lineStyle: { color: colors.ink, width: 1 },
+            itemStyle: { color: colors.ink },
+            yAxisIndex: 1,
+          },
         ],
-        tooltip: { trigger: "axis" },
-        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none" }],
+        tooltip: baseTooltip(colors, { trigger: "axis" }),
+        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false }],
       },
       true
     );
@@ -381,6 +539,13 @@
     const wma = modelsDoc.wma_200.current;
     if (statsEl && mayer && wma) {
       statsEl.textContent = `Mayer ${mayer.multiple} (${mayer.percentile}th pctile) · 200WMA dist ${wma.distance_pct}%`;
+    }
+
+    const summaryEl = document.getElementById("mayer-200wma-summary");
+    if (summaryEl && mayer) {
+      const pctFromAvg = (mayer.multiple - 1) * 100;
+      const direction = pctFromAvg >= 0 ? "above" : "below";
+      summaryEl.textContent = `Mayer Multiple is ${mayer.multiple} -- price is about ${Math.abs(pctFromAvg).toFixed(0)}% ${direction} its own 200-day average.`;
     }
   }
 
@@ -394,11 +559,11 @@
   // opacity), never accent -- rule 4 stays accent-as-data-only even for a
   // "zone," since these are structural reference chrome, not a reading.
   const SENTIMENT_ZONES = [
-    { from: 0, to: 25, opacity: 0.18 }, // Extreme Fear
-    { from: 25, to: 45, opacity: 0.1 }, // Fear
-    { from: 45, to: 55, opacity: 0.04 }, // Neutral
-    { from: 55, to: 75, opacity: 0.1 }, // Greed
-    { from: 75, to: 100, opacity: 0.18 }, // Extreme Greed
+    { from: 0, to: 25, opacity: 0.18, label: "Extreme Fear" },
+    { from: 25, to: 45, opacity: 0.1, label: "Fear" },
+    { from: 45, to: 55, opacity: 0.04, label: "Neutral" },
+    { from: 55, to: 75, opacity: 0.1, label: "Greed" },
+    { from: 75, to: 100, opacity: 0.18, label: "Extreme Greed" },
   ];
 
   function renderMarketSentiment(colors) {
@@ -431,15 +596,23 @@
             lineStyle: { color: colors.accent, width: 1.5 },
             markArea: {
               silent: true,
+              label: {
+                show: true,
+                formatter: "{b}",
+                position: "insideTop",
+                color: colors.inkDim,
+                fontFamily: colors.fontData,
+                fontSize: 9,
+              },
               data: SENTIMENT_ZONES.map((z) => [
-                { yAxis: z.from, itemStyle: { color: colors.border, opacity: z.opacity } },
+                { yAxis: z.from, name: z.label, itemStyle: { color: colors.border, opacity: z.opacity } },
                 { yAxis: z.to },
               ]),
             },
           },
         ],
-        tooltip: { trigger: "axis" },
-        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none" }],
+        tooltip: baseTooltip(colors, { trigger: "axis" }),
+        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false }],
       },
       true
     );

@@ -424,6 +424,15 @@ a {
   overflow-wrap: anywhere;
 }
 
+/* Hash rate/supply's sub-line is left empty now that their DAILY chip
+   carries the date instead (no more duplicate "committed <date>" directly
+   above it) -- collapse the reserved margin so those two cards don't sit
+   with a dangling gap next to fees/mempool/fear&greed, which still use
+   this line for real content. */
+.gauge-sub:empty {
+  margin-top: 0;
+}
+
 /* ---------- Status chips (LIVE / DELAYED / STALE) ---------- */
 .status-chip {
   display: inline-flex;
@@ -459,6 +468,14 @@ a {
   background: var(--fail);
   box-shadow: calc(var(--glow-on) * 0px) 0 calc(var(--glow-on) * 6px) var(--fail);
 }
+/* DAILY: a once-a-day metric that refreshed successfully on schedule --
+   deliberately neutral (--ink-dim), NOT amber. Amber/--warn stays reserved
+   for genuinely degraded live metrics (DELAYED/STALE/WARN); a healthy daily
+   pipeline run is not a degraded state and shouldn't share their color. */
+.status-chip[data-status="DAILY"] .status-dot {
+  background: var(--ink-dim);
+  box-shadow: calc(var(--glow-on) * 0px) 0 calc(var(--glow-on) * 6px) var(--ink-dim);
+}
 
 .status-chip[data-status="LIVE"],
 .status-chip[data-status="PASS"],
@@ -474,8 +491,11 @@ a {
 .status-chip[data-status="FAIL"] {
   color: var(--fail);
 }
+.status-chip[data-status="DAILY"] {
+  color: var(--ink-dim);
+}
 
-/* ---------- Projections / charts ---------- */
+/* ---------- Price Models / charts ---------- */
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -555,6 +575,17 @@ a {
 
 .chart-canvas--hero {
   height: 380px;
+}
+
+/* Plain-language takeaway (charts.js), sitting between the chart and its
+   dimmer, more technical .chart-caption -- plain-language-first, precise-
+   detail-second, so a newcomer gets the point before the methodology
+   footnote. --ink (not --ink-dim) since this is a primary reading, not
+   metadata. */
+.chart-plain-summary {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink);
 }
 
 .chart-caption {
