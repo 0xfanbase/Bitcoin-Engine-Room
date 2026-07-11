@@ -114,7 +114,24 @@
       const cutoffStr = cutoff.toISOString().slice(0, 10);
       filtered = priceHistory.filter((r) => r.date >= cutoffStr);
     }
-    const actualPoints = filtered.map((r) => [daysSinceGenesis(r.date, genesis), r.value]);
+    // Series values are log10(price), not price, plotted on a linear y-axis
+    // (formatted back to dollars for display) rather than a genuine log
+    // y-axis. This is a workaround for a real ECharts 5.5.1 rendering bug,
+    // not a style choice: stacking two areaStyle line series (the standard
+    // "invisible floor + visible band" technique for filling between two
+    // curves) renders a diagonal compositing artifact instead of the
+    // intended band, on ANY axis type, not just log -- confirmed in
+    // isolation with flat, non-log test data (stack: 'x' on two constant
+    // series produces a diagonal wipe between them instead of a clean
+    // boundary; removing `stack` renders correctly; this is the actual bug,
+    // not "log axes can't be stacked"). The corridor is instead drawn by a
+    // single `type: 'custom'` series whose renderItem builds the ceiling
+    // curve forward and the floor curve backward into one closed polygon,
+    // sidestepping stacking entirely. The log10 transform is kept anyway
+    // (rather than reverting to type:"log") because it makes the corridor's
+    // ±2σ width a constant additive offset instead of a multiplicative one,
+    // which is what the model actually defines it as.
+    const actualPoints = filtered.map((r) => [daysSinceGenesis(r.date, genesis), Math.log10(r.value)]);
     const todayDay = daysSinceGenesis(pl.current.date, genesis);
 
     const { a, b, sigma } = pl.params;
@@ -123,15 +140,13 @@
     const steps = 80;
     const trendPoints = [];
     const floorPoints = [];
-    const bandPoints = [];
+    const ceilPoints = [];
     for (let i = 0; i <= steps; i++) {
       const d = minDay * Math.pow(maxDay / minDay, i / steps);
       const trendLog10 = a + b * Math.log10(d);
-      const floor = Math.pow(10, trendLog10 - 2 * sigma);
-      const ceiling = Math.pow(10, trendLog10 + 2 * sigma);
-      trendPoints.push([d, Math.pow(10, trendLog10)]);
-      floorPoints.push([d, floor]);
-      bandPoints.push([d, ceiling - floor]);
+      trendPoints.push([d, trendLog10]);
+      floorPoints.push([d, trendLog10 - 2 * sigma]);
+      ceilPoints.push([d, trendLog10 + 2 * sigma]);
     }
 
     const yearTicks = buildYearTicks(minDay, maxDay, genesis);
@@ -142,7 +157,7 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 60, right: 20, top: 20, bottom: 40 },
+        grid: { left: 60, right: 50, top: 20, bottom: 40 },
         xAxis: {
           type: "log",
           min: minDay,
@@ -158,17 +173,53 @@
           splitLine: { show: false },
         },
         yAxis: {
-          type: "log",
-          min: (val) => Math.pow(10, Math.floor(Math.log10(val.min))),
-          max: (val) => Math.pow(10, Math.ceil(Math.log10(val.max))),
+          type: "value",
+          min: (val) => Math.floor(val.min),
+          max: (val) => Math.ceil(val.max),
+          interval: 1,
           axisLine: { lineStyle: { color: colors.border } },
-          axisLabel: { color: colors.inkDim, formatter: (v) => "$" + Number(v).toLocaleString() },
+          axisLabel: { color: colors.inkDim, formatter: (v) => "$" + Math.round(Math.pow(10, v)).toLocaleString() },
           splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
         },
         series: [
-          { name: "Idle (floor)", type: "line", data: floorPoints, showSymbol: false, lineStyle: { opacity: 0 }, stack: "band", silent: true },
-          { name: "Redline band", type: "line", data: bandPoints, showSymbol: false, lineStyle: { opacity: 0 }, areaStyle: { color: colors.accent, opacity: 0.12 }, stack: "band", silent: true },
-          { name: "Cruise (trend)", type: "line", data: trendPoints, showSymbol: false, lineStyle: { color: colors.accent, width: 1.5, type: "dashed" } },
+          {
+            name: "Idle (floor)",
+            type: "line",
+            data: floorPoints,
+            showSymbol: false,
+            lineStyle: { opacity: 0 },
+            silent: true,
+            endLabel: { show: true, formatter: "Idle", color: colors.inkDim, fontFamily: colors.fontData, fontSize: 10 },
+          },
+          {
+            name: "Redline (ceiling)",
+            type: "line",
+            data: ceilPoints,
+            showSymbol: false,
+            lineStyle: { opacity: 0 },
+            silent: true,
+            endLabel: { show: true, formatter: "Redline", color: colors.inkDim, fontFamily: colors.fontData, fontSize: 10 },
+          },
+          {
+            name: "Corridor band",
+            type: "custom",
+            silent: true,
+            data: [floorPoints[0]],
+            renderItem: function (params, api) {
+              const points = [];
+              for (let i = 0; i < ceilPoints.length; i++) points.push(api.coord(ceilPoints[i]));
+              for (let i = floorPoints.length - 1; i >= 0; i--) points.push(api.coord(floorPoints[i]));
+              return { type: "polygon", shape: { points }, style: { fill: colors.accent, opacity: 0.12 } };
+            },
+          },
+          {
+            name: "Cruise (trend)",
+            type: "line",
+            data: trendPoints,
+            showSymbol: false,
+            lineStyle: { color: colors.accent, width: 1.5, type: "dashed" },
+            endLabel: { show: true, formatter: "Cruise", color: colors.accent, fontFamily: colors.fontData, fontSize: 10 },
+          },
           {
             name: "Price",
             type: "line",
@@ -194,7 +245,7 @@
               symbolSize: 8,
               itemStyle: { color: colors.ink, borderColor: colors.accent, borderWidth: 1.5 },
               label: { show: false },
-              data: [{ coord: [todayDay, pl.current.price] }],
+              data: [{ coord: [todayDay, Math.log10(pl.current.price)] }],
             },
           },
         ],
@@ -209,7 +260,7 @@
               .filter((p) => p.seriesName === "Cruise (trend)" || p.seriesName === "Price")
               .map(
                 (p) =>
-                  `${p.marker} ${p.seriesName}: $${Number(p.data[1]).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                  `${p.marker} ${p.seriesName}: $${Math.round(Math.pow(10, p.data[1])).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
               )
               .join("<br/>");
             return `${formatDateShort(dateFromDays(day, genesis))}<br/>${rows}`;
