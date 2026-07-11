@@ -4,14 +4,22 @@
  * on BER, fetched data, or any other module's boot order, so this attaches
  * immediately rather than waiting for ber:booted like every other asset
  * file does. The two section-level explainers (status-chip vocabulary,
- * audit-checks glossary) are native <details>/<summary> and need no JS at
- * all -- this file only drives the per-metric button+panel pairs.
+ * audit-checks glossary) are native <details>/<summary> and need no JS to
+ * open individually -- but they carry the same circular "i" bullet as
+ * every .info-toggle (::before in style.css), so #expand-all-toggle treats
+ * them as part of "all the i's" too, not just the 15 button-driven panels.
  *
- * Reveal is hover- or focus-driven (mouse users see the description without
- * clicking); a click pins the panel open so touch users -- who never fire a
- * hover event -- get the same persistent-open behavior mouse users get by
- * clicking. A pinned panel ignores mouseleave/blur and only a second click
- * (or clicking a different toggle) closes it.
+ * Reveal is click-only. It used to also open on hover/focus, but on the
+ * masthead stats -- whose box width tracks their content -- opening the
+ * panel widened the box and shifted the toggle out from under the pointer,
+ * firing mouseleave -> close -> mouseenter -> open in an unending loop.
+ * Click-only removes the feedback loop entirely and gives touch users --
+ * who never fire a hover event -- the same behavior mouse users get,
+ * instead of a second, hover-only code path.
+ *
+ * #expand-all-toggle is a single top-of-page control that opens (or closes)
+ * every info-panel and info-disclosure on the page in one action,
+ * independent of any individual toggle's own state.
  */
 (function () {
   "use strict";
@@ -26,38 +34,51 @@
     panel.hidden = true;
   }
 
+  function panelFor(toggle) {
+    return document.getElementById(toggle.getAttribute("aria-controls"));
+  }
+
   document.addEventListener("click", function (event) {
     const toggle = event.target.closest(".info-toggle");
     if (!toggle) return;
-    const panel = document.getElementById(toggle.getAttribute("aria-controls"));
+    const panel = panelFor(toggle);
     if (!panel) return;
-    const isOpen = toggle.getAttribute("aria-expanded") === "true";
-    if (isOpen && toggle.dataset.pinned === "true") {
-      toggle.dataset.pinned = "false";
+    if (toggle.getAttribute("aria-expanded") === "true") {
       closePanel(toggle, panel);
     } else {
-      toggle.dataset.pinned = "true";
       openPanel(toggle, panel);
     }
   });
 
-  document.querySelectorAll(".info-toggle").forEach(function (toggle) {
-    const panel = document.getElementById(toggle.getAttribute("aria-controls"));
-    if (!panel) return;
-
-    toggle.addEventListener("mouseenter", function () {
-      openPanel(toggle, panel);
+  const expandAllToggle = document.getElementById("expand-all-toggle");
+  if (expandAllToggle) {
+    expandAllToggle.addEventListener("click", function () {
+      // Derived from the actual DOM state, not the button's own last-set
+      // aria-pressed -- a manual click on an individual toggle or
+      // <details> after using this button would otherwise desync it from
+      // reality (still reading "Collapse all" with something still
+      // closed, or vice versa). Anything still closed means "expand all"
+      // is the right next action; only when everything is already open do
+      // we collapse.
+      const anyClosed =
+        Array.from(document.querySelectorAll(".info-toggle")).some((t) => t.getAttribute("aria-expanded") !== "true") ||
+        Array.from(document.querySelectorAll(".info-disclosure")).some((d) => !d.open);
+      const expanding = anyClosed;
+      document.querySelectorAll(".info-toggle").forEach(function (toggle) {
+        const panel = panelFor(toggle);
+        if (!panel) return;
+        if (expanding) {
+          openPanel(toggle, panel);
+        } else {
+          closePanel(toggle, panel);
+        }
+      });
+      document.querySelectorAll(".info-disclosure").forEach(function (disclosure) {
+        disclosure.open = expanding;
+      });
+      expandAllToggle.setAttribute("aria-pressed", String(expanding));
+      expandAllToggle.classList.toggle("is-active", expanding);
+      expandAllToggle.textContent = expanding ? "Collapse all descriptions" : "Expand all descriptions";
     });
-    toggle.addEventListener("mouseleave", function () {
-      if (toggle.dataset.pinned === "true") return;
-      closePanel(toggle, panel);
-    });
-    toggle.addEventListener("focus", function () {
-      openPanel(toggle, panel);
-    });
-    toggle.addEventListener("blur", function () {
-      if (toggle.dataset.pinned === "true") return;
-      closePanel(toggle, panel);
-    });
-  });
+  }
 })();

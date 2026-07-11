@@ -115,13 +115,14 @@
     if (generatedAt) generatedAt.textContent = "audited " + audit.generated_at;
 
     findingsList.innerHTML = "";
-    if (!audit.findings.length) {
+    const findings = audit.findings || [];
+    if (!findings.length) {
       const li = document.createElement("li");
       li.textContent = "No findings -- all checks clean.";
       findingsList.appendChild(li);
       return;
     }
-    audit.findings.forEach((f) => findingsList.appendChild(renderFinding(f)));
+    findings.forEach((f) => findingsList.appendChild(renderFinding(f)));
   }
 
   document.addEventListener("ber:booted", () => {

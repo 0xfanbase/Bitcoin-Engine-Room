@@ -35,7 +35,8 @@
          the readability law (CLAUDE.md Section 6 rule 10) still holds. -->
     <div class="masthead-inner">
     <h1 id="site-title">Bitcoin Engine Room</h1>
-    <div class="odometer" id="odometer" aria-label="Current block height">
+    <button class="chip-btn expand-all-toggle" id="expand-all-toggle" type="button" aria-pressed="false">Expand all descriptions</button>
+    <div class="odometer" id="odometer" aria-label="Current block height" aria-live="polite" aria-atomic="true">
       <span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span><span class="odometer-digit">-</span>
     </div>
     <!-- .odometer-caption-row wraps the caption + info-toggle as siblings
@@ -208,9 +209,9 @@
       <p class="info-source">Source: model published by Giovanni Santostasi; refit nightly against this site's own historical price data</p>
     </div>
     <div class="chart-controls" role="group" aria-label="Power law chart timeframe">
-      <button class="chip-btn" data-power-law-range="1y">1Y</button>
-      <button class="chip-btn" data-power-law-range="4y">4Y</button>
-      <button class="chip-btn is-active" data-power-law-range="all">ALL</button>
+      <button class="chip-btn" type="button" data-power-law-range="1y" aria-pressed="false">1Y</button>
+      <button class="chip-btn" type="button" data-power-law-range="4y" aria-pressed="false">4Y</button>
+      <button class="chip-btn is-active" type="button" data-power-law-range="all" aria-pressed="true">ALL</button>
     </div>
     <div id="power-law-chart" class="chart-canvas chart-canvas--hero" title="Scroll or pinch to zoom &middot; drag to pan &middot; double-click to reset"></div>
     <p class="chart-caption">Model family published by Giovanni Santostasi. Bands are descriptive envelopes from historical fit residuals (±2σ in log10 space), not statistical confidence intervals. <a href="#power-law-card">#power-law</a></p>

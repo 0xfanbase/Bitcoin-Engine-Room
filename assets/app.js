@@ -21,11 +21,6 @@
     return "$" + Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
   };
 
-  BER.formatCompact = function (value, unit) {
-    if (value == null) return "—";
-    return Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 }) + (unit ? " " + unit : "");
-  };
-
   BER.formatHashrate = function (eh) {
     if (eh == null) return "—";
     return Number(eh).toLocaleString("en-US", { maximumFractionDigits: 1 }) + " EH/s";
@@ -39,11 +34,6 @@
   BER.formatSupply = function (btc) {
     if (btc == null) return "—";
     return (Number(btc) / 1e6).toLocaleString("en-US", { maximumFractionDigits: 3 }) + "M BTC";
-  };
-
-  BER.formatDate = function (isoDate) {
-    if (!isoDate) return "—";
-    return isoDate;
   };
 
   BER.daysAgo = function (isoDate) {
