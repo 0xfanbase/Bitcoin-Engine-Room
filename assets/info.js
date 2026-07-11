@@ -53,7 +53,17 @@
   const expandAllToggle = document.getElementById("expand-all-toggle");
   if (expandAllToggle) {
     expandAllToggle.addEventListener("click", function () {
-      const expanding = expandAllToggle.getAttribute("aria-pressed") !== "true";
+      // Derived from the actual DOM state, not the button's own last-set
+      // aria-pressed -- a manual click on an individual toggle or
+      // <details> after using this button would otherwise desync it from
+      // reality (still reading "Collapse all" with something still
+      // closed, or vice versa). Anything still closed means "expand all"
+      // is the right next action; only when everything is already open do
+      // we collapse.
+      const anyClosed =
+        Array.from(document.querySelectorAll(".info-toggle")).some((t) => t.getAttribute("aria-expanded") !== "true") ||
+        Array.from(document.querySelectorAll(".info-disclosure")).some((d) => !d.open);
+      const expanding = anyClosed;
       document.querySelectorAll(".info-toggle").forEach(function (toggle) {
         const panel = panelFor(toggle);
         if (!panel) return;

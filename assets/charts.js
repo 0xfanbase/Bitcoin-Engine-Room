@@ -99,6 +99,7 @@
   // ---------- Power Law Corridor (the hero) ----------
 
   function renderPowerLaw(colors) {
+    if (!modelsDoc) return;
     const chart = getOrInitChart("power-law-chart");
     if (!chart) return;
     const pl = modelsDoc.power_law;
@@ -232,7 +233,10 @@
     document.querySelectorAll("[data-power-law-range]").forEach((btn) => {
       btn.addEventListener("click", () => {
         powerLawRange = btn.dataset.powerLawRange;
-        document.querySelectorAll("[data-power-law-range]").forEach((b) => b.classList.toggle("is-active", b === btn));
+        document.querySelectorAll("[data-power-law-range]").forEach((b) => {
+          b.classList.toggle("is-active", b === btn);
+          b.setAttribute("aria-pressed", String(b === btn));
+        });
         renderPowerLaw(colorTokens());
       });
     });

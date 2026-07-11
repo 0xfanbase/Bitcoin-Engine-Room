@@ -408,6 +408,7 @@ a {
   font-family: var(--font-data);
   font-size: 1.6rem;
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .gauge-value .unit {
@@ -420,6 +421,7 @@ a {
   margin-top: 0.35rem;
   font-size: 0.75rem;
   color: var(--ink-dim);
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Status chips (LIVE / DELAYED / STALE) ---------- */
@@ -624,8 +626,12 @@ a {
 }
 
 /* "last snapshot age" shown in red if stale beyond the site's own
-   red-flag threshold -- CLAUDE.md/spec Section 6's cron-caveat mitigation. */
-.audit-generated-at.is-overdue {
+   red-flag threshold -- CLAUDE.md/spec Section 6's cron-caveat mitigation.
+   Standalone (not .audit-generated-at.is-overdue): the age span health.js
+   builds for the Engine Health summary is a separate element from
+   #audit-generated-at (the audit-panel's own timestamp) and only ever
+   carries this one class. */
+.is-overdue {
   color: var(--fail);
 }
 
@@ -825,7 +831,12 @@ a {
 /* ---------- Responsive ---------- */
 @media (max-width: 480px) {
   .gauges-grid {
-    grid-template-columns: repeat(2, 1fr);
+    /* minmax(0, 1fr), not a bare 1fr: a grid track's implicit minimum is
+       its content's width, so one long unbroken numeral (e.g. a 4-digit
+       terawatt difficulty reading) could force the column -- and the whole
+       page, since html has overflow-x: hidden -- wider than a 320px
+       viewport with no way to scroll to the clipped pixels. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   /* Health rows carry more text (metric name + source name) than a gauge
      card does -- a 2-col grid overflows on narrow phones, so this panel
