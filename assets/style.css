@@ -571,6 +571,14 @@ a {
 .chart-canvas {
   width: 100%;
   height: 260px;
+  /* Without this, touch-action defaults to `auto`: the browser's own
+     two-finger pinch-to-zoom-the-page still owns the gesture and never lets
+     zrender see it, so ECharts' `inside` dataZoom (unlocked for touch,
+     see charts.js) never fires -- pinch appears to do nothing. `pan-y`
+     (not `none`) keeps a single-finger vertical drag scrolling the page
+     natively, matching the zoomLock design's intent that plain scroll
+     always wins; only pinch and horizontal drag are released to the chart. */
+  touch-action: pan-y;
 }
 
 .chart-canvas--hero {

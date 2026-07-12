@@ -107,6 +107,25 @@
     return new Date(g + days * 86400000);
   }
 
+  // Power-law y-axis ticks land on exact decade boundaries (log10 space,
+  // interval: 1), so abbreviation is always a clean "1" + unit, never a
+  // rounding artifact. Director ruling (Fable, mobile-legibility review):
+  // instrument readouts abbreviate ("1.00M" on a multimeter) -- spelled-out,
+  // comma-grouped dollars are prose convention, not instrument convention.
+  // Applies on every viewport, not just mobile: one code path, no
+  // width-measurement JS, kills the whole axis-label-clipping bug class
+  // instead of patching around it per breakpoint. The tooltip keeps full
+  // precision via toLocaleString -- this formatter is for axis graduations
+  // only.
+  function formatAxisDollar(v) {
+    const n = Math.round(v);
+    if (n < 0) return "$" + Math.pow(10, n).toFixed(-n);
+    if (n >= 9) return "$" + Math.pow(10, n - 9).toLocaleString() + "B";
+    if (n >= 6) return "$" + Math.pow(10, n - 6).toLocaleString() + "M";
+    if (n >= 3) return "$" + Math.pow(10, n - 3).toLocaleString() + "K";
+    return "$" + Math.pow(10, n).toLocaleString();
+  }
+
   const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function formatDateShort(d) {
     return `${MONTH_ABBR[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
@@ -231,7 +250,7 @@
           max: (val) => Math.ceil(val.max),
           interval: 1,
           axisLine: { lineStyle: { color: colors.border } },
-          axisLabel: { color: colors.inkDim, formatter: (v) => "$" + Math.round(Math.pow(10, v)).toLocaleString() },
+          axisLabel: { color: colors.inkDim, formatter: formatAxisDollar },
           splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
         },
         series: [
@@ -491,13 +510,22 @@
         grid: { left: 50, right: 50, top: 30, bottom: 35 },
         legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 } },
         xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
+        // No axis `name` on either side (director ruling, mobile-legibility
+        // review): a value-axis name duplicating a legend item duplicating
+        // the plate-stats line above the chart fails the screensaver test
+        // on any viewport, and on narrow ones it collided with the legend
+        // outright. The right axis's `%` formatter already disambiguates
+        // which axis is which.
         yAxis: [
-          { type: "value", name: "Mayer", position: "left", axisLabel: { color: colors.inkDim }, splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } } },
-          { type: "value", name: "200WMA dist %", position: "right", axisLabel: { color: colors.inkDim, formatter: "{value}%" }, splitLine: { show: false } },
+          { type: "value", position: "left", axisLabel: { color: colors.inkDim }, splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } } },
+          { type: "value", position: "right", axisLabel: { color: colors.inkDim, formatter: "{value}%" }, splitLine: { show: false } },
         ],
         series: [
           {
-            name: "Mayer Multiple",
+            // Short, plate-stats-vocabulary legend labels ("Mayer 0.8662 ..."
+            // above already uses this exact wording) -- fits one legend row
+            // at mobile widths without wrapping or colliding.
+            name: "Mayer",
             type: "line",
             showSymbol: false,
             data: mayerSeries,
@@ -508,18 +536,18 @@
               silent: true,
               symbol: "none",
               lineStyle: { type: "dashed", color: colors.inkDim, opacity: 0.6, width: 1 },
-              label: {
-                formatter: "price = 200-day avg",
-                color: colors.inkDim,
-                fontFamily: colors.fontData,
-                fontSize: 9,
-                position: "insideEndTop",
-              },
+              // Label cut, line kept (director ruling): "price = 200-day avg"
+              // is explanatory prose sitting on the plot face, off-identity
+              // per the mono-is-the-machine/sans-is-the-human typography
+              // rule -- the info panel already explains Mayer=1.0 the same
+              // way. A bare hairline at the axis's %-formatted zero line
+              // reads as the reference point on its own.
+              label: { show: false },
               data: [{ yAxis: 1 }],
             },
           },
           {
-            name: "200WMA distance",
+            name: "200WMA dist",
             type: "line",
             showSymbol: false,
             data: wmaDistanceSeries,
