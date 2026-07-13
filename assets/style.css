@@ -156,6 +156,24 @@ a {
   );
 }
 
+/* Readability-law fix (director review, mobile audit): the 40px feather
+   above assumes a wide, short-line desktop column where real text never
+   starts before the feather has already reached full opacity. At phone
+   widths the 1.5rem (24px) horizontal padding sits INSIDE that 40px ramp,
+   where the scrim computes to ~0.58 opacity -- under the law's own >=0.92
+   floor (CLAUDE.md Section 6 rule 10) -- and info-panel text wraps
+   edge-to-edge of that padding box, so it's real text, not a rare corner
+   case. The rain-on-the-flanks benefit the feather exists for is also
+   nearly gone at this width (~11px of visible rain per side at 375px), so
+   below this breakpoint the scrim goes back to solid, edge-to-edge, same
+   as it was before the 2026-07-09 feather amendment -- enforcing the law
+   here, not relaxing it. */
+@media (max-width: 600px) {
+  .masthead-inner {
+    background: rgba(2, 8, 4, 0.96);
+  }
+}
+
 .masthead-inner::after {
   content: "";
   position: absolute;
@@ -743,6 +761,20 @@ a {
   cursor: pointer;
   box-sizing: content-box;
   flex-shrink: 0;
+  position: relative;
+}
+
+/* Mobile-audit fix: the visible ring above is ~19px (11px content + 4px
+   padding on each side) -- under WCAG 2.2's 24px minimum and well under
+   the ~44px platform guidance, on what's the primary interaction for the
+   site's whole "explain everything" transparency story. This invisible
+   pseudo-element extends the actual tap target to ~45px square without
+   changing the visible ring's size at all, so the whisper-volume chrome
+   direction (rule 6) is untouched. */
+.info-toggle::after {
+  content: "";
+  position: absolute;
+  inset: -13px;
 }
 
 .info-toggle:hover,

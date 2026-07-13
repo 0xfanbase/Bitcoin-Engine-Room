@@ -245,7 +245,14 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 60, right: 50, top: 20, bottom: 40 },
+        // Percentage margins, not fixed pixels (mobile audit finding): a
+        // fixed 60/50px gutter ate ~110px of a 375px phone screen (over
+        // 1/4 of the hero chart) and never adapted back down on resize
+        // either, since ECharts only recomputes percentage-based grid
+        // margins on .resize() -- fixed pixel ones just sit there. Right
+        // stays wider than left to leave room for the Idle/Cruise/Redline
+        // endLabel text, which renders inside this margin.
+        grid: { left: "10%", right: "13%", top: 20, bottom: 40 },
         xAxis: {
           type: "log",
           min: minDay,
