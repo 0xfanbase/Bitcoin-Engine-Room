@@ -215,6 +215,11 @@ def check_sanity_replay() -> list[dict]:
     for metric in ALL_HISTORY_METRICS:
         doc = load_json(HISTORY_DIR / f"{metric}.json")
         if not doc:
+            # difficulty_daily is exempt from check_continuity (its P1 portion
+            # is deliberately sparse), so a missing/deleted history file for
+            # it would otherwise produce no audit finding at all -- catch that
+            # here instead of silently skipping every metric's missing file.
+            findings.append(_finding("sanity_replay", "FAIL", "history file missing", metric))
             continue
         recent = doc["series"][-30:]
         violations = check_backfill_sanity(metric, recent, sanity_rules["backfill_absolute"])

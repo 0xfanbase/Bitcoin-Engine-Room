@@ -9,6 +9,12 @@
     },
     {
       "metric": "hashrate_daily",
+      "gap_start": "2009-01-03",
+      "gap_end": "2009-01-09",
+      "reason": "Same event as the supply_daily entry above (no blocks mined for ~6 days immediately after genesis): blockchain.info's hash-rate chart carried five 0.0 placeholder rows for 2009-01-04 through 2009-01-08 with no real block interval to estimate from. Found 2026-07-13 during a data-pipeline audit (tightened hashrate_daily.schema.json's value bound from minimum:0 to exclusiveMinimum:0, matching price_daily/difficulty_daily, which surfaced the placeholder rows); removed from the committed history and from backfill.py's hashrate branch (previously only price/difficulty filtered non-positive rows)."
+    },
+    {
+      "metric": "hashrate_daily",
       "gap_start": "2025-11-12",
       "gap_end": "2025-11-16",
       "reason": "Verified 2026-07-09 by calling BlockchainInfoChartsClient().fetch_chart('hash-rate') live: blockchain.info's own hash-rate chart is itself missing 2025-11-13 through 2025-11-15 -- a gap in the upstream source, not a defect in our backfill or pipeline."

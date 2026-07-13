@@ -109,10 +109,16 @@ def build_series_for_metric(name: str, *, cm_rows_cache: dict) -> list[dict]:
     fallback = BlockchainInfoChartsClient().fetch_chart(config["bi_chart"])
     series = merge_series(primary, fallback)
 
-    if name == "price":
-        # blockchain.info's market-price series carries placeholder 0.0 rows
-        # before Bitcoin had an exchange-traded price (pre-mid-2010) -- not a
-        # real observation, and disallowed by the schema's exclusiveMinimum.
+    if name in ("price", "hashrate"):
+        # Same placeholder-zero issue as difficulty above. Price: blockchain.info's
+        # market-price series carries 0.0 rows before Bitcoin had an
+        # exchange-traded price (pre-mid-2010). Hashrate: its hash-rate chart
+        # carries five 0.0 rows for 2009-01-04 through 2009-01-08 -- the ~6
+        # days after genesis when no blocks were mined at all (the same event
+        # already documented for supply_daily in known_gaps.json), so there
+        # was no block interval for the chart's estimator to compute from.
+        # Neither is a real observation, and both are disallowed by the
+        # schema's exclusiveMinimum.
         series = [row for row in series if row["value"] > 0]
 
     return series

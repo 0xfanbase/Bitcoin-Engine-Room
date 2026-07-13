@@ -2,36 +2,11 @@
   "metric": "hashrate_daily",
   "unit": "EH/s",
   "schema_version": 1,
-  "generated_at": "2026-07-12T08:39:54Z",
+  "generated_at": "2026-07-13T06:23:37Z",
   "series": [
     {
       "date": "2009-01-03",
       "value": 4.97102696296296e-14,
-      "source": "blockchain_info"
-    },
-    {
-      "date": "2009-01-04",
-      "value": 0.0,
-      "source": "blockchain_info"
-    },
-    {
-      "date": "2009-01-05",
-      "value": 0.0,
-      "source": "blockchain_info"
-    },
-    {
-      "date": "2009-01-06",
-      "value": 0.0,
-      "source": "blockchain_info"
-    },
-    {
-      "date": "2009-01-07",
-      "value": 0.0,
-      "source": "blockchain_info"
-    },
-    {
-      "date": "2009-01-08",
-      "value": 0.0,
       "source": "blockchain_info"
     },
     {

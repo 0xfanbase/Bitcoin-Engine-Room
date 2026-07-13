@@ -19,8 +19,12 @@
         "additionalProperties": false,
         "properties": {
           "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
-          "value": {"type": "number", "minimum": 0},
-          "source": {"type": "string", "enum": ["coinmetrics", "blockchain_info", "mempool_space"]}
+          "value": {"type": "number", "exclusiveMinimum": 0},
+          "source": {"type": "string", "enum": ["coinmetrics", "blockchain_info", "mempool_space"]},
+          "carried_forward": {
+            "type": "boolean",
+            "description": "True only when this row's value was carried forward from the prior day after every source in the failover chain failed or was rejected this run -- not a fresh observation. Absent (or false) on every freshly-fetched row."
+          }
         }
       }
     }
