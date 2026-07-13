@@ -184,6 +184,21 @@ def _check_price_cross_source(row: dict, live_rules: dict) -> bool | None:
     return not within_tolerance
 
 
+def _latest_fields(metric: str, row: dict) -> dict:
+    """Extract the small last-known-value digest health.json carries per
+    metric (last_date/last_value, plus last_classification for fng_daily) so
+    the frontend can paint every gauge straight from health.json -- already
+    the first thing app.js fetches on boot -- instead of separately
+    downloading each metric's full, multi-hundred-KB history file just to
+    read its final row (spec 'never blank gauges', same mechanics as
+    `_record_tip_height` below, extended from block height to these five).
+    """
+    fields = {"last_date": row["date"], "last_value": row["value"]}
+    if metric == "fng_daily":
+        fields["last_classification"] = row["classification"]
+    return fields
+
+
 def snapshot_metric(
     metric: str, *, history: dict | None, live_rules: dict, prior_health: dict, height_cache: dict
 ) -> tuple[dict, dict | None]:
@@ -263,7 +278,9 @@ def run_snapshot(metrics: list[str], *, dry_run: bool = False) -> dict:
             # Reuse prior health.json's record if we have one; otherwise derive
             # a proper OK record from the already-valid last row rather than
             # fabricating a misleading STALE placeholder.
-            new_health["metrics"][metric] = prior_health.get(metric) or _health_record_from_existing(history)
+            record = dict(prior_health.get(metric) or _health_record_from_existing(history))
+            record.update(_latest_fields(metric, history["series"][-1]))
+            new_health["metrics"][metric] = record
             continue
 
         record, row = snapshot_metric(
@@ -274,6 +291,9 @@ def run_snapshot(metrics: list[str], *, dry_run: bool = False) -> dict:
             warn = _check_price_cross_source(row, live_rules)
             if warn is not None:
                 record["cross_source_variance_warn"] = warn
+
+        if row is not None:
+            record.update(_latest_fields(metric, row))
 
         new_health["metrics"][metric] = record
 

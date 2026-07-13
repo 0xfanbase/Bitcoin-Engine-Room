@@ -55,6 +55,10 @@ def test_price_snapshot_appends_new_day_on_success(tmp_path, monkeypatch):
     assert health["metrics"]["price_daily"]["status"] == "OK"
     assert health["metrics"]["price_daily"]["source"] == "mempool_space"
     assert health["metrics"]["price_daily"]["cross_source_variance_warn"] is False
+    # last_date/last_value let the frontend paint the gauge straight from
+    # health.json instead of fetching the full (multi-hundred-KB) history file.
+    assert health["metrics"]["price_daily"]["last_date"] == fetch_snapshot._today()
+    assert health["metrics"]["price_daily"]["last_value"] == 62000.0
 
     doc = _load_history(tmp_path, "price_daily")
     assert len(doc["series"]) == 2
@@ -77,6 +81,12 @@ def test_already_recorded_today_is_a_no_op(tmp_path, monkeypatch):
     assert health["metrics"]["fng_daily"]["status"] == "OK"
     assert health["metrics"]["fng_daily"]["source"] == "alternative_me"
     assert health["metrics"]["fng_daily"]["last_success_date"] == today
+    # Idempotent-skip path still populates last_date/last_value/
+    # last_classification from the already-committed row, not just a
+    # freshly-fetched one.
+    assert health["metrics"]["fng_daily"]["last_date"] == today
+    assert health["metrics"]["fng_daily"]["last_value"] == 50
+    assert health["metrics"]["fng_daily"]["last_classification"] == "Neutral"
 
 
 @responses.activate
@@ -131,6 +141,11 @@ def test_all_sources_failing_carries_forward_and_increments_failures(tmp_path, m
     assert record["status"] == "STALE"
     assert record["consecutive_failures"] == 3  # 2 -> 3, now issue-worthy
     assert record["stale_since"] == "2026-07-07"  # preserved from prior run, not reset
+    # Carried-forward value still populates last_date/last_value under
+    # today's date -- the gauge shouldn't blank just because every live
+    # source failed.
+    assert record["last_date"] == fetch_snapshot._today()
+    assert record["last_value"] == 1.0e14
 
     doc = _load_history(tmp_path, "difficulty_daily")
     assert len(doc["series"]) == 2  # carried forward, not skipped
