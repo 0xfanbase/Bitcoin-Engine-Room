@@ -5,6 +5,10 @@ on:
     - cron: '30 6 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: daily-snapshot
+  cancel-in-progress: false
+
 permissions:
   contents: write
   issues: write
@@ -12,6 +16,7 @@ permissions:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +28,7 @@ jobs:
         run: pip install -r pipeline/requirements.txt
 
       - name: Run daily snapshot
+        id: snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python -m pipeline.fetch_snapshot
@@ -36,6 +42,11 @@ jobs:
         run: python -m pipeline.audit
 
       - name: Commit and push if changed
+        # Runs even if fit_models/audit failed after a successful snapshot,
+        # so a downstream crash never discards a real day's fetched data
+        # (previously the whole job's changes were lost, silently creating a
+        # permanent continuity gap with no way to backfill the missed day).
+        if: always() && steps.snapshot.outcome == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
