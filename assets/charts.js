@@ -4,13 +4,25 @@
  * Apache ECharts (CDN, spec Section 3). Colors are read from the current
  * CSS custom properties directly -- single source of truth stays the
  * design tokens, no separate hardcoded ECharts theme registrations.
+ *
+ * Everything in this module is loaded lazily, on an IntersectionObserver
+ * watching the Price Models section, not on ber:booted: the ECharts CDN
+ * script (~340KB gzipped) and the two full history files this module
+ * charts (price_daily.json, fng_daily.json -- the other three history
+ * files are never fetched at all now that app.js paints gauges from
+ * health.json's last_value digest) used to load unconditionally on every
+ * visit, mobile included, even though every chart sits below the fold.
+ * See IMPROVEMENT_BACKLOG.md.
  */
 (function () {
   "use strict";
 
   const BER = (window.BER = window.BER || {});
+  const ECHARTS_CDN_URL = "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js";
   let charts = {};
   let modelsDoc = null;
+  let priceHistorySeries = [];
+  let fngHistorySeries = [];
   let powerLawRange = "all";
 
   // Wheel-to-zoom trap fix: ECharts' "inside" dataZoom prevents the page's
@@ -48,8 +60,13 @@
     if (e.key === "Shift") setChartsZoomLock(true);
   });
 
+  // Default (not "no-store") cache mode, unlike live.js's genuinely
+  // real-time endpoints: these are daily-immutable committed files, so
+  // letting the browser's normal HTTP cache (conditional requests / 304s)
+  // work saves a full re-download on repeat same-day visits, mobile
+  // cellular especially.
   function fetchJSON(path) {
-    return fetch(path, { cache: "no-store" }).then((r) => {
+    return fetch(path).then((r) => {
       if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
       return r.json();
     });
@@ -177,8 +194,7 @@
     const pl = modelsDoc.power_law;
     const genesis = pl.params.genesis_date;
 
-    const priceHistory = (BER.histories && BER.histories.price_daily && BER.histories.price_daily.series) || [];
-    let filtered = priceHistory;
+    let filtered = priceHistorySeries;
     if (powerLawRange !== "all") {
       const years = powerLawRange === "1y" ? 1 : 4;
       const cutoff = new Date();
@@ -597,8 +613,7 @@
   function renderMarketSentiment(colors) {
     const chart = getOrInitChart("market-sentiment-chart");
     if (!chart) return;
-    const series = (BER.histories && BER.histories.fng_daily && BER.histories.fng_daily.series) || [];
-    const points = series.map((r) => [r.date, r.value]);
+    const points = fngHistorySeries.map((r) => [r.date, r.value]);
 
     chart.setOption(
       {
@@ -646,7 +661,7 @@
     );
 
     const statsEl = document.getElementById("market-sentiment-stats");
-    const latest = series.length ? series[series.length - 1] : null;
+    const latest = fngHistorySeries.length ? fngHistorySeries[fngHistorySeries.length - 1] : null;
     if (statsEl && latest) {
       statsEl.textContent = `${latest.value} · ${latest.classification} · as of ${latest.date}`;
     }
@@ -667,16 +682,84 @@
     Object.values(charts).forEach((c) => c && c.resize());
   }
 
-  document.addEventListener("ber:booted", async () => {
+  // Coalesces the resize storm mobile browsers fire when the URL bar
+  // collapses/expands on scroll -- without this, every one of those events
+  // was calling .resize() (a real layout recompute) on up to 4 chart
+  // instances back to back.
+  function debounce(fn, ms) {
+    let timer = null;
+    return function debounced(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(null, args), ms);
+    };
+  }
+
+  function loadEchartsScript() {
+    if (window.echarts) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = ECHARTS_CDN_URL;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("ECharts CDN script failed to load"));
+      document.head.appendChild(script);
+    });
+  }
+
+  let loadStarted = false;
+  async function loadAndRender() {
+    if (loadStarted) return;
+    loadStarted = true;
     initPowerLawControls();
-    try {
-      modelsDoc = await fetchJSON("data/models.json");
-    } catch (e) {
-      console.warn("models.json unavailable -- projections section stays empty", e);
+
+    const [echartsResult, modelsResult, priceResult, fngResult] = await Promise.allSettled([
+      loadEchartsScript(),
+      fetchJSON("data/models.json"),
+      fetchJSON("data/history/price_daily.json"),
+      fetchJSON("data/history/fng_daily.json"),
+    ]);
+
+    if (echartsResult.status === "rejected") {
+      console.warn("ECharts unavailable -- projections section stays empty", echartsResult.reason);
       return;
     }
-    renderAll();
-  });
+    if (modelsResult.status === "rejected") {
+      console.warn("models.json unavailable -- projections section stays empty", modelsResult.reason);
+      return;
+    }
+    modelsDoc = modelsResult.value;
+    // Partial failure on either history file still renders every chart that
+    // doesn't depend on it, same "never blank the rest of the page over one
+    // failure" spirit as the live-snapshot failover chains.
+    if (priceResult.status === "fulfilled") priceHistorySeries = priceResult.value.series || [];
+    else console.warn("price_daily.json unavailable -- power law chart's actual-price line stays empty", priceResult.reason);
+    if (fngResult.status === "fulfilled") fngHistorySeries = fngResult.value.series || [];
+    else console.warn("fng_daily.json unavailable -- market sentiment chart stays empty", fngResult.reason);
 
-  window.addEventListener("resize", resizeAll);
+    renderAll();
+  }
+
+  // Price Models is below the fold on every viewport, mobile especially --
+  // defer the ~340KB(gz) ECharts CDN script and this module's own data
+  // fetches until the user is actually approaching the section instead of
+  // paying for both on every page load regardless of whether anyone scrolls
+  // that far (see IMPROVEMENT_BACKLOG.md). rootMargin starts the load while
+  // the section is still a scroll away so charts are ready, not popping in
+  // mid-scroll.
+  const lazySection = document.getElementById("power-law-card");
+  if (lazySection && "IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          observer.disconnect();
+          loadAndRender();
+        }
+      },
+      { rootMargin: "600px 0px" }
+    );
+    observer.observe(lazySection);
+  } else {
+    document.addEventListener("ber:booted", loadAndRender);
+  }
+
+  window.addEventListener("resize", debounce(resizeAll, 150));
 })();

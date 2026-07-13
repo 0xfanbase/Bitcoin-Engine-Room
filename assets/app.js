@@ -1,10 +1,16 @@
 /* app.js -- boot, Digital Rain toggle wiring, H1 boot flourish, shared formatters.
  *
  * Boot order matters for the "never blank gauges" rule (spec Section 10.3):
- * 1. Paint every gauge from the last COMMITTED data/history/*.json row +
- *    data/health.json immediately, so there's meaningful content even if
- *    the network is unavailable or live.js's fetches all fail.
- * 2. live.js then upgrades price/fees/mempool/block-height to real-time.
+ * 1. Paint every gauge from data/health.json's per-metric last_date/
+ *    last_value (a small digest carried alongside the existing tip_height
+ *    field, same mechanics) immediately, so there's meaningful content even
+ *    if the network is unavailable or live.js's fetches all fail -- without
+ *    downloading any of the five much larger data/history/*.json files,
+ *    three of which nothing on the page reads beyond that same last row.
+ * 2. ber:booted fires right after, not gated on any further download --
+ *    live.js upgrades price/fees/mempool/block-height to real-time, and
+ *    charts.js separately (and lazily) fetches the two full histories
+ *    (price, Fear & Greed) it actually charts.
  * 3. health.js renders the Engine Health panel from the same health.json
  *    this module already fetched (shared via window.BER.health, no
  *    duplicate fetch).
@@ -120,14 +126,13 @@
 
   // ---------- boot: paint from committed data ----------
 
+  // Default cache mode (not "no-store"): health.json is a daily-immutable
+  // committed file, so the browser's normal HTTP cache can serve repeat
+  // same-day visits a 304 instead of a full re-download.
   async function fetchJSON(path) {
-    const response = await fetch(path, { cache: "no-store" });
+    const response = await fetch(path);
     if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
     return response.json();
-  }
-
-  function lastRow(doc) {
-    return doc && doc.series && doc.series.length ? doc.series[doc.series.length - 1] : null;
   }
 
   // Daily-cadence gauges (hashrate/difficulty/supply/fng) are refreshed once
@@ -185,27 +190,24 @@
       if (captionEl) captionEl.textContent = "block height · as of " + health.tip_height.date;
     }
 
-    const metrics = ["price_daily", "hashrate_daily", "difficulty_daily", "supply_daily", "fng_daily"];
-    const histories = {};
-    await Promise.all(
-      metrics.map(async (m) => {
-        try {
-          histories[m] = await fetchJSON(`data/history/${m}.json`);
-        } catch (e) {
-          console.warn(m + " unavailable", e);
-        }
-      })
-    );
-    BER.histories = histories;
+    // Gauges paint straight from health.json's per-metric last_date/
+    // last_value (added alongside tip_height for exactly this reason) --
+    // it's already fetched above, so this costs zero extra network requests.
+    // Previously this painted from each metric's full data/history/*.json
+    // file, which meant downloading ~3MB combined (three of the five files
+    // entirely unused beyond their own last row) before the gauges, the
+    // WebSocket connection, or any polling could even start -- see
+    // IMPROVEMENT_BACKLOG.md. Full history is still fetched, but lazily and
+    // only for the two metrics (price, Fear & Greed) charts.js actually
+    // charts in full.
+    const metricHealth = (m) => health && health.metrics && health.metrics[m];
 
-    const priceRow = lastRow(histories.price_daily);
-    if (priceRow) {
-      document.getElementById("stat-price").textContent = BER.formatUSD(priceRow.value);
-      const priceHealth = health && health.metrics && health.metrics.price_daily;
+    const priceHealth = metricHealth("price_daily");
+    if (priceHealth && priceHealth.last_value != null) {
+      document.getElementById("stat-price").textContent = BER.formatUSD(priceHealth.last_value);
       // Price is a live.js-owned metric; paint committed value now with a
       // STALE chip, live.js will upgrade it if a live fetch succeeds.
-      BER.setChip("chip-price", "STALE", "STALE · as of " + priceRow.date);
-      void priceHealth;
+      BER.setChip("chip-price", "STALE", "STALE · as of " + priceHealth.last_date);
     }
 
     // gauge-*-sub used to read "committed <date>" here, but that's now a
@@ -215,32 +217,32 @@
     // chip is the single source of truth for that date now. Difficulty's
     // sub is still overwritten with live retarget progress by live.js's
     // pollDifficultyAdjustment() when that succeeds -- unaffected here.
-    const hashrateRow = lastRow(histories.hashrate_daily);
-    if (hashrateRow) {
-      document.getElementById("gauge-hashrate").textContent = BER.formatHashrate(hashrateRow.value);
+    const hashrateHealth = metricHealth("hashrate_daily");
+    if (hashrateHealth && hashrateHealth.last_value != null) {
+      document.getElementById("gauge-hashrate").textContent = BER.formatHashrate(hashrateHealth.last_value);
       document.getElementById("gauge-hashrate-sub").textContent = ""; // no longer duplicates the DAILY chip's date -- see comment above
-      paintDailyChip("chip-hashrate", health && health.metrics && health.metrics.hashrate_daily);
+      paintDailyChip("chip-hashrate", hashrateHealth);
     }
 
-    const difficultyRow = lastRow(histories.difficulty_daily);
-    if (difficultyRow) {
-      document.getElementById("gauge-difficulty").textContent = BER.formatDifficulty(difficultyRow.value);
+    const difficultyHealth = metricHealth("difficulty_daily");
+    if (difficultyHealth && difficultyHealth.last_value != null) {
+      document.getElementById("gauge-difficulty").textContent = BER.formatDifficulty(difficultyHealth.last_value);
       document.getElementById("gauge-difficulty-sub").textContent = ""; // pollDifficultyAdjustment() fills this with live retarget progress if it succeeds
-      paintDailyChip("chip-difficulty", health && health.metrics && health.metrics.difficulty_daily);
+      paintDailyChip("chip-difficulty", difficultyHealth);
     }
 
-    const supplyRow = lastRow(histories.supply_daily);
-    if (supplyRow) {
-      document.getElementById("gauge-supply").textContent = BER.formatSupply(supplyRow.value);
+    const supplyHealth = metricHealth("supply_daily");
+    if (supplyHealth && supplyHealth.last_value != null) {
+      document.getElementById("gauge-supply").textContent = BER.formatSupply(supplyHealth.last_value);
       document.getElementById("gauge-supply-sub").textContent = ""; // no longer duplicates the DAILY chip's date -- see comment above
-      paintDailyChip("chip-supply", health && health.metrics && health.metrics.supply_daily);
+      paintDailyChip("chip-supply", supplyHealth);
     }
 
-    const fngRow = lastRow(histories.fng_daily);
-    if (fngRow) {
-      document.getElementById("gauge-fng").textContent = fngRow.value;
-      document.getElementById("gauge-fng-sub").textContent = fngRow.classification + " · " + fngRow.date;
-      paintDailyChip("chip-fng", health && health.metrics && health.metrics.fng_daily);
+    const fngHealth = metricHealth("fng_daily");
+    if (fngHealth && fngHealth.last_value != null) {
+      document.getElementById("gauge-fng").textContent = fngHealth.last_value;
+      document.getElementById("gauge-fng-sub").textContent = fngHealth.last_classification + " · " + fngHealth.last_date;
+      paintDailyChip("chip-fng", fngHealth);
     }
 
     // Fees and mempool have no committed history (live-only per spec Section
