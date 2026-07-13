@@ -37,6 +37,20 @@
           "cross_source_variance_warn": {
             "type": "boolean",
             "description": "price_daily only, per spec Section 6: mempool.space vs CoinGecko price disagreement beyond threshold. Primary value is still recorded either way."
+          },
+          "last_date": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "description": "Date of this metric's last known row (fresh or carried-forward) -- lets the frontend paint its gauge straight from health.json instead of fetching the full history file. Same mechanics as top-level tip_height, extended to these five metrics. Absent only if a metric has never successfully recorded a row (e.g. a fresh repo before the first backfill)."
+          },
+          "last_value": {
+            "type": "number",
+            "description": "This metric's last known value (fresh or carried-forward), mirroring last_date."
+          },
+          "last_classification": {
+            "type": "string",
+            "enum": ["Extreme Fear", "Fear", "Neutral", "Greed", "Extreme Greed"],
+            "description": "fng_daily only -- mirrors the classification field carried alongside its value in fng_daily.json's own series rows."
           }
         }
       }

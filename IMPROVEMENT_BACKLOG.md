@@ -14,6 +14,16 @@ Per spec Section 19: "where the spec is silent, choose the simplest option and l
 
 ---
 
+### [post-v1] `.chip-btn` tap targets still under WCAG's 24px floor (2026-07-13)
+Source: manual (mobile UI/UX review -- scope note, not a finding either review actually raised)
+Description: The same mobile audit that fixed `.info-toggle`'s ~19px effective tap target to ~45px left `.chip-btn` (the Power Law chart's 1Y/4Y/ALL range buttons, and the masthead's "Explain everything" toggle) at its current ~22px height -- still under WCAG 2.2's 24px minimum. Neither the Fable director review nor the code-level audit specifically named it, so it was left alone rather than expanding scope past what was reviewed.
+Suggested fix: bump `.chip-btn`'s padding (e.g. `0.4rem 0.6rem`) to clear the 24px floor, same review pass that touched `.info-toggle` if/when this is picked up.
+
+### [post-v1] Only the hero chart's grid margins were made responsive (2026-07-13)
+Source: manual (mobile UI/UX review -- scope note)
+Description: The Power Law Corridor's fixed 60px/50px grid margins were switched to percentage-based (`10%`/`13%`) so they scale down on mobile and stay responsive on resize -- that chart specifically is what the director review flagged as eating ~110px of a 375px screen. The other three charts (4-Year Cycle Overlay, Mayer Multiple/200WMA, Market Sentiment) still use fixed pixel margins (`left: 55/50/45`, `right: 45/50/20`), smaller than the hero chart's originals but not reviewed for mobile fit.
+Suggested fix: if a future mobile pass flags these three as cramped, apply the same percentage-margin treatment, adjusting each chart's right margin for whatever endLabel/legend text it needs room for.
+
 ### [P1] Two-profile sanity rules instead of one flat set (2026-07-09)
 Source: manual
 Description: Spec Section 6's sanity bounds (e.g. `price > 1000`) are written for validating one new live day, not 2010-era backfilled history where BTC traded under $1. Applying them unmodified to the full historical series would make every pre-2017 row fail.

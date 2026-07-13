@@ -53,15 +53,78 @@
   const SURGE_HOLD_MS = 2000;
   const SURGE_DECAY_MS = 2000;
 
+  const FONT_STRING = FONT_SIZE + 'px "MS Gothic", "Osaka-Mono", "Noto Sans Mono CJK JP", monospace';
+  // Mobile browsers fire `resize` with only a small height delta when the
+  // URL bar collapses/expands on scroll (typically 50-100px) -- honoring
+  // that like a real resize would wipe the canvas bitmap (any
+  // width/height reassignment clears it) and rebuild the whole rain mid-
+  // scroll, the single most common mobile gesture. Only a genuine width
+  // change or a height change bigger than this gets a real reset.
+  const HEIGHT_JITTER_PX = 150;
+
   let canvas = null;
   let ctx = null;
   let columns = [];
   let intervalId = null;
   let running = false;
   let surgeStartMs = null;
+  let lastWidth = 0;
+  let lastHeight = 0;
+  // Colors are read from CSS custom properties once, not every draw() call
+  // (20x/sec, forever): this is a single-identity site with no theme
+  // switch at runtime, so they never change after start() reads them --
+  // getComputedStyle() forces a style recalc, real CPU cost repeated
+  // needlessly on every frame on a low-power mobile CPU.
+  let cachedFade = null;
+  let cachedColors = null;
 
   function reducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  // Adaptive yield, not a toggle: extends the reduced-motion family rather
+  // than reviving the removed on/off rocker (CLAUDE.md Section 6 rule 9's
+  // dated note). An always-on 20fps full-viewport canvas paint has a real
+  // battery/thermal/data cost that a plugged-in desktop never pays but a
+  // phone in someone's hand does -- so the instrument declines to start (or
+  // stops if already running) when the device itself signals it's under
+  // pressure, the same way it already declines under prefers-reduced-motion.
+  let lowBattery = false; // best-effort, updated asynchronously by watchBattery()
+
+  function dataSaverActive() {
+    const conn = navigator.connection || navigator.webkitConnection || navigator.mozConnection;
+    if (conn && conn.saveData) return true;
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-data: reduce)").matches);
+  }
+
+  function shouldYield() {
+    return reducedMotion() || dataSaverActive() || lowBattery;
+  }
+
+  function watchBattery() {
+    if (!navigator.getBattery) return; // not supported on most browsers -- best-effort only
+    navigator
+      .getBattery()
+      .then((battery) => {
+        const update = () => {
+          lowBattery = battery.level < 0.2 && !battery.charging;
+          sync();
+        };
+        update();
+        battery.addEventListener("levelchange", update);
+        battery.addEventListener("chargingchange", update);
+      })
+      .catch(() => {});
+  }
+
+  function readColorTokens() {
+    const style = getComputedStyle(document.documentElement);
+    cachedFade = style.getPropertyValue("--rain-fade").trim() || "rgba(2, 8, 4, 0.055)";
+    cachedColors = {
+      head: style.getPropertyValue("--rain-head").trim() || "#e6ffe6",
+      head2: style.getPropertyValue("--rain-head2").trim() || "#9dffb0",
+      trail: style.getPropertyValue("--rain-trail").trim() || "#00b33c",
+    };
   }
 
   function randomGlyph() {
@@ -91,8 +154,19 @@
 
   function resize() {
     if (!canvas) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const isFirstResize = lastWidth === 0 && lastHeight === 0;
+    if (!isFirstResize && width === lastWidth && Math.abs(height - lastHeight) <= HEIGHT_JITTER_PX) {
+      return; // URL-bar jitter, not a real resize -- see HEIGHT_JITTER_PX comment above
+    }
+    lastWidth = width;
+    lastHeight = height;
+    canvas.width = width;
+    canvas.height = height;
+    // Resizing a canvas resets its whole drawing-context state, font
+    // included -- must be reapplied every real resize, just not every frame.
+    ctx.font = FONT_STRING;
     const colCount = Math.ceil(canvas.width / COLUMN_WIDTH);
     const next = [];
     for (let i = 0; i < colCount; i++) next.push(columns[i] || makeColumn());
@@ -137,17 +211,9 @@
 
   function draw() {
     if (!ctx || !canvas) return;
-    const style = getComputedStyle(document.documentElement);
-    const fade = style.getPropertyValue("--rain-fade").trim() || "rgba(2, 8, 4, 0.055)";
-    const colors = {
-      head: style.getPropertyValue("--rain-head").trim() || "#e6ffe6",
-      head2: style.getPropertyValue("--rain-head2").trim() || "#9dffb0",
-      trail: style.getPropertyValue("--rain-trail").trim() || "#00b33c",
-    };
-
-    ctx.fillStyle = fade;
+    const colors = cachedColors;
+    ctx.fillStyle = cachedFade;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = FONT_SIZE + 'px "MS Gothic", "Osaka-Mono", "Noto Sans Mono CJK JP", monospace';
 
     const surge = surgeIntensity();
     const effectiveReactivate = REACTIVATE_CHANCE + (1 - REACTIVATE_CHANCE) * surge;
@@ -197,11 +263,12 @@
   }
 
   function start() {
-    if (running || reducedMotion()) return;
+    if (running || shouldYield()) return;
     if (!canvas) {
       canvas = document.getElementById("digital-rain-canvas");
       if (!canvas) return;
       ctx = canvas.getContext("2d");
+      readColorTokens();
     }
     resize();
     running = true;
@@ -221,7 +288,7 @@
   }
 
   function sync() {
-    if (reducedMotion()) stop();
+    if (shouldYield()) stop();
     else start();
   }
 
@@ -229,12 +296,25 @@
     if (running) resize();
   });
 
-  document.addEventListener("ber:booted", sync);
   document.addEventListener("ber:block", () => {
     surgeStartMs = performance.now();
   });
   if (window.matchMedia) {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mq.addEventListener) mq.addEventListener("change", sync);
+    const dataMq = window.matchMedia("(prefers-reduced-data: reduce)");
+    if (dataMq.addEventListener) dataMq.addEventListener("change", sync);
   }
+  const conn = navigator.connection || navigator.webkitConnection || navigator.mozConnection;
+  if (conn && conn.addEventListener) conn.addEventListener("change", sync);
+  watchBattery();
+
+  // Starts immediately rather than waiting for ber:booted: this canvas is
+  // static markup already in the DOM by the time this deferred script
+  // runs, with no dependency on any fetched data. The rain is the cheapest
+  // thing on the page to show -- it shouldn't sit gated behind app.js's
+  // health.json fetch (or, before that fix, the ~3MB of history files boot
+  // used to wait on) just because it happened to listen for the same
+  // "booted" event as modules that genuinely need that data.
+  sync();
 })();

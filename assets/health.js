@@ -20,8 +20,11 @@
   // Section 6): flag the last snapshot age in red once it's suspiciously old.
   const SNAPSHOT_AGE_RED_FLAG_HOURS = 48;
 
+  // Default cache mode (not "no-store"): both health.json and
+  // audit/latest.json are daily-immutable committed files -- see app.js's
+  // fetchJSON for why this matters on repeat same-day mobile visits.
   function fetchJSON(path) {
-    return fetch(path, { cache: "no-store" }).then((r) => {
+    return fetch(path).then((r) => {
       if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
       return r.json();
     });

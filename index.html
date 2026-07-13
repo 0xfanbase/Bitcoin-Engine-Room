@@ -311,7 +311,10 @@
 
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
+<!-- ECharts is no longer loaded here -- charts.js injects it dynamically
+     only once the Price Models section nears the viewport (always below
+     the fold, mobile especially), so the ~340KB(gz) CDN script isn't in
+     every visit's critical path. -->
 <script src="assets/app.js" defer></script>
 <script src="assets/live.js" defer></script>
 <script src="assets/health.js" defer></script>
