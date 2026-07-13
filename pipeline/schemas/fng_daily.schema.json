@@ -25,7 +25,11 @@
             "type": "string",
             "enum": ["Extreme Fear", "Fear", "Neutral", "Greed", "Extreme Greed"]
           },
-          "source": {"const": "alternative_me"}
+          "source": {"const": "alternative_me"},
+          "carried_forward": {
+            "type": "boolean",
+            "description": "True only when this row's value was carried forward from the prior day after every source in the failover chain failed or was rejected this run -- not a fresh observation. Absent (or false) on every freshly-fetched row."
+          }
         }
       }
     }

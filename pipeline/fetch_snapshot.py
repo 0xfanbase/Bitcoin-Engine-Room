@@ -169,13 +169,23 @@ def _sanity_check(metric: str, row: dict, prior_series: list[dict], live_rules: 
 def _check_price_cross_source(row: dict, live_rules: dict) -> bool | None:
     """Best-effort mempool.space vs CoinGecko cross-check (spec Section 6).
 
+    Reuses `row`'s own value for whichever of the two sources it actually
+    came from, instead of re-fetching a source already hit (or already
+    known-failed) moments earlier in the same run by the primary chain --
+    saves up to 2 redundant live HTTP calls/day, including a full
+    retry/backoff cycle against a source that just failed.
+
     Returns True if variance exceeds the threshold (i.e. a WARN should be
     raised), False if within tolerance, None if the check couldn't run.
     Never blocks recording the primary value either way.
     """
     try:
-        mempool_value = MempoolSpaceClient().fetch_price()["value"]
-        coingecko_value = CoinGeckoClient().fetch_price()["value"]
+        mempool_value = (
+            row["value"] if row["source"] == "mempool_space" else MempoolSpaceClient().fetch_price()["value"]
+        )
+        coingecko_value = (
+            row["value"] if row["source"] == "coingecko" else CoinGeckoClient().fetch_price()["value"]
+        )
     except Exception:
         return None
     within_tolerance = check_cross_source_variance(
@@ -199,6 +209,23 @@ def _latest_fields(metric: str, row: dict) -> dict:
     return fields
 
 
+def _is_stale_or_duplicate_date(row: dict, prior_series: list[dict]) -> bool:
+    """True if `row`'s date doesn't advance past the last committed date.
+
+    Most chain entries stamp `_today()` themselves (always fresh), but a
+    fallback that reads its date from upstream data -- blockchain.info's
+    hash-rate chart (`bi_latest`, which can lag a day behind) or
+    alternative.me's "latest" Fear & Greed reading -- can hand back a date
+    that's already the last row in history, or older. Without this guard
+    that candidate gets appended as a second, out-of-order/duplicate-dated
+    row instead of being treated as a failed source, silently corrupting
+    the committed series and re-corrupting it on every subsequent run while
+    the primary stays down (since the idempotent same-day skip never
+    matches a date that isn't actually today).
+    """
+    return bool(prior_series) and row["date"] <= prior_series[-1]["date"]
+
+
 def snapshot_metric(
     metric: str, *, history: dict | None, live_rules: dict, prior_health: dict, height_cache: dict
 ) -> tuple[dict, dict | None]:
@@ -210,6 +237,14 @@ def snapshot_metric(
         try:
             row = fetch_fn()
             latency_ms = (time.monotonic() - start) * 1000
+
+            if _is_stale_or_duplicate_date(row, prior_series):
+                print(
+                    f"WARNING: {metric} rejected {source_name} candidate: stale/duplicate date "
+                    f"{row['date']} (last recorded {prior_series[-1]['date']})",
+                    file=sys.stderr,
+                )
+                continue
 
             candidate_doc = {
                 "metric": metric,
@@ -254,7 +289,13 @@ def snapshot_metric(
     if prior_series:
         last = prior_series[-1]
         if last["date"] != _today():
-            carried_row = {**last, "date": _today()}
+            # `source` stays whatever it was on `last` -- it names where the
+            # underlying VALUE originally came from, not today's (failed)
+            # fetch -- so `carried_forward` is the only signal in the history
+            # file itself that this row is a repeat, not a fresh observation
+            # (health.json's STALE status is a same-day flag that clears on
+            # recovery; this stays permanently attached to the row).
+            carried_row = {**last, "date": _today(), "carried_forward": True}
 
     return record, carried_row
 
@@ -267,7 +308,13 @@ def run_snapshot(metrics: list[str], *, dry_run: bool = False) -> dict:
     prior_health = prior_health_doc.get("metrics", {})
     height_cache: dict = {}
 
-    new_health = {"schema_version": 1, "generated_at": _now_iso(), "metrics": {}}
+    # Seed from prior_health so a `--metrics` subset run (e.g. workflow_dispatch
+    # with a custom --metrics flag) only ever updates the metrics it actually
+    # processed -- previously this replaced the whole metrics dict, wiping
+    # every other metric's health record and, via _handle_github_issue's
+    # "all OK" check below, wrongly auto-closing an open outage issue for a
+    # metric this run never even looked at.
+    new_health = {"schema_version": 1, "generated_at": _now_iso(), "metrics": dict(prior_health)}
     issue_worthy = []
 
     for metric in metrics:

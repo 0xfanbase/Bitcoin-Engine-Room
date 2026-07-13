@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import jsonschema
 import responses
@@ -40,8 +40,8 @@ def test_price_snapshot_appends_new_day_on_success(tmp_path, monkeypatch):
     _seed_history(tmp_path, "price_daily", "USD", [{"date": "2026-07-08", "value": 61000.0, "source": "mempool_space"}])
     _patch_paths(monkeypatch, tmp_path)
 
-    # Called twice: once by the failover chain, once by the cross-source check.
-    responses.add(responses.GET, "https://mempool.space/api/v1/prices", json={"USD": 62000}, status=200)
+    # Called once by the failover chain; the cross-source check reuses that
+    # same value instead of re-fetching mempool.space a second time.
     responses.add(responses.GET, "https://mempool.space/api/v1/prices", json={"USD": 62000}, status=200)
     responses.add(
         responses.GET,
@@ -151,6 +151,9 @@ def test_all_sources_failing_carries_forward_and_increments_failures(tmp_path, m
     assert len(doc["series"]) == 2  # carried forward, not skipped
     assert doc["series"][-1]["value"] == 1.0e14  # same value as last known good
     assert doc["series"][-1]["date"] == fetch_snapshot._today()
+    # Provenance flag: the committed row must be distinguishable from a real
+    # observation even after health.json's transient STALE status clears.
+    assert doc["series"][-1]["carried_forward"] is True
 
 
 @responses.activate
@@ -182,7 +185,6 @@ def test_tip_height_recorded_in_health_even_without_supply_daily(tmp_path, monke
     _seed_history(tmp_path, "price_daily", "USD", [{"date": "2026-07-08", "value": 61000.0, "source": "mempool_space"}])
     _patch_paths(monkeypatch, tmp_path)
 
-    responses.add(responses.GET, "https://mempool.space/api/v1/prices", json={"USD": 62000}, status=200)
     responses.add(responses.GET, "https://mempool.space/api/v1/prices", json={"USD": 62000}, status=200)
     responses.add(
         responses.GET,
@@ -226,3 +228,81 @@ def test_tip_height_carries_forward_last_known_value_on_fetch_failure(tmp_path, 
     # carried forward under its own original date, not fabricated as today.
     assert health["tip_height"] == {"height": 900000, "date": "2026-07-08"}
     jsonschema.validate(health, load_schema("health"))
+
+
+@responses.activate
+def test_hashrate_fallback_with_lagging_upstream_date_is_rejected_not_duplicated(tmp_path, monkeypatch, load_schema):
+    """blockchain.info's hash-rate chart can lag a day behind. Regression test
+    for a real bug: without a date-freshness guard, that lagging fallback
+    value got appended as a second row dated the same as (or older than) the
+    last committed row -- a duplicate/out-of-order date silently corrupting
+    history, re-triggered on every subsequent run while mempool.space stayed
+    down (the idempotent same-day skip never matches a non-today date).
+    """
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+    today = fetch_snapshot._today()
+    _seed_history(tmp_path, "hashrate_daily", "EH/s", [{"date": yesterday, "value": 800.0, "source": "mempool_space"}])
+    _patch_paths(monkeypatch, tmp_path)
+
+    for _ in range(4):
+        responses.add(responses.GET, "https://mempool.space/api/v1/mining/hashrate/3d", status=500)
+    yesterday_unix = int(
+        datetime.strptime(yesterday, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()
+    )
+    # blockchain.info's own chart hasn't updated yet -- its latest point is
+    # still yesterday's, same date as the last committed row.
+    responses.add(
+        responses.GET,
+        "https://api.blockchain.info/charts/hash-rate",
+        json={"values": [{"x": yesterday_unix, "y": 800_000_000.0}]},  # TH/s -> 800 EH/s
+        status=200,
+    )
+
+    health = fetch_snapshot.run_snapshot(["hashrate_daily"])
+
+    # Both sources rejected/failed this run -- carried forward under today's
+    # date instead of the stale fallback being accepted as a fresh row.
+    assert health["metrics"]["hashrate_daily"]["status"] == "STALE"
+    doc = _load_history(tmp_path, "hashrate_daily")
+    assert len(doc["series"]) == 2  # carried forward, not a duplicate-dated append
+    assert doc["series"][-1]["date"] == today
+    assert doc["series"][-1]["value"] == 800.0
+    assert doc["series"][-1]["carried_forward"] is True
+    jsonschema.validate(doc, load_schema("hashrate_daily"))
+
+
+@responses.activate
+def test_metrics_subset_run_preserves_other_metrics_health_records(tmp_path, monkeypatch):
+    """Regression test: running with a --metrics subset used to overwrite
+    health.json's whole `metrics` dict, wiping every other metric's record
+    and (via the all-OK check) wrongly auto-closing an open outage issue for
+    a metric this run never touched.
+    """
+    _seed_history(tmp_path, "price_daily", "USD", [{"date": "2026-07-08", "value": 61000.0, "source": "mempool_space"}])
+    _patch_paths(monkeypatch, tmp_path)
+
+    (tmp_path / "health.json").write_text(json.dumps({
+        "schema_version": 1,
+        "generated_at": "2026-07-08T06:30:00Z",
+        "metrics": {
+            "hashrate_daily": {
+                "source": "mempool_space", "status": "STALE", "latency_ms": None,
+                "consecutive_failures": 5, "last_success_date": "2026-07-03", "stale_since": "2026-07-04",
+            }
+        },
+    }))
+
+    responses.add(responses.GET, "https://mempool.space/api/v1/prices", json={"USD": 62000}, status=200)
+    responses.add(
+        responses.GET,
+        "https://api.coingecko.com/api/v3/simple/price",
+        json={"bitcoin": {"usd": 62050}},
+        status=200,
+    )
+
+    health = fetch_snapshot.run_snapshot(["price_daily"])
+
+    assert health["metrics"]["price_daily"]["status"] == "OK"
+    # hashrate_daily wasn't processed this run -- its prior record must survive.
+    assert health["metrics"]["hashrate_daily"]["status"] == "STALE"
+    assert health["metrics"]["hashrate_daily"]["consecutive_failures"] == 5
