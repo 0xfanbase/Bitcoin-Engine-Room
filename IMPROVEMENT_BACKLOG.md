@@ -14,6 +14,21 @@ Per spec Section 19: "where the spec is silent, choose the simplest option and l
 
 ---
 
+### [post-v1] A long enough outage can wedge a metric perma-STALE (2026-07-13)
+Source: manual (Fable-led data pipeline audit)
+Description: `check_price_live`'s 40% day-over-day bound (`pipeline/validation.py`) compares a fresh candidate against the *carried-forward* value, not the last genuinely fetched one. During a multi-day outage where the real price has genuinely moved >40% from the last real observation, every real source's fresh value would get rejected by the sanity check forever, even after the source itself recovers -- the metric stays STALE until a human manually edits the carried value. Same mechanism could pollute `check_hashrate_live`'s trailing-30-day median with repeated carried-forward duplicates during a long outage.
+Suggested fix: not implemented -- needs real design thought (e.g. widening the day-over-day bound in proportion to `consecutive_failures`/days-carried, or comparing against the last *genuinely fetched* value instead of the carried one). Logged rather than guessed at under audit-fix time pressure.
+
+### [post-v1] `NEXT_HALVING_HEIGHT` is a dated constant that will silently go stale (2026-07-13)
+Source: manual (Fable-led data pipeline audit)
+Description: `pipeline/subsidy.py`'s `NEXT_HALVING_HEIGHT = 1_050_000` (duplicated in `assets/app.js`) is correct for the current halving epoch but hardcoded -- `blocks_until_next_halving()` will return 0 forever once the chain passes that height (~2028), and the frontend's countdown will silently show "0 blocks" instead of counting toward the *next* halving after that.
+Suggested fix: bump both `pipeline/subsidy.py` and `assets/app.js` to the following halving height once this one actually passes, or compute it generically as `((height // HALVING_INTERVAL_BLOCKS) + 1) * HALVING_INTERVAL_BLOCKS` instead of a pinned constant -- the latter is a real fix, not just a future edit, and worth doing next time this file is touched.
+
+### [post-v1] `pipeline/requirements.txt` pins nothing (2026-07-13)
+Source: manual (Fable-led data pipeline audit)
+Description: Every dependency (`requests>=2.31`, `numpy>=1.26`, `jsonschema>=4.20`, `pytest>=8.0`, `responses>=0.24`) is a floor, not a pin -- a breaking release of any of these lands directly in the next `daily.yml` run with no warning, since CI reinstalls fresh each time.
+Suggested fix: not implemented -- a real tradeoff (pinning trades automatic security patches for stability, and needs a process for bumping pins occasionally) rather than an obvious bug fix. Worth a deliberate decision, not a reflexive pin.
+
 ### [post-v1] `.chip-btn` tap targets still under WCAG's 24px floor (2026-07-13)
 Source: manual (mobile UI/UX review -- scope note, not a finding either review actually raised)
 Description: The same mobile audit that fixed `.info-toggle`'s ~19px effective tap target to ~45px left `.chip-btn` (the Power Law chart's 1Y/4Y/ALL range buttons, and the masthead's "Explain everything" toggle) at its current ~22px height -- still under WCAG 2.2's 24px minimum. Neither the Fable director review nor the code-level audit specifically named it, so it was left alone rather than expanding scope past what was reviewed.
