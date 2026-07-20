@@ -2,7 +2,7 @@
   "metric": "difficulty_daily",
   "unit": "raw_difficulty",
   "schema_version": 1,
-  "generated_at": "2026-07-19T08:55:03Z",
+  "generated_at": "2026-07-20T09:42:45Z",
   "series": [
     {
       "date": "2009-01-03",
@@ -31996,6 +31996,11 @@
     },
     {
       "date": "2026-07-19",
+      "value": 127170500429035.2,
+      "source": "mempool_space"
+    },
+    {
+      "date": "2026-07-20",
       "value": 127170500429035.2,
       "source": "mempool_space"
     }
