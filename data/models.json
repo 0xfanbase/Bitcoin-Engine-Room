@@ -1,8 +1,17 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-20T09:42:47Z",
+  "generated_at": "2026-07-21T09:11:39Z",
   "power_law": {
     "params": {
+      "a": -16.261101,
+      "b": 5.617858,
+      "r_squared": 0.959775,
+      "sigma": 0.301373,
+      "fit_start_date": "2010-07-17",
+      "genesis_date": "2009-01-03",
+      "n_points": 5817
+    },
+    "previous_params": {
       "a": -16.26192,
       "b": 5.618108,
       "r_squared": 0.959775,
@@ -11,22 +20,13 @@
       "genesis_date": "2009-01-03",
       "n_points": 5816
     },
-    "previous_params": {
-      "a": -16.262774,
-      "b": 5.61837,
-      "r_squared": 0.959775,
-      "sigma": 0.30137,
-      "fit_start_date": "2010-07-17",
-      "genesis_date": "2009-01-03",
-      "n_points": 5815
-    },
     "current": {
-      "date": "2026-07-20",
-      "price": 64163.0,
-      "trend_price": 133130.82,
-      "deviation_pct": -51.8,
-      "z_score": -1.0518,
-      "residual_percentile": 11.97
+      "date": "2026-07-21",
+      "price": 66163.0,
+      "trend_price": 133206.29,
+      "deviation_pct": -50.33,
+      "z_score": -1.0084,
+      "residual_percentile": 14.06
     },
     "bands": {
       "floor_label": "Idle",
@@ -37,27 +37,27 @@
     "projections": [
       {
         "date": "2027-01-01",
-        "floor": 38333.05,
-        "trend": 153574.26,
-        "ceiling": 615266.9
+        "floor": 38320.84,
+        "trend": 153525.67,
+        "ceiling": 615073.49
       },
       {
         "date": "2028-01-01",
-        "floor": 51934.22,
-        "trend": 208064.84,
-        "ceiling": 833573.33
+        "floor": 51916.97,
+        "trend": 207996.19,
+        "ceiling": 833300.01
       },
       {
         "date": "2030-01-01",
-        "floor": 91180.04,
-        "trend": 365295.98,
-        "ceiling": 1463490.83
+        "floor": 91147.48,
+        "trend": 365166.29,
+        "ceiling": 1462974.25
       },
       {
         "date": "2035-01-01",
-        "floor": 302743.99,
-        "trend": 1212887.84,
-        "ceiling": 4859210.94
+        "floor": 302619.68,
+        "trend": 1212392.34,
+        "ceiling": 4857235.84
       }
     ]
   },
@@ -9242,7 +9242,8 @@
           818,
           819,
           820,
-          821
+          821,
+          822
         ],
         "pct_performance": [
           0.0,
@@ -10066,25 +10067,26 @@
           -1.67,
           0.19,
           1.31,
-          0.53
+          0.53,
+          3.67
         ]
       }
     ],
     "current_epoch": {
       "halving_date": "2024-04-20",
-      "days_into_epoch": 821,
-      "pct_complete_of_avg_epoch": 56.2,
-      "pct_performance": 0.53,
+      "days_into_epoch": 822,
+      "pct_complete_of_avg_epoch": 56.3,
+      "pct_performance": 3.67,
       "cycle_percentile_vs_prior_epochs": 0.0
     }
   },
   "mayer_multiple": {
     "current": {
-      "date": "2026-07-20",
-      "price": 64163.0,
-      "sma_200d": 73036.99,
-      "multiple": 0.8785,
-      "percentile": 25.5
+      "date": "2026-07-21",
+      "price": 66163.0,
+      "sma_200d": 72922.96,
+      "multiple": 0.9073,
+      "percentile": 28.3
     },
     "series": [
       {
@@ -32554,15 +32556,19 @@
       {
         "date": "2026-07-20",
         "value": 0.8785
+      },
+      {
+        "date": "2026-07-21",
+        "value": 0.9073
       }
     ]
   },
   "wma_200": {
     "current": {
-      "date": "2026-07-20",
-      "price": 64163.0,
-      "wma_200w": 63226.57,
-      "distance_pct": 1.48
+      "date": "2026-07-21",
+      "price": 66163.0,
+      "wma_200w": 63236.57,
+      "distance_pct": 4.63
     },
     "series": [
       {
@@ -36358,10 +36364,10 @@
         "distance_pct": 2.63
       },
       {
-        "date": "2026-07-20",
-        "price": 64163.0,
-        "wma_200w": 63226.57,
-        "distance_pct": 1.48
+        "date": "2026-07-21",
+        "price": 66163.0,
+        "wma_200w": 63236.57,
+        "distance_pct": 4.63
       }
     ]
   }
