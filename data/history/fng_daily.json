@@ -2,7 +2,7 @@
   "metric": "fng_daily",
   "unit": "index_0_100",
   "schema_version": 1,
-  "generated_at": "2026-07-22T09:10:49Z",
+  "generated_at": "2026-07-23T09:10:07Z",
   "series": [
     {
       "date": "2018-02-01",
@@ -18541,6 +18541,12 @@
     {
       "date": "2026-07-22",
       "value": 33,
+      "classification": "Fear",
+      "source": "alternative_me"
+    },
+    {
+      "date": "2026-07-23",
+      "value": 31,
       "classification": "Fear",
       "source": "alternative_me"
     }
