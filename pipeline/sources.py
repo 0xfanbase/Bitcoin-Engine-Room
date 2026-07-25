@@ -48,7 +48,7 @@ def request_with_retry(
     json_body: dict | None = None,
     timeout: int = DEFAULT_TIMEOUT,
     max_retries: int = DEFAULT_MAX_RETRIES,
-    sleep_fn=time.sleep,
+    sleep_fn=None,
 ) -> requests.Response:
     """Fetch a URL with polite-client retry/backoff discipline.
 
@@ -58,6 +58,12 @@ def request_with_retry(
     mandatory User-Agent (used by pipeline/gh_issues.py for GitHub's auth
     header); `json_body` is passed through for POST/PATCH calls.
     """
+    # Resolved here rather than defaulted to time.sleep in the signature --
+    # a default argument is bound at def-time, so tests that monkeypatch
+    # pipeline.sources.time.sleep (rather than passing sleep_fn explicitly)
+    # would silently keep sleeping the real backoff delays.
+    if sleep_fn is None:
+        sleep_fn = time.sleep
     headers = {"User-Agent": USER_AGENT, **(extra_headers or {})}
     last_error = "unknown error"
 

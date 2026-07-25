@@ -78,7 +78,7 @@ bitcoin-engine-room/
     └── daily.yml                  # P2, extended P5 to run fetch_snapshot -> fit_models -> audit
 ```
 
-All six phases (P1–P6) are complete as of this writing. There is no P7 in the spec — from here, work is either the weekly `/improve` ritual against `IMPROVEMENT_BACKLOG.md`, or a deliberate new feature the project owner asks for (e.g. resolving the Coin Metrics 401 or the JSON payload budget). The Matrix/Digital-Rain theme, originally deferred post-v1, shipped 2026-07-09 by owner request — see Section 6 rule 9.
+All six phases (P1–P6) are complete as of this writing. There is no P7 in the spec — from here, work is either the weekly `/improve` ritual against `IMPROVEMENT_BACKLOG.md`, or a deliberate new feature the project owner asks for (e.g. resolving the Coin Metrics 401 or the JSON payload budget). The Digital-Rain theme, originally deferred post-v1, shipped 2026-07-09 by owner request — see Section 6 rule 9.
 
 Do not create stub files for anything marked as a later phase — an absent file is the clearest signal of what's in scope right now.
 

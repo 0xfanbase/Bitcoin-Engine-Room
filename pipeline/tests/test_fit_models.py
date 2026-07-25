@@ -1,3 +1,4 @@
+import json
 import math
 from datetime import date, timedelta
 
@@ -220,3 +221,48 @@ def test_200wma_groups_by_iso_week_and_computes_rolling_mean(monkeypatch):
     assert len(result["series"]) == 2
     assert result["series"][-1]["wma_200w"] == pytest.approx((200.0 + 300.0) / 2)
     assert result["current"] == result["series"][-1]
+
+
+# --------------------------------------------------------------------------
+# run_fit orchestration: carried_forward exclusion
+# --------------------------------------------------------------------------
+
+
+def test_run_fit_excludes_carried_forward_rows_from_every_model(tmp_path, monkeypatch):
+    """A carried_forward row is a repeat of the last real observation written
+    under a fresh date during an outage (fetch_snapshot.py) -- real for
+    display, but not a genuine second data point. Appending one must change
+    nothing about any of the four models run_fit() derives from price_series
+    (power law, cycle overlay, Mayer, 200WMA)."""
+    a_true, b_true = -17.0, 5.8
+    series = _synthetic_power_law_series(a_true, b_true, 10, 500)
+
+    price_path = tmp_path / "price_daily.json"
+    constants_path = tmp_path / "model_constants.json"
+    constants_path.write_text(json.dumps(TEST_CONSTANTS))
+    monkeypatch.setattr(fit_models, "PRICE_HISTORY_PATH", price_path)
+    monkeypatch.setattr(fit_models, "MODEL_CONSTANTS_PATH", constants_path)
+    monkeypatch.setattr(fit_models, "MODELS_OUT_PATH", tmp_path / "models.json")
+
+    def write_series(rows):
+        price_path.write_text(json.dumps({
+            "metric": "price_daily", "unit": "USD", "schema_version": 1,
+            "generated_at": "2026-07-08T06:30:00Z", "series": rows,
+        }))
+
+    write_series(series)
+    clean_result = fit_models.run_fit(dry_run=True)
+
+    last = series[-1]
+    carried_date = date.fromisoformat(last["date"]) + timedelta(days=1)
+    carried_row = {**last, "date": carried_date.isoformat(), "carried_forward": True}
+    write_series(series + [carried_row])
+    result_with_carry = fit_models.run_fit(dry_run=True)
+
+    assert result_with_carry["power_law"] == clean_result["power_law"]
+    assert result_with_carry["cycle_overlay"] == clean_result["cycle_overlay"]
+    assert result_with_carry["mayer_multiple"] == clean_result["mayer_multiple"]
+    assert result_with_carry["wma_200"] == clean_result["wma_200"]
+    # Sanity: the fixture actually exercises a non-trivial fit, so this isn't
+    # vacuously true because both sides are empty.
+    assert clean_result["power_law"]["params"]["n_points"] == len(series)

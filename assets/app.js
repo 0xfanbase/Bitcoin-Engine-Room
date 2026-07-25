@@ -49,6 +49,25 @@
     return Math.floor((now - then) / 86400000);
   };
 
+  // Chain/pipeline source ids are snake_case (pipeline/sources.py's own
+  // vocabulary); chips show the human/domain form instead so the same
+  // source doesn't read as two different spellings depending on which
+  // gauge happens to name it (e.g. price's chip showing the raw chain id
+  // "MEMPOOL_SPACE" next to mempool/fees' literal "mempool.space").
+  const SOURCE_DISPLAY_NAMES = {
+    mempool_space: "mempool.space",
+    coingecko: "CoinGecko",
+    coinbase: "Coinbase",
+    blockchain_info: "blockchain.info",
+    alternative_me: "alternative.me",
+    computed_subsidy_schedule: "computed (subsidy schedule)",
+  };
+
+  BER.sourceDisplayName = function (sourceId) {
+    if (!sourceId) return sourceId;
+    return SOURCE_DISPLAY_NAMES[sourceId] || sourceId.toUpperCase();
+  };
+
   // ---------- odometer digits + halving countdown (shared with live.js) ----------
   // Defined here (not live.js) and called by both this module's committed-
   // data fallback paint and live.js's real-time odometer updates, so the

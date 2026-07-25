@@ -37,10 +37,12 @@
   let ws = null;
   let wsReconnectAttempts = 0;
   let wsDegraded = false;
+  let wsResumePending = false;
   let lastBlockHeight = null;
   let lastBlockTimestamp = null;
   let heightPollTimer = null;
   let mempoolReceived = false;
+  let mempoolLive = false;
 
   // ---------- odometer / block height ----------
 
@@ -213,7 +215,15 @@
   // ---------- WebSocket ----------
 
   function connectWebSocket() {
-    if (document.hidden) return; // reconnect will be retried on visibilitychange
+    if (document.hidden) {
+      // Consumed by resumeAllPolling() on the next visibilitychange -- without
+      // this, a reconnect attempt that lands while backgrounded (the initial
+      // attempt, or one of scheduleReconnect's backoff retries) drops silently:
+      // no socket, no further timer, wsDegraded never trips, so returning to
+      // the tab found nothing left trying to recover.
+      wsResumePending = true;
+      return;
+    }
     try {
       ws = new WebSocket(WS_URL);
     } catch (e) {
@@ -306,12 +316,37 @@
     }
   }
 
-  function renderMempool(count) {
+  function renderMempool(count, { live = true } = {}) {
     if (count == null) return;
+    // A REST-sourced reading must never clobber one the WebSocket already
+    // delivered -- without this guard a first-paint REST response landing a
+    // beat after the WS's own message would downgrade an already-LIVE chip
+    // back to DELAYED.
+    if (!live && mempoolLive) return;
     mempoolReceived = true;
+    if (live) mempoolLive = true;
     const el = document.getElementById("gauge-mempool");
     if (el) el.textContent = Number(count).toLocaleString("en-US");
-    BER.setChip("chip-mempool", "LIVE", "LIVE · mempool.space");
+    BER.setChip("chip-mempool", live ? "LIVE" : "DELAYED", live ? "LIVE · mempool.space" : "DELAYED · polling");
+  }
+
+  // Mempool has no committed-history fallback (it's a live-only metric, spec
+  // Section 5) and previously had no REST path at all, so every load showed
+  // "—" for up to MEMPOOL_FALLBACK_TIMEOUT_MS regardless of how fast the
+  // other five gauges painted from committed data -- the one visible gap in
+  // an otherwise never-blank page. One-shot REST first-paint at boot closes
+  // it; the WebSocket still upgrades the chip to LIVE the moment it delivers
+  // its own reading (see the `live` guard above).
+  async function fetchMempoolOnce() {
+    if (document.hidden) return;
+    try {
+      const res = await fetch(`${REST_BASE}/mempool`, { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status " + res.status);
+      const data = await res.json();
+      if (typeof data.count === "number") renderMempool(data.count, { live: false });
+    } catch (e) {
+      // WebSocket path or the MEMPOOL_FALLBACK_TIMEOUT_MS fallback handles it.
+    }
   }
 
   // ---------- REST polling: price (with client failover), fees, difficulty ----------
@@ -358,7 +393,10 @@
         // Status word first, source second -- matches the vocabulary used
         // everywhere else a chip appears (DAILY · as of <date>, STALE ·
         // unavailable, etc.) instead of showing the raw source id alone.
-        BER.setChip("chip-price", status, status + " · " + result.source);
+        // Human/domain name, not the raw snake_case chain id -- otherwise
+        // this is the only chip on the page spelling mempool.space as
+        // "MEMPOOL_SPACE" next to gauges that spell it "mempool.space".
+        BER.setChip("chip-price", status, status + " · " + BER.sourceDisplayName(result.source));
       }
       // On total failure, leave the committed-data STALE display from app.js untouched.
     } finally {
@@ -412,6 +450,10 @@
 
   function resumeAllPolling() {
     if (wsDegraded) startHeightPolling();
+    if (wsResumePending) {
+      wsResumePending = false;
+      connectWebSocket();
+    }
   }
 
   document.addEventListener("visibilitychange", () => {
@@ -429,6 +471,7 @@
     pollPrice();
     pollFees();
     pollDifficultyAdjustment();
+    fetchMempoolOnce();
     startRailTicker();
     setInterval(pollPrice, PRICE_POLL_MS);
     setInterval(pollFees, PRICE_POLL_MS);

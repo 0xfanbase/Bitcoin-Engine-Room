@@ -19,6 +19,14 @@
 
   const BER = (window.BER = window.BER || {});
   const ECHARTS_CDN_URL = "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js";
+  // Subresource Integrity: the version is exactly pinned, so this hash
+  // (computed from that same pinned file) never needs to change until the
+  // pinned version itself does. Without it, the one third-party executable
+  // byte on this page has no defense against a CDN compromise -- a real
+  // gap on a site presenting financial figures. A hash mismatch fails the
+  // load the same way a network failure already does (see the onerror
+  // handler below), never a silent partial script.
+  const ECHARTS_CDN_INTEGRITY = "sha384-Mx5lkUEQPM1pOJCwFtUICyX45KNojXbkWdYhkKUKsbv391mavbfoAmONbzkgYPzR";
   let charts = {};
   let modelsDoc = null;
   let priceHistorySeries = [];
@@ -200,7 +208,7 @@
       const cutoff = new Date();
       cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
       const cutoffStr = cutoff.toISOString().slice(0, 10);
-      filtered = priceHistory.filter((r) => r.date >= cutoffStr);
+      filtered = priceHistorySeries.filter((r) => r.date >= cutoffStr);
     }
     // Series values are log10(price), not price, plotted on a linear y-axis
     // (formatted back to dollars for display) rather than a genuine log
@@ -251,8 +259,13 @@
         // either, since ECharts only recomputes percentage-based grid
         // margins on .resize() -- fixed pixel ones just sit there. Right
         // stays wider than left to leave room for the Idle/Cruise/Redline
-        // endLabel text, which renders inside this margin.
-        grid: { left: "10%", right: "13%", top: 20, bottom: 40 },
+        // endLabel text, which renders inside this margin. Left uses
+        // containLabel instead of a guessed percentage/px width: a fixed
+        // guess clipped the "$" (and sometimes a digit) off labels like
+        // $100K on narrow viewports where the guessed gutter came in
+        // narrower than the label actually needed -- containLabel sizes the
+        // reserved space to the real rendered label width instead.
+        grid: { left: 8, right: "13%", top: 20, bottom: 40, containLabel: true },
         xAxis: {
           type: "log",
           min: minDay,
@@ -398,11 +411,14 @@
     document.querySelectorAll("[data-power-law-range]").forEach((btn) => {
       btn.addEventListener("click", () => {
         powerLawRange = btn.dataset.powerLawRange;
+        // Render before flipping is-active/aria-pressed: if the render fails
+        // or no-ops (data not loaded yet), the control must not claim a
+        // range the chart isn't actually showing.
+        renderPowerLaw(colorTokens());
         document.querySelectorAll("[data-power-law-range]").forEach((b) => {
           b.classList.toggle("is-active", b === btn);
           b.setAttribute("aria-pressed", String(b === btn));
         });
-        renderPowerLaw(colorTokens());
       });
     });
   }
@@ -476,7 +492,9 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 55, right: 45, top: 30, bottom: 35 },
+        // containLabel: same clipping-prevention fix as the hero chart's
+        // grid (see its comment) -- swept across all four charts.
+        grid: { left: 8, right: 45, top: 30, bottom: 35, containLabel: true },
         // 2012's +10,000% cycle otherwise owns the whole y-axis, squashing
         // every later cycle (including the current one) into a flat line
         // near 0%. Deselected by default, not hidden -- its legend chip is
@@ -530,7 +548,9 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 50, right: 50, top: 30, bottom: 35 },
+        // containLabel: same clipping-prevention fix as the hero chart's
+        // grid (see its comment) -- swept across all four charts.
+        grid: { left: 8, right: 50, top: 30, bottom: 35, containLabel: true },
         legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 } },
         xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
         // No axis `name` on either side (director ruling, mobile-legibility
@@ -627,7 +647,9 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 45, right: 20, top: 20, bottom: 35 },
+        // containLabel: same clipping-prevention fix as the hero chart's
+        // grid (see its comment) -- swept across all four charts.
+        grid: { left: 8, right: 20, top: 20, bottom: 35, containLabel: true },
         xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
         yAxis: {
           type: "value",
@@ -706,6 +728,8 @@
     return new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = ECHARTS_CDN_URL;
+      script.integrity = ECHARTS_CDN_INTEGRITY;
+      script.crossOrigin = "anonymous";
       script.onload = () => resolve();
       script.onerror = () => reject(new Error("ECharts CDN script failed to load"));
       document.head.appendChild(script);
