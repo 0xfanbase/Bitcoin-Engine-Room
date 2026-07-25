@@ -732,6 +732,14 @@ a {
   font-size: 0.8rem;
   color: var(--ink-dim);
   margin-bottom: 0.75rem;
+  /* Readability law (CLAUDE.md Section 6 rule 10): no DOM text sits
+     directly over unbacked rain. This was the one element left without a
+     backing surface -- same panel treatment as .info-disclosure/.health-row
+     right below it. */
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 0.6rem 0.8rem;
 }
 
 /* ---------- Info toggles ("explain-everything" educational tooltips,
