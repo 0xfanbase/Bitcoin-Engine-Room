@@ -37,6 +37,7 @@
   let ws = null;
   let wsReconnectAttempts = 0;
   let wsDegraded = false;
+  let wsResumePending = false;
   let lastBlockHeight = null;
   let lastBlockTimestamp = null;
   let heightPollTimer = null;
@@ -213,7 +214,15 @@
   // ---------- WebSocket ----------
 
   function connectWebSocket() {
-    if (document.hidden) return; // reconnect will be retried on visibilitychange
+    if (document.hidden) {
+      // Consumed by resumeAllPolling() on the next visibilitychange -- without
+      // this, a reconnect attempt that lands while backgrounded (the initial
+      // attempt, or one of scheduleReconnect's backoff retries) drops silently:
+      // no socket, no further timer, wsDegraded never trips, so returning to
+      // the tab found nothing left trying to recover.
+      wsResumePending = true;
+      return;
+    }
     try {
       ws = new WebSocket(WS_URL);
     } catch (e) {
@@ -412,6 +421,10 @@
 
   function resumeAllPolling() {
     if (wsDegraded) startHeightPolling();
+    if (wsResumePending) {
+      wsResumePending = false;
+      connectWebSocket();
+    }
   }
 
   document.addEventListener("visibilitychange", () => {
