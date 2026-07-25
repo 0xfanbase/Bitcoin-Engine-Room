@@ -200,7 +200,7 @@
       const cutoff = new Date();
       cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
       const cutoffStr = cutoff.toISOString().slice(0, 10);
-      filtered = priceHistory.filter((r) => r.date >= cutoffStr);
+      filtered = priceHistorySeries.filter((r) => r.date >= cutoffStr);
     }
     // Series values are log10(price), not price, plotted on a linear y-axis
     // (formatted back to dollars for display) rather than a genuine log
@@ -398,11 +398,14 @@
     document.querySelectorAll("[data-power-law-range]").forEach((btn) => {
       btn.addEventListener("click", () => {
         powerLawRange = btn.dataset.powerLawRange;
+        // Render before flipping is-active/aria-pressed: if the render fails
+        // or no-ops (data not loaded yet), the control must not claim a
+        // range the chart isn't actually showing.
+        renderPowerLaw(colorTokens());
         document.querySelectorAll("[data-power-law-range]").forEach((b) => {
           b.classList.toggle("is-active", b === btn);
           b.setAttribute("aria-pressed", String(b === btn));
         });
-        renderPowerLaw(colorTokens());
       });
     });
   }
