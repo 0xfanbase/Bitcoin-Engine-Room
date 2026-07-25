@@ -301,7 +301,13 @@ def compute_200wma(price_series: list[dict]) -> dict:
 
 def run_fit(*, dry_run: bool = False) -> dict:
     price_doc = load_json(PRICE_HISTORY_PATH)
-    price_series = price_doc["series"]
+    # carried_forward rows are a repeat of the last real observation, written
+    # under today's date during an outage (fetch_snapshot.py) -- real for
+    # display (never blank a gauge), but not a genuine second data point.
+    # Filtered once here, at the source, so every model derived from
+    # price_series (power law, cycle overlay, Mayer, 200WMA) counts only
+    # real observations instead of quietly inflating n_points with repeats.
+    price_series = [row for row in price_doc["series"] if not row.get("carried_forward")]
     constants = load_json(MODEL_CONSTANTS_PATH)
     previous_models = load_json(MODELS_OUT_PATH) if MODELS_OUT_PATH.exists() else None
 
