@@ -19,6 +19,14 @@
 
   const BER = (window.BER = window.BER || {});
   const ECHARTS_CDN_URL = "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js";
+  // Subresource Integrity: the version is exactly pinned, so this hash
+  // (computed from that same pinned file) never needs to change until the
+  // pinned version itself does. Without it, the one third-party executable
+  // byte on this page has no defense against a CDN compromise -- a real
+  // gap on a site presenting financial figures. A hash mismatch fails the
+  // load the same way a network failure already does (see the onerror
+  // handler below), never a silent partial script.
+  const ECHARTS_CDN_INTEGRITY = "sha384-Mx5lkUEQPM1pOJCwFtUICyX45KNojXbkWdYhkKUKsbv391mavbfoAmONbzkgYPzR";
   let charts = {};
   let modelsDoc = null;
   let priceHistorySeries = [];
@@ -720,6 +728,8 @@
     return new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = ECHARTS_CDN_URL;
+      script.integrity = ECHARTS_CDN_INTEGRITY;
+      script.crossOrigin = "anonymous";
       script.onload = () => resolve();
       script.onerror = () => reject(new Error("ECharts CDN script failed to load"));
       document.head.appendChild(script);
