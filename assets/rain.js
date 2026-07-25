@@ -27,11 +27,14 @@
  *
  * IP note (director ruling): the falling-glyph-on-black trope is generic
  * and unprotectable, reimplemented thousands of times since 1999 without
- * incident -- but the film's own specific glyph typeface is a protected
- * derivative-work risk, so this draws half-width katakana + digits from
- * ordinary system font stacks only, never a "Matrix code font." Public
- * name is "Digital Rain," always -- never the film's title, anywhere in
- * UI copy, code comments, or element ids.
+ * incident -- but the source film's own specific glyph typeface is a
+ * protected derivative-work risk, so this draws half-width katakana +
+ * digits from ordinary system font stacks only, never a downloaded
+ * lookalike font traced from that typeface. Public name is "Digital
+ * Rain," always -- never the film's title, anywhere in UI copy, code
+ * comments, or element ids (this comment ships unminified to every
+ * visitor -- no build step -- so it holds itself to the same rule it
+ * states).
  */
 (function () {
   "use strict";
