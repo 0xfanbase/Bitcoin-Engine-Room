@@ -36,7 +36,7 @@ Educational tool. Not financial advice. Models are curve fits, not guarantees.
 
 ## Status
 
-Phases 1 through 5 (skeleton & backfill, daily pipeline, frontend core, models & charts, audit & health panel) are built. See [`PROGRESS.md`](PROGRESS.md) for the full session log and phase checklist, and [`IMPROVEMENT_BACKLOG.md`](IMPROVEMENT_BACKLOG.md) for open items — including two the site's own audit surfaces honestly rather than hiding: the committed JSON payload currently exceeds the project's own 2MB budget, and hash rate doesn't yet have a cross-source variance check the way price does.
+All six build phases (skeleton & backfill, daily pipeline, frontend core, models & charts, audit & health panel, polish) are built. Ongoing work is the weekly `/improve` ritual against the backlog, not a new phase. See [`PROGRESS.md`](PROGRESS.md) for the full session log and phase checklist, and [`IMPROVEMENT_BACKLOG.md`](IMPROVEMENT_BACKLOG.md) for open items — including one the site's own audit surfaces honestly rather than hiding: hash rate doesn't yet have a cross-source variance check the way price does. (The committed JSON payload once exceeded a 2MB budget; the project owner raised that to 5MB rather than trim history, since comprehensive daily history back to genesis is the site's stated differentiator — the daily audit has passed since.)
 
 ## License
 
