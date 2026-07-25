@@ -1,8 +1,17 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-24T09:04:16Z",
+  "generated_at": "2026-07-25T08:31:35Z",
   "power_law": {
     "params": {
+      "a": -16.257752,
+      "b": 5.616833,
+      "r_squared": 0.959775,
+      "sigma": 0.30138,
+      "fit_start_date": "2010-07-17",
+      "genesis_date": "2009-01-03",
+      "n_points": 5821
+    },
+    "previous_params": {
       "a": -16.258614,
       "b": 5.617097,
       "r_squared": 0.959775,
@@ -11,22 +20,13 @@
       "genesis_date": "2009-01-03",
       "n_points": 5820
     },
-    "previous_params": {
-      "a": -16.25945,
-      "b": 5.617353,
-      "r_squared": 0.959775,
-      "sigma": 0.301375,
-      "fit_start_date": "2010-07-17",
-      "genesis_date": "2009-01-03",
-      "n_points": 5819
-    },
     "current": {
-      "date": "2026-07-24",
-      "price": 65265.0,
-      "trend_price": 133431.22,
-      "deviation_pct": -51.09,
-      "z_score": -1.0305,
-      "residual_percentile": 13.11
+      "date": "2026-07-25",
+      "price": 63918.0,
+      "trend_price": 133504.62,
+      "deviation_pct": -52.12,
+      "z_score": -1.0614,
+      "residual_percentile": 11.44
     },
     "bands": {
       "floor_label": "Idle",
@@ -37,27 +37,27 @@
     "projections": [
       {
         "date": "2027-01-01",
-        "floor": 38283.42,
-        "trend": 153378.18,
-        "ceiling": 614492.27
+        "floor": 38270.11,
+        "trend": 153327.16,
+        "ceiling": 614297.18
       },
       {
         "date": "2028-01-01",
-        "floor": 51864.15,
-        "trend": 207787.83,
-        "ceiling": 832478.34
+        "floor": 51845.37,
+        "trend": 207715.75,
+        "ceiling": 832202.19
       },
       {
         "date": "2030-01-01",
-        "floor": 91047.8,
-        "trend": 364772.66,
-        "ceiling": 1461420.28
+        "floor": 91012.44,
+        "trend": 364636.52,
+        "ceiling": 1460896.95
       },
       {
         "date": "2035-01-01",
-        "floor": 302239.6,
-        "trend": 1210888.64,
-        "ceiling": 4851287.93
+        "floor": 302105.22,
+        "trend": 1210368.59,
+        "ceiling": 4849277.84
       }
     ]
   },
@@ -9246,7 +9246,8 @@
           822,
           823,
           824,
-          825
+          825,
+          826
         ],
         "pct_performance": [
           0.0,
@@ -10074,25 +10075,26 @@
           3.67,
           3.37,
           2.9,
-          2.26
+          2.26,
+          0.15
         ]
       }
     ],
     "current_epoch": {
       "halving_date": "2024-04-20",
-      "days_into_epoch": 825,
+      "days_into_epoch": 826,
       "pct_complete_of_avg_epoch": 56.5,
-      "pct_performance": 2.26,
+      "pct_performance": 0.15,
       "cycle_percentile_vs_prior_epochs": 0.0
     }
   },
   "mayer_multiple": {
     "current": {
-      "date": "2026-07-24",
-      "price": 65265.0,
-      "sma_200d": 72548.91,
-      "multiple": 0.8996,
-      "percentile": 27.3
+      "date": "2026-07-25",
+      "price": 63918.0,
+      "sma_200d": 72395.51,
+      "multiple": 0.8829,
+      "percentile": 25.8
     },
     "series": [
       {
@@ -32578,15 +32580,19 @@
       {
         "date": "2026-07-24",
         "value": 0.8996
+      },
+      {
+        "date": "2026-07-25",
+        "value": 0.8829
       }
     ]
   },
   "wma_200": {
     "current": {
-      "date": "2026-07-24",
-      "price": 65265.0,
-      "wma_200w": 63232.08,
-      "distance_pct": 3.22
+      "date": "2026-07-25",
+      "price": 63918.0,
+      "wma_200w": 63225.35,
+      "distance_pct": 1.1
     },
     "series": [
       {
@@ -36382,10 +36388,10 @@
         "distance_pct": 2.63
       },
       {
-        "date": "2026-07-24",
-        "price": 65265.0,
-        "wma_200w": 63232.08,
-        "distance_pct": 3.22
+        "date": "2026-07-25",
+        "price": 63918.0,
+        "wma_200w": 63225.35,
+        "distance_pct": 1.1
       }
     ]
   }
