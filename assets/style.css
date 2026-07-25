@@ -426,7 +426,9 @@ a {
   font-family: var(--font-data);
   font-size: 1.6rem;
   color: var(--ink);
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .gauge-value .unit {
@@ -917,5 +919,16 @@ a {
   }
   .masthead-stats {
     gap: 1rem 1.5rem;
+  }
+  /* Real readouts like "915.4 EH/s" and "20.061M BTC" don't fit the 2-col
+     grid's narrow cards at the base 1.6rem size without wrapping between
+     the number and its unit -- a legibility regression on ordinary,
+     everyday values (.gauge-value is nowrap + ellipsis now, see its rule,
+     precisely so it never silently wraps mid-reading again). 0.95rem is
+     the measured size (Playwright, real committed values, 320-480px) that
+     keeps the longest current readouts on one line with no ellipsis;
+     still a clear step up from the 0.75rem card label above it. */
+  .gauge-value {
+    font-size: 0.95rem;
   }
 }
