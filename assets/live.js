@@ -42,6 +42,7 @@
   let lastBlockTimestamp = null;
   let heightPollTimer = null;
   let mempoolReceived = false;
+  let mempoolLive = false;
 
   // ---------- odometer / block height ----------
 
@@ -315,12 +316,37 @@
     }
   }
 
-  function renderMempool(count) {
+  function renderMempool(count, { live = true } = {}) {
     if (count == null) return;
+    // A REST-sourced reading must never clobber one the WebSocket already
+    // delivered -- without this guard a first-paint REST response landing a
+    // beat after the WS's own message would downgrade an already-LIVE chip
+    // back to DELAYED.
+    if (!live && mempoolLive) return;
     mempoolReceived = true;
+    if (live) mempoolLive = true;
     const el = document.getElementById("gauge-mempool");
     if (el) el.textContent = Number(count).toLocaleString("en-US");
-    BER.setChip("chip-mempool", "LIVE", "LIVE · mempool.space");
+    BER.setChip("chip-mempool", live ? "LIVE" : "DELAYED", live ? "LIVE · mempool.space" : "DELAYED · polling");
+  }
+
+  // Mempool has no committed-history fallback (it's a live-only metric, spec
+  // Section 5) and previously had no REST path at all, so every load showed
+  // "—" for up to MEMPOOL_FALLBACK_TIMEOUT_MS regardless of how fast the
+  // other five gauges painted from committed data -- the one visible gap in
+  // an otherwise never-blank page. One-shot REST first-paint at boot closes
+  // it; the WebSocket still upgrades the chip to LIVE the moment it delivers
+  // its own reading (see the `live` guard above).
+  async function fetchMempoolOnce() {
+    if (document.hidden) return;
+    try {
+      const res = await fetch(`${REST_BASE}/mempool`, { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status " + res.status);
+      const data = await res.json();
+      if (typeof data.count === "number") renderMempool(data.count, { live: false });
+    } catch (e) {
+      // WebSocket path or the MEMPOOL_FALLBACK_TIMEOUT_MS fallback handles it.
+    }
   }
 
   // ---------- REST polling: price (with client failover), fees, difficulty ----------
@@ -442,6 +468,7 @@
     pollPrice();
     pollFees();
     pollDifficultyAdjustment();
+    fetchMempoolOnce();
     startRailTicker();
     setInterval(pollPrice, PRICE_POLL_MS);
     setInterval(pollFees, PRICE_POLL_MS);
