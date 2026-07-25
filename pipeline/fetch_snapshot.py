@@ -227,9 +227,22 @@ def _is_stale_or_duplicate_date(row: dict, prior_series: list[dict]) -> bool:
 
 
 def snapshot_metric(
-    metric: str, *, history: dict | None, live_rules: dict, prior_health: dict, height_cache: dict
+    metric: str,
+    *,
+    history: dict | None,
+    live_rules: dict,
+    prior_health: dict,
+    height_cache: dict,
+    already_failed_today: bool = False,
 ) -> tuple[dict, dict | None]:
-    """Try each source in `metric`'s chain. Returns (health_record, new_row_or_None)."""
+    """Try each source in `metric`'s chain. Returns (health_record, new_row_or_None).
+
+    `already_failed_today` is set by a same-day retry of a carried-forward
+    placeholder (run_snapshot already stripped that placeholder out of
+    `history` before calling this): a failure here is a continuation of
+    today's already-recorded outage, not a new day of it, so
+    `consecutive_failures` must not increment a second time.
+    """
     prior_series = history["series"] if history else []
 
     for source_name, fetch_fn in _source_chain(metric, height_cache):
@@ -274,7 +287,9 @@ def snapshot_metric(
             continue
 
     # every source in the chain failed or was rejected -- carry forward
-    consecutive_failures = prior_health.get("consecutive_failures", 0) + 1
+    consecutive_failures = prior_health.get("consecutive_failures", 0)
+    if not already_failed_today:
+        consecutive_failures += 1
     stale_since = prior_health.get("stale_since") or _today()
     record = {
         "source": prior_health.get("source"),
@@ -319,19 +334,35 @@ def run_snapshot(metrics: list[str], *, dry_run: bool = False) -> dict:
 
     for metric in metrics:
         history = load_history(metric)
+        last_row = history["series"][-1] if history and history["series"] else None
+        recorded_today = last_row is not None and last_row["date"] == _today()
 
-        if history and history["series"] and history["series"][-1]["date"] == _today():
-            # Idempotent: already recorded today, nothing to do this run.
-            # Reuse prior health.json's record if we have one; otherwise derive
-            # a proper OK record from the already-valid last row rather than
-            # fabricating a misleading STALE placeholder.
+        if recorded_today and not last_row.get("carried_forward"):
+            # Idempotent: a real observation already recorded today, nothing
+            # to do this run. Reuse prior health.json's record if we have
+            # one; otherwise derive a proper OK record from the already-valid
+            # last row rather than fabricating a misleading STALE placeholder.
             record = dict(prior_health.get(metric) or _health_record_from_existing(history))
-            record.update(_latest_fields(metric, history["series"][-1]))
+            record.update(_latest_fields(metric, last_row))
             new_health["metrics"][metric] = record
             continue
 
+        retry_today = recorded_today  # recorded_today here implies carried_forward
+        if retry_today:
+            # A same-day operator retry (e.g. workflow_dispatch after sources
+            # recover): drop today's placeholder before trying the chain
+            # again, so a fresh success replaces it in place -- one row per
+            # date, not two -- instead of the idempotent check above treating
+            # a permanently-stale placeholder as "nothing to do" forever.
+            history = {**history, "series": history["series"][:-1]}
+
         record, row = snapshot_metric(
-            metric, history=history, live_rules=live_rules, prior_health=prior_health.get(metric, {}), height_cache=height_cache
+            metric,
+            history=history,
+            live_rules=live_rules,
+            prior_health=prior_health.get(metric, {}),
+            height_cache=height_cache,
+            already_failed_today=retry_today,
         )
 
         if metric == "price_daily" and record["status"] == "OK":

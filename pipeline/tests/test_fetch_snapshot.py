@@ -157,6 +157,89 @@ def test_all_sources_failing_carries_forward_and_increments_failures(tmp_path, m
 
 
 @responses.activate
+def test_same_day_retry_recovers_and_replaces_carried_forward_row(tmp_path, monkeypatch):
+    today = fetch_snapshot._today()
+    _seed_history(tmp_path, "price_daily", "USD", [
+        {"date": "2026-07-07", "value": 61000.0, "source": "mempool_space"},
+        {"date": today, "value": 61000.0, "source": "mempool_space", "carried_forward": True},
+    ])
+    _patch_paths(monkeypatch, tmp_path)
+    (tmp_path / "health.json").write_text(json.dumps({
+        "schema_version": 1,
+        "generated_at": "2026-07-08T06:30:00Z",
+        "metrics": {
+            "price_daily": {
+                "source": "mempool_space", "status": "STALE", "latency_ms": None,
+                "consecutive_failures": 1, "last_success_date": "2026-07-07", "stale_since": today,
+            }
+        },
+    }))
+
+    # Sources have recovered since the earlier failed attempt today.
+    responses.add(responses.GET, "https://mempool.space/api/v1/prices", json={"USD": 63000}, status=200)
+    responses.add(
+        responses.GET, "https://api.coingecko.com/api/v3/simple/price",
+        json={"bitcoin": {"usd": 63050}}, status=200,
+    )
+
+    health = fetch_snapshot.run_snapshot(["price_daily"])
+
+    record = health["metrics"]["price_daily"]
+    assert record["status"] == "OK"
+    assert record["consecutive_failures"] == 0
+    assert record["last_value"] == 63000.0
+
+    doc = _load_history(tmp_path, "price_daily")
+    # Placeholder replaced in place, not appended alongside -- still exactly
+    # one row for today.
+    assert len(doc["series"]) == 2
+    assert doc["series"][-1] == {"date": today, "value": 63000.0, "source": "mempool_space"}
+    assert "carried_forward" not in doc["series"][-1]
+
+
+@responses.activate
+def test_same_day_retry_still_failing_does_not_double_count(tmp_path, monkeypatch):
+    today = fetch_snapshot._today()
+    _seed_history(tmp_path, "difficulty_daily", "raw_difficulty", [
+        {"date": "2026-07-07", "value": 1.0e14, "source": "mempool_space"},
+        {"date": today, "value": 1.0e14, "source": "mempool_space", "carried_forward": True},
+    ])
+    _patch_paths(monkeypatch, tmp_path)
+    (tmp_path / "health.json").write_text(json.dumps({
+        "schema_version": 1,
+        "generated_at": "2026-07-08T06:30:00Z",
+        "metrics": {
+            "difficulty_daily": {
+                "source": "mempool_space", "status": "STALE", "latency_ms": None,
+                "consecutive_failures": 1, "last_success_date": "2026-07-06", "stale_since": today,
+            }
+        },
+    }))
+
+    # Sources are still down on this same-day retry.
+    for _ in range(4):
+        responses.add(responses.GET, "https://mempool.space/api/v1/difficulty-adjustment", status=500)
+    for _ in range(4):
+        responses.add(responses.GET, "https://blockchain.info/q/getdifficulty", status=500)
+
+    health = fetch_snapshot.run_snapshot(["difficulty_daily"])
+
+    record = health["metrics"]["difficulty_daily"]
+    assert record["status"] == "STALE"
+    # Still 1, not 2 -- this is a retry of today's already-recorded failure,
+    # not a second day of outage.
+    assert record["consecutive_failures"] == 1
+    assert record["stale_since"] == today
+
+    doc = _load_history(tmp_path, "difficulty_daily")
+    # Placeholder regenerated in place -- still exactly one row for today,
+    # not a second stacked on top.
+    assert len(doc["series"]) == 2
+    assert doc["series"][-1]["date"] == today
+    assert doc["series"][-1]["carried_forward"] is True
+
+
+@responses.activate
 def test_supply_falls_through_to_computed_subsidy_schedule(tmp_path, monkeypatch):
     _seed_history(tmp_path, "supply_daily", "BTC", [{"date": "2026-07-08", "value": 20_053_800.0, "source": "blockchain_info"}])
     _patch_paths(monkeypatch, tmp_path)
