@@ -251,8 +251,13 @@
         // either, since ECharts only recomputes percentage-based grid
         // margins on .resize() -- fixed pixel ones just sit there. Right
         // stays wider than left to leave room for the Idle/Cruise/Redline
-        // endLabel text, which renders inside this margin.
-        grid: { left: "10%", right: "13%", top: 20, bottom: 40 },
+        // endLabel text, which renders inside this margin. Left uses
+        // containLabel instead of a guessed percentage/px width: a fixed
+        // guess clipped the "$" (and sometimes a digit) off labels like
+        // $100K on narrow viewports where the guessed gutter came in
+        // narrower than the label actually needed -- containLabel sizes the
+        // reserved space to the real rendered label width instead.
+        grid: { left: 8, right: "13%", top: 20, bottom: 40, containLabel: true },
         xAxis: {
           type: "log",
           min: minDay,
@@ -479,7 +484,9 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 55, right: 45, top: 30, bottom: 35 },
+        // containLabel: same clipping-prevention fix as the hero chart's
+        // grid (see its comment) -- swept across all four charts.
+        grid: { left: 8, right: 45, top: 30, bottom: 35, containLabel: true },
         // 2012's +10,000% cycle otherwise owns the whole y-axis, squashing
         // every later cycle (including the current one) into a flat line
         // near 0%. Deselected by default, not hidden -- its legend chip is
@@ -533,7 +540,9 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 50, right: 50, top: 30, bottom: 35 },
+        // containLabel: same clipping-prevention fix as the hero chart's
+        // grid (see its comment) -- swept across all four charts.
+        grid: { left: 8, right: 50, top: 30, bottom: 35, containLabel: true },
         legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 } },
         xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
         // No axis `name` on either side (director ruling, mobile-legibility
@@ -630,7 +639,9 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 45, right: 20, top: 20, bottom: 35 },
+        // containLabel: same clipping-prevention fix as the hero chart's
+        // grid (see its comment) -- swept across all four charts.
+        grid: { left: 8, right: 20, top: 20, bottom: 35, containLabel: true },
         xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
         yAxis: {
           type: "value",
