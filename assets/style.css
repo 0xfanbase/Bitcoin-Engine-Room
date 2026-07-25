@@ -17,7 +17,15 @@
   --panel: rgba(4, 16, 8, 0.92);
   --panel-border: #123322;
   --ink: #cfe8d4;
-  --ink-dim: #5f8a6c;
+  /* Raised from #5f8a6c: at ~5.1:1 on a bare background that token had too
+     little headroom to survive even the readability law's own compliant
+     8% rain bleed through a 0.92-opacity panel -- several small-text
+     elements measured below the 4.5:1 AA floor depending on which glyph
+     happened to be behind them at a given instant. Same family, still
+     unmistakably dimmer than --ink, just enough brighter to hold the floor
+     under worst-case bleed (verified by direct canvas pixel sampling, not
+     token math alone). */
+  --ink-dim: #7fa98c;
   --accent: #33ff66;       /* phosphor green -- DATA color only, never a surface (director rule) */
   --ok: #33ff66;
   --warn: #d0e64a;
