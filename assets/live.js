@@ -393,7 +393,10 @@
         // Status word first, source second -- matches the vocabulary used
         // everywhere else a chip appears (DAILY · as of <date>, STALE ·
         // unavailable, etc.) instead of showing the raw source id alone.
-        BER.setChip("chip-price", status, status + " · " + result.source);
+        // Human/domain name, not the raw snake_case chain id -- otherwise
+        // this is the only chip on the page spelling mempool.space as
+        // "MEMPOOL_SPACE" next to gauges that spell it "mempool.space".
+        BER.setChip("chip-price", status, status + " · " + BER.sourceDisplayName(result.source));
       }
       // On total failure, leave the committed-data STALE display from app.js untouched.
     } finally {

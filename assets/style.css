@@ -450,6 +450,11 @@ a {
   font-size: 0.75rem;
   color: var(--ink-dim);
   overflow-wrap: anywhere;
+  /* These sub-lines are live data readouts (retarget %, fear/greed date,
+     fee tiers) -- machine voice, not prose, so Section 6 rule 5's "every
+     numeral in the DOM is mono, no exceptions" applies to the whole line,
+     not just the digits inside it. */
+  font-family: var(--font-data);
 }
 
 /* Hash rate/supply's sub-line is left empty now that their DAILY chip
