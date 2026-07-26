@@ -362,12 +362,20 @@
           formatter: (params) => {
             if (!params || !params.length) return "";
             const day = params[0].axisValue;
-            const rows = params
-              .filter((p) => p.seriesName === "Cruise (trend)" || p.seriesName === "Price")
-              .map(
-                (p) =>
-                  `${p.marker} ${p.seriesName}: $${Math.round(Math.pow(10, p.data[1])).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-              )
+            // Fixed high-to-low order regardless of the series-declaration
+            // order ECharts hands back in params (Idle, Redline, Corridor
+            // band, Cruise, Price) -- matches the endLabel/legend reading
+            // order on the chart itself. "Corridor band" is intentionally
+            // absent: it's a single-dummy-point fill series, not a real
+            // per-date value.
+            const order = ["Redline (ceiling)", "Cruise (trend)", "Idle (floor)", "Price"];
+            const bySeries = new Map(params.map((p) => [p.seriesName, p]));
+            const rows = order
+              .filter((name) => bySeries.has(name))
+              .map((name) => {
+                const p = bySeries.get(name);
+                return `${p.marker} ${p.seriesName}: $${Math.round(Math.pow(10, p.data[1])).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+              })
               .join("<br/>");
             return `${formatDateShort(dateFromDays(day, genesis))}<br/>${rows}`;
           },
