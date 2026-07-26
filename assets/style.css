@@ -899,6 +899,50 @@ a {
   border-radius: 0;
 }
 
+/* Same nested-disclosure reset as #audit-glossary -- lives inside
+   #power-law-card, which is already panel-backed. */
+#power-law-cycle-tops-disclosure {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0 0;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--panel-border);
+  border-radius: 0;
+}
+
+.cycle-tops-table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.cycle-tops-table th,
+.cycle-tops-table td {
+  text-align: left;
+  padding: 0.3rem 0.6rem 0.3rem 0;
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+
+.cycle-tops-table th {
+  color: var(--ink-dim);
+  font-family: var(--font-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+.cycle-tops-table td {
+  color: var(--ink);
+}
+
+.cycle-tops-table td:last-child {
+  color: var(--ink-dim);
+  white-space: normal;
+}
+
 /* ---------- Footer / attribution ----------
    Panel-backed per the readability law -- previously sat on bare
    background with no protection from the rain behind it. */

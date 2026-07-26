@@ -9,7 +9,7 @@
     "generated_at": {"type": "string", "format": "date-time"},
     "power_law": {
       "type": "object",
-      "required": ["params", "previous_params", "current", "bands", "projections"],
+      "required": ["params", "previous_params", "current", "bands", "projections", "cycle_tops", "cycle_top_era_maxima_sigma"],
       "properties": {
         "params": {
           "type": "object",
@@ -29,6 +29,36 @@
           "items": {
             "type": "object",
             "required": ["date", "floor", "trend", "ceiling"]
+          }
+        },
+        "cycle_tops": {
+          "type": "array",
+          "description": "Cycle-top markers, admitted only by a stated mechanical rule (see MODEL_METHODOLOGY.md), each scored against this SAME power-law fit's a/b/sigma -- not an independent curve fit through the tops. 'kind' distinguishes how a point was admitted; two entries may describe the same halving era when different rules disagree about where it topped -- that disagreement is kept visible, not resolved by picking one. Every confirmed:false entry carries drawdown_so_far_pct, computed uniformly regardless of kind.",
+          "items": {
+            "type": "object",
+            "required": ["date", "price", "sigma_vs_trend", "kind", "confirmed"],
+            "properties": {
+              "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+              "price": {"type": "number", "exclusiveMinimum": 0},
+              "sigma_vs_trend": {"type": "number"},
+              "kind": {"type": "string", "enum": ["confirmed_top", "era_max_sigma", "current_era_high", "unconfirmed_top"]},
+              "confirmed": {"type": "boolean"},
+              "drawdown_so_far_pct": {"type": "number"}
+            },
+            "if": {"properties": {"confirmed": {"const": false}}},
+            "then": {"required": ["drawdown_so_far_pct"]}
+          }
+        },
+        "cycle_top_era_maxima_sigma": {
+          "type": "array",
+          "description": "Each halving era's own highest sigma_vs_trend value and the date it occurred, oldest first, current (open) era last -- the date is NOT reliably the same as any other cycle_tops entry's date for that era (a confirmed top and the era's peak-sigma reading can fall on different days). Site copy may only claim 'each era topped lower than the last' when the sigma_vs_trend sequence is actually non-increasing; it is an observed pattern in past data, not a guarantee.",
+          "items": {
+            "type": "object",
+            "required": ["date", "sigma_vs_trend"],
+            "properties": {
+              "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+              "sigma_vs_trend": {"type": "number"}
+            }
           }
         }
       }
