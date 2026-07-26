@@ -15,7 +15,10 @@
       "b_warn_outside_range": [5.4, 6.1],
       "r_squared_drop_warn": 0.01,
       "b_day_over_day_pct_warn": 0.005
-    }
+    },
+    "cycle_top_drawdown_confirm_pct": 0.70,
+    "cycle_top_recovery_confirm_pct": 0.50,
+    "cycle_top_note": "ZigZag swing detection over the same price_daily.json this fit already uses: a running high is confirmed a cycle top once price later falls cycle_top_drawdown_confirm_pct from it; a running low is confirmed a bottom once price later rises cycle_top_recovery_confirm_pct from it. 70%/50% were chosen because they reproduce the canonical list of major Bitcoin cycle tops with zero hand-picking (verified against the full committed history). This is one of three mechanical rules compute_cycle_tops() unions (the other two: each halving era's own peak sigma-vs-trend excursion, and the current open era's highest close to date) -- see MODEL_METHODOLOGY.md before changing any of it. Every point is reported as its deviation (sigma_vs_trend) from THIS SAME fit's a/b/sigma -- no second curve is fit through the tops themselves."
   },
   "cycle_overlay": {
     "halving_dates": ["2012-11-28", "2016-07-09", "2020-05-11", "2024-04-20"],

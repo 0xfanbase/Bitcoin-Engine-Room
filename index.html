@@ -224,7 +224,21 @@
     </div>
     <div id="power-law-chart" class="chart-canvas chart-canvas--hero" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
     <p class="chart-plain-summary" id="power-law-summary"></p>
+    <p class="chart-plain-summary" id="power-law-cycle-tops-summary"></p>
     <p class="chart-caption">Model family published by Giovanni Santostasi. Bands are descriptive envelopes from historical fit residuals (±2σ in log10 space), not statistical confidence intervals. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#power-law-card" title="Link to this chart">#power-law</a></p>
+    <details class="info-disclosure" id="power-law-cycle-tops-disclosure">
+      <summary>Where past cycles topped</summary>
+      <div class="info-panel">
+        <p>Each row is a point where price ran unusually far above this same trend line -- admitted by one of three fixed rules, never picked by hand: a confirmed cycle top (price later fell at least 70% from it), a halving era's own peak reading above trend, or the current era's high so far. Measured against today's fitted trend, not what anyone could see at the time -- this is a retrospective reading, not a forecast in either direction.</p>
+        <table class="cycle-tops-table" id="power-law-cycle-tops-table">
+          <thead>
+            <tr><th scope="col">Date</th><th scope="col">Price</th><th scope="col">vs trend</th><th scope="col">Status</th></tr>
+          </thead>
+          <tbody id="power-law-cycle-tops-tbody"></tbody>
+        </table>
+        <p id="power-law-cycle-tops-caveat"></p>
+      </div>
+    </details>
   </div>
 
   <div class="chart-grid">

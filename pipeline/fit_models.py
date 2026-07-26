@@ -52,6 +52,189 @@ def _days_since_genesis(d: date, genesis: date) -> int:
 
 
 # --------------------------------------------------------------------------
+# Cycle tops (owner request 2026-07-26: a grounded counterweight to the
+# corridor's long-run upward curve, without fitting a second, fragile model
+# through only a handful of points -- rejected explicitly, see
+# MODEL_METHODOLOGY.md and IMPROVEMENT_BACKLOG.md. Every point here is scored
+# against the SAME power-law fit already used for Idle/Cruise/Redline; no
+# independent curve is fit through the tops. Marker admission is a fixed,
+# mechanical rule -- see compute_cycle_tops -- specifically so no one top gets
+# hand-picked over another one an equally valid rule would also admit.)
+# --------------------------------------------------------------------------
+
+
+def identify_cycle_tops(price_series: list[dict], drawdown_confirm_pct: float, recovery_confirm_pct: float) -> list[dict]:
+    """ZigZag swing detection over the full chronological price series.
+
+    A running high is confirmed a cycle top once price later falls
+    `drawdown_confirm_pct` from it; a running low is confirmed a bottom once
+    price later rises `recovery_confirm_pct` from it (resuming the search for
+    the next top). If the series ends still tracking an unconfirmed running
+    high, that high is returned too, flagged `confirmed: False` -- the
+    current cycle may not be over yet, and silently omitting it would hide
+    exactly the kind of in-progress data point this site's transparency
+    stance requires showing. Deliberately returns only `date`/`price`/
+    `confirmed` -- era membership and any "how far has it fallen" figure are
+    the caller's job (`compute_cycle_tops`), since this function has no idea
+    what a "halving era" is and shouldn't need to.
+    """
+    if not price_series:
+        return []
+
+    tops: list[dict] = []
+    seeking_top = True
+    extreme = price_series[0]
+
+    for row in price_series[1:]:
+        if seeking_top:
+            if row["value"] >= extreme["value"]:
+                extreme = row
+            elif 1.0 - row["value"] / extreme["value"] >= drawdown_confirm_pct:
+                tops.append({"date": extreme["date"], "price": extreme["value"], "confirmed": True})
+                seeking_top = False
+                extreme = row
+        else:
+            if row["value"] <= extreme["value"]:
+                extreme = row
+            elif row["value"] / extreme["value"] - 1.0 >= recovery_confirm_pct:
+                seeking_top = True
+                extreme = row
+
+    if seeking_top:
+        tops.append({"date": extreme["date"], "price": extreme["value"], "confirmed": False})
+
+    return tops
+
+
+def _sigma_vs_trend(d: int, price: float, a: float, b: float, sigma: float) -> float:
+    trend_log10 = a + b * math.log10(d)
+    return (math.log10(price) - trend_log10) / sigma if sigma else 0.0
+
+
+def _era_slices(price_series: list[dict], halving_dates: list[date]) -> list[tuple[date | None, date | None, list[dict]]]:
+    """[(era_start|None, era_end|None, rows), ...], one slice per halving era
+    plus the pre-first-halving era (None start) and the current, still-open
+    era (None end) -- symmetrical with compute_cycle_overlay's own
+    halving-anchored epochs, just extended backward to cover 2011's cycle top,
+    which predates every halving and would otherwise belong to no era."""
+    bounds = [None, *halving_dates, None]
+    slices = []
+    for era_start, era_end in zip(bounds, bounds[1:]):
+        rows = [
+            row
+            for row in price_series
+            if (era_start is None or _parse_date(row["date"]) >= era_start)
+            and (era_end is None or _parse_date(row["date"]) < era_end)
+        ]
+        if rows:
+            slices.append((era_start, era_end, rows))
+    return slices
+
+
+def compute_cycle_tops(price_series: list[dict], constants: dict, genesis: date, a: float, b: float, sigma: float) -> list[dict]:
+    """Admits a marker only through a stated, mechanical rule -- never
+    hand-picked (see MODEL_METHODOLOGY.md):
+
+    (i) every drawdown/recovery-confirmed cycle top (`identify_cycle_tops`),
+        kind "confirmed_top"; its unconfirmed remainder (the ZigZag
+        algorithm's own currently-tracked running high, wherever it's dated)
+        is kind "unconfirmed_top", or "current_era_high" specifically when
+        that date falls in the still-open era -- these are NOT the same
+        claim: an old, not-yet-70%-crashed high sitting in a closed era is a
+        different fact than "the current era's own high so far."
+    (ii) each halving era's own highest sigma-vs-trend excursion, when that's
+         a date not already admitted by (i) for the same era;
+    (iii) the current, still-open era's highest CLOSE (raw price, not sigma)
+          to date, kind "current_era_high", when that's a date not already
+          admitted above.
+
+    Every point is scored against THIS SAME power-law fit's a/b/sigma -- no
+    independent curve is fit through the tops. Where two rules disagree about
+    the same era (e.g. the drawdown-confirmed top isn't also that era's peak
+    sigma reading), BOTH points are kept: resolving that by fiat would be
+    exactly the cherry-picking this method exists to avoid.
+
+    Every entry with `confirmed: False` carries `drawdown_so_far_pct` --
+    computed once, uniformly, here, regardless of which rule admitted it, so
+    the frontend never has to guess whether a given kind happens to carry the
+    field (a prior version attached it only on the ZigZag path, which could
+    render "-undefined% so far" for an era-loop-admitted point).
+    """
+    pl = constants["power_law"]
+    drawdown_pct = pl.get("cycle_top_drawdown_confirm_pct", 0.70)
+    recovery_pct = pl.get("cycle_top_recovery_confirm_pct", 0.50)
+    halving_dates = [_parse_date(d) for d in constants["cycle_overlay"]["halving_dates"]]
+    era_slices = _era_slices(price_series, halving_dates)
+    # The open era is always the LAST slice (_era_slices' bounds always end in
+    # None) -- None here means "no lower bound", i.e. treat everything as
+    # open if there are no eras at all (degenerate, empty-input case).
+    open_era_start = era_slices[-1][0] if era_slices else None
+    last_price = price_series[-1]["value"] if price_series else None
+
+    def sigma_of(row: dict) -> float:
+        d = _days_since_genesis(_parse_date(row["date"]), genesis)
+        return _sigma_vs_trend(d, row["value"], a, b, sigma)
+
+    def make_entry(row: dict, kind: str, confirmed: bool) -> dict:
+        entry = {
+            "date": row["date"],
+            "price": row["value"],
+            "sigma_vs_trend": round(sigma_of(row), 4),
+            "kind": kind,
+            "confirmed": confirmed,
+        }
+        if not confirmed and last_price is not None:
+            entry["drawdown_so_far_pct"] = round((1.0 - last_price / row["value"]) * 100.0, 2)
+        return entry
+
+    by_date: dict[str, dict] = {}
+
+    for top in identify_cycle_tops(price_series, drawdown_pct, recovery_pct):
+        row = {"date": top["date"], "value": top["price"]}
+        if top["confirmed"]:
+            by_date[top["date"]] = make_entry(row, "confirmed_top", True)
+        else:
+            in_open_era = open_era_start is None or _parse_date(top["date"]) >= open_era_start
+            by_date[top["date"]] = make_entry(row, "current_era_high" if in_open_era else "unconfirmed_top", False)
+
+    for era_start, era_end, rows in era_slices:
+        era_max_sigma_row = max(rows, key=sigma_of)
+        if era_max_sigma_row["date"] not in by_date:
+            by_date[era_max_sigma_row["date"]] = make_entry(era_max_sigma_row, "era_max_sigma", era_end is not None)
+
+        if era_end is None:  # the current, open era
+            era_max_price_row = max(rows, key=lambda r: r["value"])
+            if era_max_price_row["date"] not in by_date:
+                by_date[era_max_price_row["date"]] = make_entry(era_max_price_row, "current_era_high", False)
+
+    return sorted(by_date.values(), key=lambda e: e["date"])
+
+
+def cycle_top_era_maxima(price_series: list[dict], constants: dict, genesis: date, a: float, b: float, sigma: float) -> list[dict]:
+    """Each halving era's own single highest sigma-vs-trend excursion, oldest
+    first, current (open) era last -- `{date, sigma_vs_trend}`, not a bare
+    number: site copy needs the DATE this value actually occurred on (e.g. to
+    say "since 2011"), and that date is not reliably the same as any other
+    entry's date (the era's confirmed top and its peak-sigma reading can be,
+    and in the real committed history are, different days). Site copy claims
+    each era topping lower than the last only when this sequence's
+    `sigma_vs_trend` values are actually non-increasing -- an observed
+    pattern in past data, not a rule, and nothing here assumes it holds; the
+    frontend checks it fresh against whatever this returns."""
+    halving_dates = [_parse_date(d) for d in constants["cycle_overlay"]["halving_dates"]]
+
+    def sigma_of(row: dict) -> float:
+        d = _days_since_genesis(_parse_date(row["date"]), genesis)
+        return _sigma_vs_trend(d, row["value"], a, b, sigma)
+
+    maxima = []
+    for _era_start, _era_end, rows in _era_slices(price_series, halving_dates):
+        row = max(rows, key=sigma_of)
+        maxima.append({"date": row["date"], "sigma_vs_trend": round(sigma_of(row), 4)})
+    return maxima
+
+
+# --------------------------------------------------------------------------
 # Power law corridor (spec Section 8.1)
 # --------------------------------------------------------------------------
 
@@ -107,6 +290,9 @@ def fit_power_law(price_series: list[dict], constants: dict, previous_models: di
     if previous_models and previous_models.get("power_law", {}).get("params"):
         previous_params = previous_models["power_law"]["params"]
 
+    cycle_tops = compute_cycle_tops(price_series, constants, genesis, a, b, sigma)
+    era_maxima = cycle_top_era_maxima(price_series, constants, genesis, a, b, sigma)
+
     return {
         "params": {
             "a": round(float(a), 6),
@@ -133,6 +319,8 @@ def fit_power_law(price_series: list[dict], constants: dict, previous_models: di
             "note": "floor/ceiling are trend * 10^(-/+ 2*sigma) in log10 space -- descriptive envelopes from historical fit residuals, not statistical confidence intervals (residuals are autocorrelated across multi-year cycles).",
         },
         "projections": projections,
+        "cycle_tops": cycle_tops,
+        "cycle_top_era_maxima_sigma": era_maxima,
     }
 
 

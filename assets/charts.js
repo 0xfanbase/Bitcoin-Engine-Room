@@ -203,12 +203,16 @@
     const genesis = pl.params.genesis_date;
 
     let filtered = priceHistorySeries;
+    // Cycle-top markers respect the same 1Y/4Y/ALL timeframe as the price
+    // line -- a 1Y view showing zero or one marker is correct, not a bug.
+    let cycleTopsFiltered = pl.cycle_tops || [];
     if (powerLawRange !== "all") {
       const years = powerLawRange === "1y" ? 1 : 4;
       const cutoff = new Date();
       cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
       const cutoffStr = cutoff.toISOString().slice(0, 10);
       filtered = priceHistorySeries.filter((r) => r.date >= cutoffStr);
+      cycleTopsFiltered = cycleTopsFiltered.filter((t) => t.date >= cutoffStr);
     }
     // Series values are log10(price), not price, plotted on a linear y-axis
     // (formatted back to dollars for display) rather than a genuine log
@@ -229,6 +233,14 @@
     // which is what the model actually defines it as.
     const actualPoints = filtered.map((r) => [daysSinceGenesis(r.date, genesis), Math.log10(r.value)]);
     const todayDay = daysSinceGenesis(pl.current.date, genesis);
+    // Unconfirmed points (the current era's still-open running high) render
+    // dashed/dimmer -- a plotting convention, not a text label, so it stays
+    // inside director rule #7's "no permanent per-marker text on the chart
+    // face" -- the exact numbers live in the tooltip and the table below.
+    const cycleTopPoints = cycleTopsFiltered.map((t) => ({
+      value: [daysSinceGenesis(t.date, genesis), Math.log10(t.price)],
+      itemStyle: t.confirmed ? undefined : { opacity: 0.5, borderType: "dashed" },
+    }));
 
     const { a, b, sigma } = pl.params;
     const minDay = Math.max(actualPoints.length ? actualPoints[0][0] : 1, 1);
@@ -356,6 +368,25 @@
               data: [{ coord: [todayDay, Math.log10(pl.current.price)] }],
             },
           },
+          {
+            name: "Cycle tops",
+            type: "scatter",
+            data: cycleTopPoints,
+            symbol: "circle",
+            symbolSize: 8,
+            itemStyle: { color: "transparent", borderColor: colors.accent, borderWidth: 1.5, opacity: 0.85 },
+            emphasis: { scale: 1.3 },
+            // Its reading joins the shared axis tooltip below (via a
+            // proximity check against the hovered day) rather than trying to
+            // show its own per-series item tooltip -- ECharts' nearest-point
+            // matching for a ~9-point series sharing an axis with dense
+            // (Price, ~5800pt) and sparse-but-continuous (bands, 81pt) series
+            // proved unreliable to hit exactly, especially deep in the
+            // historical region. Visually it's still its own dedicated,
+            // non-silent series (director requirement) -- only the tooltip
+            // wiring is folded into the one proven formatter below.
+            tooltip: { show: false },
+          },
         ],
         tooltip: baseTooltip(colors, {
           trigger: "axis",
@@ -375,9 +406,34 @@
               .map((name) => {
                 const p = bySeries.get(name);
                 return `${p.marker} ${p.seriesName}: $${Math.round(Math.pow(10, p.data[1])).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-              })
-              .join("<br/>");
-            return `${formatDateShort(dateFromDays(day, genesis))}<br/>${rows}`;
+              });
+            // A cycle-top reading joins the box only when the hovered day is
+            // genuinely close to one -- 20 days is imperceptible on a chart
+            // spanning 2010-2035, so this can't misfire onto an unrelated
+            // date. Picks the CLOSEST candidate, not the first-in-date-order
+            // one: two real tops (2013-11-30 and 2013-12-05) sit only 5 days
+            // apart, both within a naive threshold check of each other.
+            const HOVER_MATCH_DAYS = 20;
+            let nearTop = null;
+            let nearTopDistance = Infinity;
+            for (const t of cycleTopsFiltered) {
+              const distance = Math.abs(daysSinceGenesis(t.date, genesis) - day);
+              if (distance <= HOVER_MATCH_DAYS && distance < nearTopDistance) {
+                nearTop = t;
+                nearTopDistance = distance;
+              }
+            }
+            if (nearTop) {
+              const sign = nearTop.sigma_vs_trend >= 0 ? "+" : "";
+              const suffix = nearTop.confirmed ? "" : ` -- ${cycleTopStatus(nearTop)}`;
+              // Carries its own date rather than relying on the header above
+              // (which shows whatever calendar date the axis snapped the
+              // hover to -- for a sparse marker that can land a day off the
+              // marker's own real date).
+              const topDate = formatDateShort(new Date(nearTop.date + "T00:00:00Z"));
+              rows.push(`○ Cycle top (${topDate}): $${Math.round(nearTop.price).toLocaleString()} (${sign}${nearTop.sigma_vs_trend.toFixed(2)}σ vs trend)${suffix}`);
+            }
+            return `${formatDateShort(dateFromDays(day, genesis))}<br/>${rows.join("<br/>")}`;
           },
         }),
         dataZoom: [
@@ -399,6 +455,11 @@
       const direction = dev >= 0 ? "above" : "below";
       summaryEl.textContent = `Today: price is about ${Math.abs(dev).toFixed(0)}% ${direction} the long-run trend line -- ${describeCorridorPosition(dev, sigma)}.`;
     }
+
+    const cycleTopsSummaryEl = document.getElementById("power-law-cycle-tops-summary");
+    if (cycleTopsSummaryEl) cycleTopsSummaryEl.textContent = describeCycleTops(pl);
+
+    renderCycleTopsTable(pl);
   }
 
   // Plain-language read of where today's price sits in the corridor, for
@@ -413,6 +474,100 @@
     if (fraction <= 0.6) return "near the trend line (Cruise)";
     if (fraction <= 0.85) return "in the upper half of the corridor";
     return "at the corridor ceiling (Redline)";
+  }
+
+  // Always-visible one-liner (director ruling, Fable, 2026-07-26): describes
+  // the cycle-top markers without editorializing in either direction. Worded
+  // as a standing historical fact ("Historically, ...") rather than "the
+  // small markers show" -- the latter would misdescribe a 1Y/4Y zoom where
+  // most of these points aren't currently drawn on the chart at all. The
+  // "each era topped lower than the last" framing is only used when
+  // cycle_top_era_maxima_sigma is genuinely non-increasing AND every cited
+  // value is genuinely above trend on THIS refit -- both are observed
+  // properties of the data, not rules this code assumes hold.
+  function describeCycleTops(pl) {
+    const maxima = pl.cycle_top_era_maxima_sigma || [];
+    if (maxima.length < 2) return "";
+    const first = maxima[0];
+    const last = maxima[maxima.length - 1];
+    if (first.sigma_vs_trend <= 0 || last.sigma_vs_trend <= 0) return "";
+
+    const fmtSigma = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}σ`;
+    const firstYear = new Date(first.date + "T00:00:00Z").getUTCFullYear();
+    const monotonic = maxima.every((m, i) => i === 0 || m.sigma_vs_trend <= maxima[i - 1].sigma_vs_trend + 1e-9);
+
+    return monotonic
+      ? `Historically, each halving era's biggest run above this same trend line has been smaller than the one before it -- from about ${fmtSigma(first.sigma_vs_trend)} in ${firstYear} to ${fmtSigma(last.sigma_vs_trend)} so far this era.`
+      : `Historically, each halving era's biggest run above this same trend line has varied -- about ${fmtSigma(first.sigma_vs_trend)} in ${firstYear}, ${fmtSigma(last.sigma_vs_trend)} so far this era.`;
+  }
+
+  // The most recent DATE (not just year -- two same-year points can have
+  // different status) whose cycle-top point reached/exceeded the +2σ
+  // Redline band, PROVIDED nothing more recent has matched it -- returns
+  // null (nothing shown) the moment a newer point reaches Redline again, so
+  // this can't go stale into a false claim on a future refit.
+  function redlineFreeSinceDate(tops) {
+    const REDLINE_SIGMA = 2.0;
+    let lastAtOrAboveIndex = -1;
+    tops.forEach((t, i) => {
+      if (t.sigma_vs_trend >= REDLINE_SIGMA) lastAtOrAboveIndex = i;
+    });
+    if (lastAtOrAboveIndex === -1 || lastAtOrAboveIndex === tops.length - 1) return null;
+    return tops[lastAtOrAboveIndex].date;
+  }
+
+  function describeCycleTopsCaveat(pl) {
+    const base =
+      "That's an observed pattern in past data, measured against today's fitted trend -- not a law, and nothing prevents a future cycle from breaking it in either direction.";
+    const sinceDate = redlineFreeSinceDate(pl.cycle_tops || []);
+    if (!sinceDate) return base;
+    return `${base} No cycle top since ${formatDateShort(new Date(sinceDate + "T00:00:00Z"))} has reached the Redline band.`;
+  }
+
+  const CYCLE_TOP_KIND_LABEL = {
+    confirmed_top: "confirmed top",
+    era_max_sigma: "era peak",
+    current_era_high: "current era's high",
+    unconfirmed_top: "unconfirmed top",
+  };
+
+  // Every confirmed:false entry carries drawdown_so_far_pct (computed
+  // uniformly in fit_models.py regardless of kind) -- but it isn't always a
+  // genuine drawdown: an era's peak-SIGMA day isn't necessarily its
+  // peak-PRICE day, so a later, higher-dollar point in the same era can make
+  // this negative (price has since risen past it, not fallen from it).
+  function cycleTopStatus(t) {
+    const label = CYCLE_TOP_KIND_LABEL[t.kind] || t.kind;
+    if (t.confirmed) return label;
+    const dd = t.drawdown_so_far_pct;
+    const change = dd >= 0 ? `down ${dd}% since` : `up ${Math.abs(dd)}% since`;
+    return `${label} so far (${change})`;
+  }
+
+  function renderCycleTopsTable(pl) {
+    const tbody = document.getElementById("power-law-cycle-tops-tbody");
+    if (tbody) {
+      tbody.innerHTML = ""; // clear only -- rows below are built with createElement/textContent, not markup strings
+      (pl.cycle_tops || []).forEach((t) => {
+        const tr = document.createElement("tr");
+        const sign = t.sigma_vs_trend >= 0 ? "+" : "";
+        [
+          [formatDateShort(new Date(t.date + "T00:00:00Z")), true],
+          [`$${Math.round(t.price).toLocaleString()}`, true],
+          [`${sign}${t.sigma_vs_trend.toFixed(2)}σ`, true],
+          [cycleTopStatus(t), false],
+        ].forEach(([text, numeral]) => {
+          const td = document.createElement("td");
+          if (numeral) td.className = "numeral";
+          td.textContent = text;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    const caveatEl = document.getElementById("power-law-cycle-tops-caveat");
+    if (caveatEl) caveatEl.textContent = describeCycleTopsCaveat(pl);
   }
 
   function initPowerLawControls() {

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-26T08:58:46Z",
+  "generated_at": "2026-07-26T23:50:41Z",
   "power_law": {
     "params": {
       "a": -16.2569,
@@ -12,13 +12,13 @@
       "n_points": 5822
     },
     "previous_params": {
-      "a": -16.257752,
-      "b": 5.616833,
-      "r_squared": 0.959775,
-      "sigma": 0.30138,
+      "a": -16.2569,
+      "b": 5.616573,
+      "r_squared": 0.959774,
+      "sigma": 0.301382,
       "fit_start_date": "2010-07-17",
       "genesis_date": "2009-01-03",
-      "n_points": 5821
+      "n_points": 5822
     },
     "current": {
       "date": "2026-07-26",
@@ -58,6 +58,95 @@
         "floor": 301973.07,
         "trend": 1209854.19,
         "ceiling": 4847277.15
+      }
+    ],
+    "cycle_tops": [
+      {
+        "date": "2011-06-11",
+        "price": 33.8,
+        "sigma_vs_trend": 4.0583,
+        "kind": "confirmed_top",
+        "confirmed": true
+      },
+      {
+        "date": "2013-04-10",
+        "price": 231.05,
+        "sigma_vs_trend": 2.2872,
+        "kind": "confirmed_top",
+        "confirmed": true
+      },
+      {
+        "date": "2013-11-30",
+        "price": 1133.95,
+        "sigma_vs_trend": 3.4471,
+        "kind": "era_max_sigma",
+        "confirmed": true
+      },
+      {
+        "date": "2013-12-05",
+        "price": 1136.9,
+        "sigma_vs_trend": 3.4283,
+        "kind": "confirmed_top",
+        "confirmed": true
+      },
+      {
+        "date": "2017-12-17",
+        "price": 19279.9,
+        "sigma_vs_trend": 2.662,
+        "kind": "confirmed_top",
+        "confirmed": true
+      },
+      {
+        "date": "2021-03-14",
+        "price": 61258.73,
+        "sigma_vs_trend": 1.8287,
+        "kind": "era_max_sigma",
+        "confirmed": true
+      },
+      {
+        "date": "2021-11-09",
+        "price": 67562.17,
+        "sigma_vs_trend": 1.545,
+        "kind": "confirmed_top",
+        "confirmed": true
+      },
+      {
+        "date": "2024-12-17",
+        "price": 106059.49,
+        "sigma_vs_trend": 0.4431,
+        "kind": "era_max_sigma",
+        "confirmed": false,
+        "drawdown_so_far_pct": 39.25
+      },
+      {
+        "date": "2025-10-07",
+        "price": 124776.68,
+        "sigma_vs_trend": 0.2789,
+        "kind": "current_era_high",
+        "confirmed": false,
+        "drawdown_so_far_pct": 48.36
+      }
+    ],
+    "cycle_top_era_maxima_sigma": [
+      {
+        "date": "2011-06-11",
+        "sigma_vs_trend": 4.0583
+      },
+      {
+        "date": "2013-11-30",
+        "sigma_vs_trend": 3.4471
+      },
+      {
+        "date": "2017-12-17",
+        "sigma_vs_trend": 2.662
+      },
+      {
+        "date": "2021-03-14",
+        "sigma_vs_trend": 1.8287
+      },
+      {
+        "date": "2024-12-17",
+        "sigma_vs_trend": 0.4431
       }
     ]
   },
@@ -34692,7 +34781,7 @@
       {
         "date": "2021-02-14",
         "price": 47185.19,
-        "wma_200w": 9033.8,
+        "wma_200w": 9033.79,
         "distance_pct": 422.32
       },
       {
@@ -35592,7 +35681,7 @@
       {
         "date": "2023-12-31",
         "price": 42148.38,
-        "wma_200w": 29786.06,
+        "wma_200w": 29786.05,
         "distance_pct": 41.5
       },
       {
