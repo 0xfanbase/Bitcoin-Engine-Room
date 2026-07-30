@@ -1,8 +1,17 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-29T09:23:41Z",
+  "generated_at": "2026-07-30T09:15:26Z",
   "power_law": {
     "params": {
+      "a": -16.253477,
+      "b": 5.615526,
+      "r_squared": 0.959772,
+      "sigma": 0.301394,
+      "fit_start_date": "2010-07-17",
+      "genesis_date": "2009-01-03",
+      "n_points": 5826
+    },
+    "previous_params": {
       "a": -16.254334,
       "b": 5.615788,
       "r_squared": 0.959773,
@@ -11,22 +20,13 @@
       "genesis_date": "2009-01-03",
       "n_points": 5825
     },
-    "previous_params": {
-      "a": -16.255189,
-      "b": 5.616049,
-      "r_squared": 0.959773,
-      "sigma": 0.301388,
-      "fit_start_date": "2010-07-17",
-      "genesis_date": "2009-01-03",
-      "n_points": 5824
-    },
     "current": {
-      "date": "2026-07-29",
-      "price": 64376.0,
-      "trend_price": 133799.7,
-      "deviation_pct": -51.89,
-      "z_score": -1.0542,
-      "residual_percentile": 11.76
+      "date": "2026-07-30",
+      "price": 64250.0,
+      "trend_price": 133873.36,
+      "deviation_pct": -52.01,
+      "z_score": -1.0578,
+      "residual_percentile": 11.57
     },
     "bands": {
       "floor_label": "Idle",
@@ -37,41 +37,41 @@
     "projections": [
       {
         "date": "2027-01-01",
-        "floor": 38217.59,
-        "trend": 153124.88,
-        "ceiling": 613519.25
+        "floor": 38204.4,
+        "trend": 153074.2,
+        "ceiling": 613324.91
       },
       {
         "date": "2028-01-01",
-        "floor": 51771.31,
-        "trend": 207430.0,
-        "ceiling": 831101.35
+        "floor": 51752.7,
+        "trend": 207358.4,
+        "ceiling": 830826.3
       },
       {
         "date": "2030-01-01",
-        "floor": 90872.9,
-        "trend": 364096.74,
-        "ceiling": 1458811.66
+        "floor": 90837.85,
+        "trend": 363961.5,
+        "ceiling": 1458290.56
       },
       {
         "date": "2035-01-01",
-        "floor": 301574.67,
-        "trend": 1208307.0,
-        "ceiling": 4841274.66
+        "floor": 301441.48,
+        "trend": 1207790.54,
+        "ceiling": 4839274.25
       }
     ],
     "cycle_tops": [
       {
         "date": "2011-06-11",
         "price": 33.8,
-        "sigma_vs_trend": 4.0573,
+        "sigma_vs_trend": 4.057,
         "kind": "confirmed_top",
         "confirmed": true
       },
       {
         "date": "2013-04-10",
         "price": 231.05,
-        "sigma_vs_trend": 2.2869,
+        "sigma_vs_trend": 2.2868,
         "kind": "confirmed_top",
         "confirmed": true
       },
@@ -92,45 +92,45 @@
       {
         "date": "2017-12-17",
         "price": 19279.9,
-        "sigma_vs_trend": 2.6626,
+        "sigma_vs_trend": 2.6628,
         "kind": "confirmed_top",
         "confirmed": true
       },
       {
         "date": "2021-03-14",
         "price": 61258.73,
-        "sigma_vs_trend": 1.8297,
+        "sigma_vs_trend": 1.83,
         "kind": "era_max_sigma",
         "confirmed": true
       },
       {
         "date": "2021-11-09",
         "price": 67562.17,
-        "sigma_vs_trend": 1.546,
+        "sigma_vs_trend": 1.5463,
         "kind": "confirmed_top",
         "confirmed": true
       },
       {
         "date": "2024-12-17",
         "price": 106059.49,
-        "sigma_vs_trend": 0.4444,
+        "sigma_vs_trend": 0.4448,
         "kind": "era_max_sigma",
         "confirmed": false,
-        "drawdown_so_far_pct": 39.3
+        "drawdown_so_far_pct": 39.42
       },
       {
         "date": "2025-10-07",
         "price": 124776.68,
-        "sigma_vs_trend": 0.2803,
+        "sigma_vs_trend": 0.2807,
         "kind": "current_era_high",
         "confirmed": false,
-        "drawdown_so_far_pct": 48.41
+        "drawdown_so_far_pct": 48.51
       }
     ],
     "cycle_top_era_maxima_sigma": [
       {
         "date": "2011-06-11",
-        "sigma_vs_trend": 4.0573
+        "sigma_vs_trend": 4.057
       },
       {
         "date": "2013-11-30",
@@ -138,15 +138,15 @@
       },
       {
         "date": "2017-12-17",
-        "sigma_vs_trend": 2.6626
+        "sigma_vs_trend": 2.6628
       },
       {
         "date": "2021-03-14",
-        "sigma_vs_trend": 1.8297
+        "sigma_vs_trend": 1.83
       },
       {
         "date": "2024-12-17",
-        "sigma_vs_trend": 0.4444
+        "sigma_vs_trend": 0.4448
       }
     ]
   },
@@ -9340,7 +9340,8 @@
           827,
           828,
           829,
-          830
+          830,
+          831
         ],
         "pct_performance": [
           0.0,
@@ -10173,24 +10174,25 @@
           0.95,
           2.18,
           -0.72,
-          0.87
+          0.87,
+          0.67
         ]
       }
     ],
     "current_epoch": {
       "halving_date": "2024-04-20",
-      "days_into_epoch": 830,
-      "pct_complete_of_avg_epoch": 56.8,
-      "pct_performance": 0.87,
+      "days_into_epoch": 831,
+      "pct_complete_of_avg_epoch": 56.9,
+      "pct_performance": 0.67,
       "cycle_percentile_vs_prior_epochs": 0.0
     }
   },
   "mayer_multiple": {
     "current": {
-      "date": "2026-07-29",
-      "price": 64376.0,
-      "sma_200d": 71856.23,
-      "multiple": 0.8959,
+      "date": "2026-07-30",
+      "price": 64250.0,
+      "sma_200d": 71723.6,
+      "multiple": 0.8958,
       "percentile": 27.0
     },
     "series": [
@@ -32697,15 +32699,19 @@
       {
         "date": "2026-07-29",
         "value": 0.8959
+      },
+      {
+        "date": "2026-07-30",
+        "value": 0.8958
       }
     ]
   },
   "wma_200": {
     "current": {
-      "date": "2026-07-29",
-      "price": 64376.0,
-      "wma_200w": 63453.23,
-      "distance_pct": 1.45
+      "date": "2026-07-30",
+      "price": 64250.0,
+      "wma_200w": 63452.6,
+      "distance_pct": 1.26
     },
     "series": [
       {
@@ -36507,10 +36513,10 @@
         "distance_pct": 1.91
       },
       {
-        "date": "2026-07-29",
-        "price": 64376.0,
-        "wma_200w": 63453.23,
-        "distance_pct": 1.45
+        "date": "2026-07-30",
+        "price": 64250.0,
+        "wma_200w": 63452.6,
+        "distance_pct": 1.26
       }
     ]
   }

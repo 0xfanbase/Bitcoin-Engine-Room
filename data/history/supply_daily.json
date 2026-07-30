@@ -2,7 +2,7 @@
   "metric": "supply_daily",
   "unit": "BTC",
   "schema_version": 1,
-  "generated_at": "2026-07-29T09:23:40Z",
+  "generated_at": "2026-07-30T09:15:25Z",
   "series": [
     {
       "date": "2009-01-03",
@@ -32062,6 +32062,11 @@
     {
       "date": "2026-07-29",
       "value": 20062750.0,
+      "source": "blockchain_info"
+    },
+    {
+      "date": "2026-07-30",
+      "value": 20063200.0,
       "source": "blockchain_info"
     }
   ]
