@@ -2,7 +2,7 @@
   "metric": "price_daily",
   "unit": "USD",
   "schema_version": 1,
-  "generated_at": "2026-08-31T14:19:32Z",
+  "generated_at": "2026-09-01T11:56:18Z",
   "series": [
     {
       "date": "2010-08-18",
@@ -29292,6 +29292,11 @@
     {
       "date": "2026-08-31",
       "value": 77911.0,
+      "source": "mempool_space"
+    },
+    {
+      "date": "2026-09-01",
+      "value": 78155.0,
       "source": "mempool_space"
     }
   ]
