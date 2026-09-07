@@ -1,62 +1,62 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-06T11:16:06Z",
+  "generated_at": "2026-09-07T12:56:46Z",
   "metrics": {
     "price_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 385.1,
+      "latency_ms": 471.2,
       "consecutive_failures": 0,
-      "last_success_date": "2026-09-06",
+      "last_success_date": "2026-09-07",
       "stale_since": null,
       "cross_source_variance_warn": false,
-      "last_date": "2026-09-06",
-      "last_value": 79973.0
+      "last_date": "2026-09-07",
+      "last_value": 79519.0
     },
     "hashrate_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 343.1,
+      "latency_ms": 318.9,
       "consecutive_failures": 0,
-      "last_success_date": "2026-09-06",
+      "last_success_date": "2026-09-07",
       "stale_since": null,
-      "last_date": "2026-09-06",
-      "last_value": 925.0441148531744
+      "last_date": "2026-09-07",
+      "last_value": 938.4910858035546
     },
     "difficulty_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 379.8,
+      "latency_ms": 318.6,
       "consecutive_failures": 0,
-      "last_success_date": "2026-09-06",
+      "last_success_date": "2026-09-07",
       "stale_since": null,
-      "last_date": "2026-09-06",
+      "last_date": "2026-09-07",
       "last_value": 127450789715843.1
     },
     "supply_daily": {
       "source": "blockchain_info",
       "status": "OK",
-      "latency_ms": 136.3,
+      "latency_ms": 535.6,
       "consecutive_failures": 0,
-      "last_success_date": "2026-09-06",
+      "last_success_date": "2026-09-07",
       "stale_since": null,
-      "last_date": "2026-09-06",
-      "last_value": 20080456.0
+      "last_date": "2026-09-07",
+      "last_value": 20081015.0
     },
     "fng_daily": {
       "source": "alternative_me",
       "status": "OK",
-      "latency_ms": 79.2,
+      "latency_ms": 198.3,
       "consecutive_failures": 0,
-      "last_success_date": "2026-09-06",
+      "last_success_date": "2026-09-07",
       "stale_since": null,
-      "last_date": "2026-09-06",
-      "last_value": 73,
+      "last_date": "2026-09-07",
+      "last_value": 71,
       "last_classification": "Greed"
     }
   },
   "tip_height": {
-    "height": 965754,
-    "date": "2026-09-06"
+    "height": 965931,
+    "date": "2026-09-07"
   }
 }
