@@ -2,7 +2,7 @@
   "metric": "hashrate_daily",
   "unit": "EH/s",
   "schema_version": 1,
-  "generated_at": "2026-09-08T11:38:40Z",
+  "generated_at": "2026-09-09T11:44:59Z",
   "series": [
     {
       "date": "2009-01-03",
@@ -32252,6 +32252,11 @@
     {
       "date": "2026-09-08",
       "value": 926.1373183377303,
+      "source": "mempool_space"
+    },
+    {
+      "date": "2026-09-09",
+      "value": 935.2941783831744,
       "source": "mempool_space"
     }
   ]
