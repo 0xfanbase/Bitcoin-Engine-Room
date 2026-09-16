@@ -2,7 +2,7 @@
   "metric": "fng_daily",
   "unit": "index_0_100",
   "schema_version": 1,
-  "generated_at": "2026-09-15T12:00:25Z",
+  "generated_at": "2026-09-16T11:57:10Z",
   "series": [
     {
       "date": "2018-02-01",
@@ -18872,6 +18872,12 @@
       "date": "2026-09-15",
       "value": 69,
       "classification": "Greed",
+      "source": "alternative_me"
+    },
+    {
+      "date": "2026-09-16",
+      "value": 51,
+      "classification": "Neutral",
       "source": "alternative_me"
     }
   ]
