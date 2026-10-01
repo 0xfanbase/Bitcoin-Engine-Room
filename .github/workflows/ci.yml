@@ -20,3 +20,31 @@ jobs:
 
       - name: Run pytest
         run: pytest pipeline/tests -v
+
+  # Frontend (2026-10-01, owner-approved Phase K): unit tests for the chart
+  # math (Node's built-in runner, no dependencies) and an end-to-end smoke
+  # test of the real page in headless Chromium. Test tooling only -- the
+  # site itself still ships with no build step.
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Unit tests (assets/model-math.js)
+        run: node --test tests/js/*.test.cjs
+
+      - name: Install Playwright (test-only, not committed)
+        run: |
+          npm i --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: End-to-end smoke test
+        run: |
+          python3 -m http.server 8765 >/dev/null 2>&1 &
+          sleep 1
+          BASE_URL=http://localhost:8765/ node tests/e2e/smoke.cjs
