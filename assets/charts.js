@@ -269,8 +269,6 @@
     const stAnchor = [X(ctx.todayDay), Math.log10(pl.current.price)];
     const stVisible = st.filter((p) => p.day >= minDay && p.day <= maxDay);
     const stCenter = stVisible.length ? [stAnchor, ...stVisible.map((p) => [X(p.day), Math.log10(p.center)])] : [];
-    const stLow = stVisible.length ? [stAnchor, ...stVisible.map((p) => [X(p.day), Math.log10(p.inner_low)])] : [];
-    const stHigh = stVisible.length ? [stAnchor, ...stVisible.map((p) => [X(p.day), Math.log10(p.inner_high)])] : [];
 
     const projections = (pl.projections || [])
       .map((p) => ({ ...p, day: M.dayFromDate(p.date, genesis) }))
@@ -327,10 +325,10 @@
     // Legend swatches in the site's own palette (ECharts' default rainbow
     // palette is off-identity: accent is the only data hue).
     const legendColor = {
-      Bands: rgba(accent, 0.55),
-      Fan: rgba(accent, 0.8),
-      "Next 12 mo": ink,
-      Scenario: inkDim,
+      "Idle–Redline": rgba(accent, 0.55),
+      "Trend range": rgba(accent, 0.8),
+      "12-mo path": inkDim,
+      "Since-2017 fit": inkDim,
       Halvings: inkDim,
       "Cycle tops": accent,
     };
@@ -338,20 +336,19 @@
     const line = (o) =>
       Object.assign({ type: "line", symbol: "none", showSymbol: false, emphasis: { disabled: true }, labelLayout: { moveOverlap: "shiftY" }, itemStyle: { color: legendColor[o.name] || accent } }, o);
 
-    const edgeLabel = (text, color) => ({ show: !narrow, formatter: text, color, fontFamily: colors.fontData, fontSize: 10 });
+    const edgeLabel = (text, color, keepNarrow) => ({ show: !narrow || Boolean(keepNarrow), formatter: text, color, fontFamily: colors.fontData, fontSize: narrow ? 9 : 10 });
 
     const series = [
-      polygonSeries("Bands", redline, idle, rgba(accent, 0.1), 1),
-      polygonSeries("Bands", innerHigh, innerLow, rgba(accent, 0.18), 1),
-      line({ name: "Bands", data: redline, silent: true, lineStyle: { opacity: 0 }, endLabel: edgeLabel("Redline", inkDim), z: 2 }),
-      line({ name: "Bands", data: idle, silent: true, lineStyle: { opacity: 0 }, endLabel: edgeLabel("Idle", inkDim), z: 2 }),
-      polygonSeries("Fan", fanHigh, fanLow, rgba(accent, 0.07), 2),
-      line({ name: "Fan", data: fanHigh, silent: true, lineStyle: { color: accent, width: 1, type: [4, 4], opacity: 0.6 }, z: 3 }),
-      line({ name: "Fan", data: fanLow, silent: true, lineStyle: { color: accent, width: 1, type: [4, 4], opacity: 0.6 }, z: 3 }),
-      polygonSeries("Next 12 mo", stHigh, stLow, rgba(ink, 0.1), 3),
-      line({ name: "Next 12 mo", data: stCenter, silent: true, lineStyle: { color: ink, width: 1, type: [3, 3], opacity: 0.8 }, z: 4 }),
+      polygonSeries("Idle–Redline", redline, idle, rgba(accent, 0.1), 1),
+      polygonSeries("Idle–Redline", innerHigh, innerLow, rgba(accent, 0.18), 1),
+      line({ name: "Idle–Redline", data: redline, silent: true, lineStyle: { opacity: 0 }, endLabel: edgeLabel("Redline", inkDim), z: 2 }),
+      line({ name: "Idle–Redline", data: idle, silent: true, lineStyle: { opacity: 0 }, endLabel: edgeLabel("Idle", inkDim), z: 2 }),
+      polygonSeries("Trend range", fanHigh, fanLow, rgba(accent, 0.07), 2),
+      line({ name: "Trend range", data: fanHigh, silent: true, lineStyle: { color: accent, width: 1, type: [4, 4], opacity: 0.6 }, z: 3 }),
+      line({ name: "Trend range", data: fanLow, silent: true, lineStyle: { color: accent, width: 1, type: [4, 4], opacity: 0.6 }, z: 3 }),
+      line({ name: "12-mo path", data: stCenter, silent: true, lineStyle: { color: inkDim, width: 1.25, type: [3, 3] }, z: 4 }),
       line({
-        name: "Scenario",
+        name: "Since-2017 fit",
         data: scenarioData,
         showSymbol: false,
         silent: true,
@@ -365,7 +362,7 @@
         showSymbol: false,
         silent: true,
         lineStyle: { color: accent, width: 1.5 },
-        endLabel: edgeLabel("Cruise", accent),
+        endLabel: edgeLabel("Cruise", accent, true),
         z: 5,
       }),
       line({
@@ -428,14 +425,14 @@
       },
     ];
 
-    const legendItems = ["Bands", "Fan", "Next 12 mo", "Scenario", "Halvings", "Cycle tops"];
+    const legendItems = ["Idle–Redline", "Trend range", "12-mo path", "Since-2017 fit", "Halvings", "Cycle tops"];
 
     chart.setOption(
       {
         backgroundColor: "transparent",
         animation: false,
         textStyle: { fontFamily: colors.fontData, color: inkDim },
-        grid: { left: 8, right: narrow ? 12 : 92, top: narrow ? 62 : 34, bottom: 28, containLabel: true },
+        grid: { left: 8, right: narrow ? 44 : 92, top: narrow ? 62 : 34, bottom: 28, containLabel: true },
         legend: {
           data: legendItems.map((name) => ({ name, itemStyle: { color: legendColor[name] }, lineStyle: { color: legendColor[name] } })),
           top: 0,
@@ -555,7 +552,7 @@
     const fan = M.fanAt(day, pl.trend_uncertainty && pl.trend_uncertainty.fan);
     if (future && fan) row("Trend range", `${M.formatDollarCompact(fan.low)}–${M.formatDollarCompact(fan.high)}`, true);
     const st = future ? M.shortTermAt(day, pl.short_term) : null;
-    if (st) row("Next-12-mo path", `${M.formatDollarCompact(st.center)} (${M.formatDollarCompact(st.inner_low)}–${M.formatDollarCompact(st.inner_high)})`, true);
+    if (st) row("12-mo path", `${M.formatDollarCompact(st.center)} (${M.formatDollarCompact(st.inner_low)}–${M.formatDollarCompact(st.inner_high)})`, true);
     if (pl.scenario && day >= M.dayFromDate(pl.scenario.fit_start_date, genesis)) row(pl.scenario.label, M.formatDollarFull(M.scenarioAt(day, pl.scenario)), true);
 
     const near = (list, getDay, tol) => {
@@ -586,13 +583,22 @@
     const oneYear = backtestDoc && backtestDoc.horizons ? backtestDoc.horizons.find((h) => h.horizon_days === 365) : null;
     const parts = [];
     if (cov) parts.push(`Idle–Redline holds ${M.pct(cov.outer)} of history, the inner band ${M.pct(cov.inner)}`);
-    if (oneYear) parts.push(`tested forward, the 1-year trend forecast has typically missed by ×${oneYear.trend_mae_factor.toFixed(1)} and landed inside Idle–Redline ${M.pct(oneYear.coverage_outer)} of the time`);
+    if (oneYear) parts.push(`tested forward, the 1-year trend forecast has typically missed by ×${oneYear.trend_mae_factor.toFixed(1)}${oneYear.trend_bias_pct < 0 ? ", usually on the high side," : ""} and landed inside Idle–Redline ${M.pct(oneYear.coverage_outer)} of the time`);
     return parts.join("; ");
   }
 
   function describeCorridorPosition(ctx) {
     const { pl } = ctx;
     const m = M.modelAt(ctx.todayDay, pl);
+    const where = describeCorridorZone(ctx, m);
+    return `${where} (today Idle ${M.formatDollarCompact(m.idle)} · inner band ${M.formatDollarCompact(m.innerLow)}–${M.formatDollarCompact(m.innerHigh)} · Cruise ${M.formatDollarCompact(m.trend)} · Redline ${M.formatDollarCompact(m.redline)})`;
+  }
+
+  // The bands are skewed (long upside tail), so "39% below trend" can still
+  // be inside the inner band -- printing the numbers removes the apparent
+  // contradiction with the headline.
+  function describeCorridorZone(ctx, m) {
+    const { pl } = ctx;
     const pos = (Math.log10(pl.current.price) - Math.log10(m.idle)) / (Math.log10(m.redline) - Math.log10(m.idle));
     if (pos <= 0.05) return "at the corridor floor (Idle)";
     if (pl.current.price < m.innerLow) return "below the inner band, in the lower part of the corridor";
@@ -625,7 +631,7 @@
 
     setText(
       "power-law-summary",
-      `Today price is ${describeCorridorPosition(ctx)}. The model's Cruise line reaches ${projectionPhrase(pl)}.`
+      `Today price is ${describeCorridorPosition(ctx)}. The Cruise line, extended, passes ${projectionPhrase(pl)}.`
     );
     setText("power-law-cycle-tops-summary", describeCycleTops(pl));
     setText("power-law-bands-note", bandCoverageText());
@@ -941,7 +947,7 @@
         const m = M.modelAt(day, ctx.pl);
         const fan = M.fanAt(day, ctx.pl.trend_uncertainty && ctx.pl.trend_uncertainty.fan);
         const price = priceOnDay(day, ctx.genesis);
-        let text = `Idle ${M.formatDollarFull(m.idle)} · Cruise ${M.formatDollarFull(m.trend)} · Redline ${M.formatDollarFull(m.redline)}`;
+        let text = `${v} · Idle ${M.formatDollarFull(m.idle)} · Cruise ${M.formatDollarFull(m.trend)} · Redline ${M.formatDollarFull(m.redline)}`;
         if (fan) text += ` · trend range ${M.formatDollarCompact(fan.low)}–${M.formatDollarCompact(fan.high)}`;
         if (price != null) text += ` · actual ${M.formatDollarFull(price)}`;
         setText("lookup-date-out", text);
@@ -957,8 +963,13 @@
           return;
         }
         const days = M.crossingDays(price, ctx.pl);
-        const fmt = (d) => (d == null ? "–" : d <= ctx.todayDay ? `${formatDateShort(M.dateFromDay(d, ctx.genesis))} (past)` : formatDateShort(M.dateFromDay(d, ctx.genesis)));
-        setText("lookup-price-out", `Redline line reaches it ${fmt(days.redline)} · Cruise ${fmt(days.trend)} · Idle ${fmt(days.idle)}`);
+        const target = M.formatDollarCompact(price);
+        const phrase = (name, d) => {
+          if (d == null) return `${name}: –`;
+          const when = formatDateShort(M.dateFromDay(d, ctx.genesis));
+          return d <= ctx.todayDay ? `${name} passed ${target} on ${when}` : `${name} reaches it ${when}`;
+        };
+        setText("lookup-price-out", [phrase("Redline", days.redline), phrase("Cruise", days.trend), phrase("Idle", days.idle)].join(" · "));
       });
     }
   }
@@ -1059,7 +1070,7 @@
           symbol: "circle",
           symbolSize: 9,
           itemStyle: { color: colors.accent, borderColor: colors.ink, borderWidth: 1.5 },
-          label: { show: true, formatter: () => `×${Math.pow(10, last[1]).toFixed(2)}`, color: colors.ink, fontFamily: colors.fontData, fontSize: 11, position: "top", distance: 6 },
+          label: { show: false },
           data: [{ coord: last }],
         };
         s.markLine = {
@@ -1148,10 +1159,10 @@
     const wmaData = modelsDoc.wma_200.series.map((r) => [r.date, Math.log10(r.wma_200w)]);
     const mayerData = modelsDoc.mayer_multiple.series.map((r) => [r.date, r.value]);
     const ys = priceData.map((p) => p[1]);
-    const yMin = Math.floor(Math.min(...ys));
+    const yMin = Math.min(...ys) - 0.15;
     const yMax = Math.ceil(Math.max(...ys));
     const ticks = M.dollarTicks(yMin, yMax);
-    const zoneColor = rgba(colors.inkDim, 0.08);
+    const zoneColor = rgba(colors.accent, 0.08);
 
     chart.setOption(
       {
@@ -1161,12 +1172,12 @@
         axisPointer: { link: [{ xAxisIndex: "all" }] },
         legend: { top: 0, itemWidth: 14, itemHeight: 8, icon: "roundRect", textStyle: { color: colors.inkDim, fontSize: 11 }, inactiveColor: colors.border, data: ["Price", "200-week MA", "Mayer"] },
         grid: [
-          { left: 8, right: 16, top: 30, height: "50%", containLabel: true },
-          { left: 8, right: 16, top: "70%", bottom: 28, containLabel: true },
+          { left: 8, right: 16, top: 30, height: "46%", containLabel: true },
+          { left: 8, right: 16, top: "64%", bottom: 28, containLabel: true },
         ],
         xAxis: [
-          { type: "time", gridIndex: 0, axisLabel: { show: false }, axisLine: { lineStyle: { color: colors.border } }, axisTick: { show: false } },
-          { type: "time", gridIndex: 1, axisLabel: { color: colors.inkDim }, axisLine: { lineStyle: { color: colors.border } } },
+          { type: "time", gridIndex: 0, axisLabel: { show: false }, axisLine: { onZero: false, lineStyle: { color: colors.border } }, axisTick: { show: false } },
+          { type: "time", gridIndex: 1, axisLabel: { color: colors.inkDim, hideOverlap: true }, axisLine: { onZero: false, lineStyle: { color: colors.border } } },
         ],
         yAxis: [
           {
@@ -1182,8 +1193,8 @@
             type: "value",
             gridIndex: 1,
             min: 0,
-            max: 6,
-            interval: 2,
+            max: 4,
+            interval: 1,
             axisLabel: { color: colors.inkDim, formatter: (v) => v.toFixed(0) },
             splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
           },
@@ -1200,7 +1211,7 @@
             data: mayerData,
             lineStyle: { color: colors.accent, width: 1.25 },
             itemStyle: { color: colors.accent },
-            markArea: { silent: true, itemStyle: { color: zoneColor }, data: [[{ yAxis: 0 }, { yAxis: 0.8 }], [{ yAxis: 2.4 }, { yAxis: 6 }]] },
+            markArea: { silent: true, itemStyle: { color: zoneColor }, data: [[{ yAxis: 0 }, { yAxis: 0.8 }], [{ yAxis: 2.4 }, { yAxis: 4 }]] },
             markLine: { silent: true, symbol: "none", label: { show: false }, lineStyle: { type: [2, 3], color: colors.inkDim, opacity: 0.6, width: 1 }, data: [{ yAxis: 1 }] },
           },
         ],
@@ -1279,8 +1290,8 @@
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        grid: { left: 8, right: narrow ? 44 : 78, top: 14, bottom: 30, containLabel: true },
-        xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
+        grid: { left: 8, right: narrow ? 64 : 78, top: 14, bottom: 30, containLabel: true },
+        xAxis: { type: "time", splitNumber: narrow ? 4 : 8, axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim, hideOverlap: true } },
         yAxis: [
           { type: "value", min: 0, max: 100, interval: 25, axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim }, splitLine: { show: false } },
           {
@@ -1350,6 +1361,13 @@
   // Track Record -- the model graded against reality (director ruling 8)
   // ======================================================================
 
+  // trend_bias_pct < 0 means outcomes came in BELOW the forecast on
+  // average, i.e. the forecasts ran high.
+  function biasPhrase(biasPct) {
+    const n = Math.abs(biasPct).toFixed(0);
+    return biasPct < 0 ? `ran ${n}% high` : `ran ${n}% low`;
+  }
+
   function renderTrackRecord(colors) {
     if (!backtestDoc) {
       setChartStatus("track-record-chart", "error", "backtest unavailable");
@@ -1359,7 +1377,7 @@
     if (oneYear) {
       setText(
         "track-record-stats",
-        `1y miss ×${oneYear.trend_mae_factor.toFixed(1)} · bias ${oneYear.trend_bias_pct >= 0 ? "+" : ""}${oneYear.trend_bias_pct.toFixed(0)}% · band hit ${M.pct(oneYear.coverage_outer)}`
+        `1y miss ×${oneYear.trend_mae_factor.toFixed(1)} · ${biasPhrase(oneYear.trend_bias_pct)} · in band ${M.pct(oneYear.coverage_outer)}`
       );
     }
 
@@ -1387,7 +1405,7 @@
             trigger: "axis",
             formatter: (params) => {
               const r = rows[params[0].dataIndex];
-              return `forecasts made in ${r.year} (1y ahead)<br/>typical miss ×${r.mae_factor.toFixed(2)} · bias ${r.bias_pct >= 0 ? "+" : ""}${r.bias_pct.toFixed(0)}%`;
+              return `forecasts made in ${r.year} (1y ahead)<br/>typical miss ×${r.mae_factor.toFixed(2)} · ${biasPhrase(r.bias_pct)}`;
             },
           }),
         },

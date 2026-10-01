@@ -617,6 +617,7 @@ a {
 
 .chip-group {
   display: flex;
+  justify-content: flex-start;
   gap: 0.35rem;
 }
 
@@ -758,7 +759,7 @@ a {
 
 .chart-zoom-hint {
   position: absolute;
-  bottom: 34px;
+  top: 34px;
   right: 12px;
   margin: 0;
   padding: 0.2rem 0.4rem;
@@ -823,6 +824,12 @@ a {
 
 .table-scroll {
   overflow-x: auto;
+}
+
+@media (max-width: 480px) {
+  .cycle-tops-table th {
+    font-size: 0.65rem;
+  }
 }
 
 /* Plain-language takeaway (charts.js), sitting between the chart and its

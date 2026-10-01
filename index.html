@@ -217,7 +217,7 @@
     <p class="chart-headline numeral" id="power-law-headline">&mdash;</p>
     <div class="info-panel" id="info-power-law" hidden>
       <p>A long-running model, published by Giovanni Santostasi, that fits Bitcoin's price history to a power-law curve: a straight line when both price and time are on log scales. Cruise is that fitted line.</p>
-      <p>Idle and Redline bound the range price has actually spent ~95% of its history in, measured as the spread of past prices around the line (the inner band holds ~68%). They are descriptive, not confidence intervals, and not a prediction of where price goes next. The dashed fan to the right is how uncertain the line itself is; the dotted line is the same model fit only to data since 2017, which is flatter.</p>
+      <p>Idle and Redline bound the range price has actually spent ~95% of its history in, measured as the spread of past prices around the line (the inner band holds ~68%). They are descriptive, not confidence intervals, and not a prediction of where price goes next. The dashed "trend range" to the right of today is how uncertain the line itself is; the finely dotted line is the same model fit only to data since 2017, which is flatter. The short dotted "12-mo path" assumes today's gap to the trend keeps shrinking at its historical pace (half-life ~170 days) &mdash; it stops after a year because it showed no skill beyond that.</p>
       <p class="info-source">Source: model published by Giovanni Santostasi; refit nightly against this site's own price history. Uncertainty, backtest and method: <a href="https://github.com/0xfanbase/Bitcoin-Engine-Room/blob/main/pipeline/MODEL_METHODOLOGY.md" target="_blank" rel="noopener">MODEL_METHODOLOGY.md</a></p>
     </div>
     <div class="chart-controls" role="group" aria-label="Power law chart view">
@@ -235,13 +235,11 @@
     <div class="chart-frame">
       <div id="power-law-chart" class="chart-canvas chart-canvas--hero" tabindex="0" role="img" aria-label="Power law corridor chart"></div>
       <div class="chart-zoom" role="group" aria-label="Zoom">
-        <button class="chart-zoom-btn" type="button" data-power-law-zoom="left" aria-label="Pan back in time">&larr;</button>
         <button class="chart-zoom-btn" type="button" data-power-law-zoom="out" aria-label="Zoom out">&minus;</button>
         <button class="chart-zoom-btn" type="button" data-power-law-zoom="in" aria-label="Zoom in">+</button>
-        <button class="chart-zoom-btn" type="button" data-power-law-zoom="right" aria-label="Pan forward in time">&rarr;</button>
         <button class="chart-zoom-btn" type="button" data-power-law-zoom="reset" aria-label="Reset view">reset</button>
       </div>
-      <p class="chart-zoom-hint numeral" id="power-law-zoom-hint" hidden>wheel to zoom &middot; drag to box-zoom &middot; double-click resets</p>
+      <p class="chart-zoom-hint numeral" id="power-law-zoom-hint" hidden>wheel to zoom &middot; drag to box-zoom &middot; &larr; &rarr; pan &middot; double-click resets</p>
     </div>
     <p class="chart-plain-summary" id="power-law-summary"></p>
     <p class="chart-plain-summary" id="power-law-cycle-tops-summary"></p>
@@ -259,12 +257,14 @@
           <input class="lookup-input numeral" type="text" inputmode="decimal" id="lookup-price" placeholder="250000" />
           <output class="numeral lookup-out" id="lookup-price-out" for="lookup-price"></output>
         </div>
-        <table class="cycle-tops-table" aria-label="Published projections">
-          <thead>
-            <tr><th scope="col">Jan 1</th><th scope="col">Idle</th><th scope="col">Cruise</th><th scope="col">Redline</th><th scope="col">Trend range (5&ndash;95%)</th></tr>
-          </thead>
-          <tbody id="power-law-projections-tbody"></tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="cycle-tops-table" aria-label="Published projections">
+            <thead>
+              <tr><th scope="col">Jan 1</th><th scope="col">Idle</th><th scope="col">Cruise</th><th scope="col">Redline</th><th scope="col" title="Trend range: 5th to 95th percentile of the bootstrapped trend line">5&ndash;95%</th></tr>
+            </thead>
+            <tbody id="power-law-projections-tbody"></tbody>
+          </table>
+        </div>
         <p>Each value is the published model evaluated at that date &mdash; a curve fit's extrapolation, not a price target.</p>
       </div>
     </details>
@@ -365,7 +365,7 @@
       </div>
       <div class="table-scroll">
         <table class="cycle-tops-table" aria-label="Walk-forward forecast accuracy">
-          <thead><tr><th scope="col">Ahead</th><th scope="col">Model miss</th><th scope="col">Flat-price miss</th><th scope="col">In Idle&ndash;Redline</th><th scope="col">Indep. windows</th></tr></thead>
+          <thead><tr><th scope="col">Ahead</th><th scope="col">Model miss</th><th scope="col" title="Benchmark: assume price stays where it is">Flat price</th><th scope="col" title="Share of outcomes inside Idle&ndash;Redline">In band</th><th scope="col" title="Approximate number of independent (non-overlapping) windows">Windows</th></tr></thead>
           <tbody id="track-record-tbody"></tbody>
         </table>
       </div>
