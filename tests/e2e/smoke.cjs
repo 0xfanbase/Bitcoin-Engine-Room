@@ -81,12 +81,46 @@ async function run(viewportName) {
     await page.keyboard.press("0");
     check((await state()).view === null, "[desktop] key 0 resets the view");
 
+    // Focused wheel: zoom in, then back out past where it started.
+    await page.locator("#power-law-chart").click({ position: { x: box.width * 0.5, y: box.height * 0.5 } });
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await page.mouse.wheel(0, -200);
+    await page.waitForTimeout(200);
+    const zoomedIn = (await state()).view;
+    await page.mouse.wheel(0, 200);
+    await page.waitForTimeout(150);
+    await page.mouse.wheel(0, 200);
+    await page.waitForTimeout(200);
+    const zoomedOut = (await state()).view;
+    check(zoomedIn && zoomedOut && zoomedOut.maxDay - zoomedOut.minDay > zoomedIn.maxDay - zoomedIn.minDay, "[desktop] focused wheel zooms in and back out");
+    await page.keyboard.press("0");
+
     await page.locator("h1").click();
     const y0 = await page.evaluate(() => window.scrollY);
     await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
     await page.mouse.wheel(0, 300);
     await page.waitForTimeout(300);
     check((await page.evaluate(() => window.scrollY)) > y0, "[desktop] plain wheel over an unfocused chart still scrolls the page");
+  }
+
+  if (mobile) {
+    // Real touch swipes via CDP: vertical must scroll the page (the chart is
+    // half the viewport), horizontal must pan the chart.
+    const cdp = await ctx.newCDPSession(page);
+    const swipe = async (x, y, dx, dy) => {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+      for (let i = 1; i <= 10; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x + (dx * i) / 10, y: y + (dy * i) / 10 }] });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await page.waitForTimeout(400);
+    };
+    await page.locator("#power-law-chart").scrollIntoViewIfNeeded();
+    const b = await page.locator("#power-law-chart").boundingBox();
+    const sy0 = await page.evaluate(() => window.scrollY);
+    await swipe(b.x + b.width / 2, b.y + b.height * 0.7, 0, -200);
+    check((await page.evaluate(() => window.scrollY)) > sy0 + 50, "[mobile] vertical swipe on the hero chart scrolls the page");
+    const b2 = await page.locator("#power-law-chart").boundingBox();
+    await swipe(b2.x + b2.width * 0.7, b2.y + b2.height / 2, -150, 0);
+    check((await state()).view !== null, "[mobile] horizontal swipe pans the hero chart");
   }
 
   await page.click("#power-law-lookup-disclosure summary");

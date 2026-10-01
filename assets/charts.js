@@ -311,7 +311,6 @@
       silent: true,
       z,
       itemStyle: { color: legendColor[name] || fill },
-      itemStyle: { color: fill },
       data: upper.length ? [0] : [],
       renderItem: (params, api) => {
         const pts = [];
@@ -501,21 +500,11 @@
           right: -100,
           feature: { dataZoom: { yAxisIndex: "none", brushStyle: { borderColor: inkDim, borderWidth: 1, color: rgba(accent, 0.06) } } },
         },
-        dataZoom: [
-          {
-            type: "inside",
-            xAxisIndex: 0,
-            filterMode: "none",
-            zoomLock: !(plState.focused || COARSE_POINTER),
-            zoomOnMouseWheel: true,
-            moveOnMouseMove: COARSE_POINTER,
-            moveOnMouseWheel: "shift",
-            // The axis min/max above already ARE the zoomed window, so the
-            // dataZoom itself always resets to the full axis extent.
-            start: 0,
-            end: 100,
-          },
-        ],
+        // No ECharts `inside` dataZoom on the hero: its axis min/max ARE the
+        // current window, so ECharts' own wheel/drag zoom could never widen
+        // or pan, and on touch it swallowed vertical page scrolls. Wheel,
+        // pinch and drag are handled in initPowerLawGestures() instead; the
+        // toolbox's box-zoom still drives a `datazoom` event.
       },
       // Merge (not notMerge): a full replace on every zoom step disposed the
       // tooltip mid-hover (ECharts then threw on its pending reposition).
@@ -583,7 +572,7 @@
     const oneYear = backtestDoc && backtestDoc.horizons ? backtestDoc.horizons.find((h) => h.horizon_days === 365) : null;
     const parts = [];
     if (cov) parts.push(`Idle–Redline holds ${M.pct(cov.outer)} of history, the inner band ${M.pct(cov.inner)}`);
-    if (oneYear) parts.push(`tested forward, the 1-year trend forecast has typically missed by ×${oneYear.trend_mae_factor.toFixed(1)}${oneYear.trend_bias_pct < 0 ? ", usually on the high side," : ""} and landed inside Idle–Redline ${M.pct(oneYear.coverage_outer)} of the time`);
+    if (oneYear && oneYear.trend_mae_factor != null && oneYear.coverage_outer != null) parts.push(`tested forward, the 1-year trend forecast has typically missed by ×${oneYear.trend_mae_factor.toFixed(1)}${oneYear.trend_bias_pct < 0 ? ", usually on the high side," : ""} and landed inside Idle–Redline ${M.pct(oneYear.coverage_outer)} of the time`);
     return parts.join("; ");
   }
 
@@ -838,8 +827,8 @@
       pendingZoomFrame = 0;
       const chart = charts["power-law-chart"];
       if (!chart || !modelsDoc) return;
-      const dz = (chart.getOption().dataZoom || []).find((z) => z.xAxisIndex != null || z.xAxisId != null) || chart.getOption().dataZoom[0];
       const opt = chart.getOption();
+      const dz = (opt.dataZoom || []).find((z) => z.startValue != null) || (opt.dataZoom || [])[0];
       const xAxis = opt.xAxis[0];
       const startV = dz && dz.startValue != null ? dz.startValue : xAxis.min;
       const endV = dz && dz.endValue != null ? dz.endValue : xAxis.max;
@@ -853,12 +842,102 @@
 
   function setPowerLawFocus(focused) {
     plState.focused = focused;
-    const chart = charts["power-law-chart"];
-    if (!chart) return;
-    const dz = chart.getOption().dataZoom || [];
-    chart.setOption({ dataZoom: dz.map(() => ({ zoomLock: !(focused || COARSE_POINTER) })) });
-    if (focused) showZoomHint();
+    if (focused && !COARSE_POINTER) showZoomHint();
   }
+
+  // Fraction (0..1) of the plot's x-range under a client X coordinate.
+  function plotFraction(clientX) {
+    const chart = charts["power-law-chart"];
+    const el = document.getElementById("power-law-chart");
+    if (!chart || !el) return 0.5;
+    const ax = chart.getOption().xAxis[0];
+    const left = chart.convertToPixel({ xAxisIndex: 0 }, ax.min);
+    const right = chart.convertToPixel({ xAxisIndex: 0 }, ax.max);
+    const px = clientX - el.getBoundingClientRect().left;
+    if (!(right > left)) return 0.5;
+    return Math.min(Math.max((px - left) / (right - left), 0), 1);
+  }
+
+  function plotWidthPx() {
+    const chart = charts["power-law-chart"];
+    if (!chart) return 1;
+    const ax = chart.getOption().xAxis[0];
+    return Math.max(chart.convertToPixel({ xAxisIndex: 0 }, ax.max) - chart.convertToPixel({ xAxisIndex: 0 }, ax.min), 1);
+  }
+
+  // Wheel zooms only once the chart has focus (one click) or with Shift held
+  // -- an unfocused chart never swallows a page scroll; Shift+wheel on a
+  // focused chart pans. Touch: pinch zooms around the fingers, a mostly
+  // horizontal one-finger drag pans, and vertical swipes stay with the
+  // browser (CSS touch-action: pan-y). Coalesced to one render per frame.
+  function initPowerLawGestures(el) {
+    let pending = null;
+    const flush = () => {
+      const op = pending;
+      pending = null;
+      if (!op) return;
+      if (op.zoom !== 1) zoomPowerLaw(op.zoom, op.center);
+      if (op.pan) panPowerLaw(op.pan);
+    };
+    const queue = (zoom, center, pan) => {
+      if (!pending) {
+        pending = { zoom: 1, center, pan: 0 };
+        requestAnimationFrame(flush);
+      }
+      pending.zoom *= zoom;
+      pending.center = center;
+      pending.pan += pan;
+    };
+
+    el.addEventListener(
+      "wheel",
+      (e) => {
+        if (!plState.focused && !e.shiftKey) return;
+        e.preventDefault();
+        if (plState.focused && e.shiftKey) queue(1, 0.5, Math.sign(e.deltaY || e.deltaX) * 0.08);
+        else queue(e.deltaY < 0 ? 0.85 : 1 / 0.85, plotFraction(e.clientX), 0);
+      },
+      { passive: false }
+    );
+
+    const pts = new Map();
+    let lastPinch = null;
+    let drag = null;
+    el.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "touch") return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      drag = pts.size === 1 ? { x: e.clientX, y: e.clientY, lastX: e.clientX, horizontal: null } : null;
+      lastPinch = null;
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "touch" || !pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) {
+        const [p, q] = [...pts.values()];
+        const dist = Math.hypot(p.x - q.x, p.y - q.y);
+        if (lastPinch && dist > 0) queue(lastPinch / dist, plotFraction((p.x + q.x) / 2), 0);
+        lastPinch = dist;
+        return;
+      }
+      if (drag) {
+        const dx = e.clientX - drag.x;
+        const dy = e.clientY - drag.y;
+        if (drag.horizontal === null && Math.hypot(dx, dy) > 10) drag.horizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
+        if (drag.horizontal) {
+          queue(1, 0.5, -(e.clientX - drag.lastX) / plotWidthPx());
+          drag.lastX = e.clientX;
+        }
+      }
+    });
+    const end = (e) => {
+      pts.delete(e.pointerId);
+      lastPinch = null;
+      if (!pts.size) drag = null;
+    };
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+  }
+
 
   function showZoomHint() {
     let seen = false;
@@ -910,6 +989,7 @@
         if (document.activeElement !== el) el.focus({ preventScroll: true });
       });
       el.addEventListener("dblclick", resetPowerLawView);
+      initPowerLawGestures(el);
       el.addEventListener("keydown", (e) => {
         const keys = { "+": () => zoomPowerLaw(0.6), "=": () => zoomPowerLaw(0.6), "-": () => zoomPowerLaw(1 / 0.6), _: () => zoomPowerLaw(1 / 0.6), 0: resetPowerLawView, ArrowLeft: () => panPowerLaw(-0.15), ArrowRight: () => panPowerLaw(0.15) };
         const fn = keys[e.key];
@@ -1374,7 +1454,7 @@
       return;
     }
     const oneYear = backtestDoc.horizons.find((h) => h.horizon_days === 365);
-    if (oneYear) {
+    if (oneYear && oneYear.trend_mae_factor != null && oneYear.trend_bias_pct != null && oneYear.coverage_outer != null) {
       setText(
         "track-record-stats",
         `1y miss ×${oneYear.trend_mae_factor.toFixed(1)} · ${biasPhrase(oneYear.trend_bias_pct)} · in band ${M.pct(oneYear.coverage_outer)}`
@@ -1405,6 +1485,7 @@
             trigger: "axis",
             formatter: (params) => {
               const r = rows[params[0].dataIndex];
+              if (!r || r.mae_factor == null) return "";
               return `forecasts made in ${r.year} (1y ahead)<br/>typical miss ×${r.mae_factor.toFixed(2)} · ${biasPhrase(r.bias_pct)}`;
             },
           }),
@@ -1417,9 +1498,10 @@
     const tbody = document.getElementById("track-record-tbody");
     if (tbody) {
       tbody.textContent = "";
+      const fx = (v) => (v == null ? "–" : `×${v.toFixed(2)}`);
       backtestDoc.horizons.forEach((h) => {
         const tr = document.createElement("tr");
-        [`${Math.round(h.horizon_days / 365)}y`, `×${h.trend_mae_factor.toFixed(2)}`, `×${h.random_walk_mae_factor.toFixed(2)}`, M.pct(h.coverage_outer), `~${Math.round(h.approx_independent_windows)}`].forEach((text) => {
+        [`${Math.round(h.horizon_days / 365)}y`, fx(h.trend_mae_factor), fx(h.random_walk_mae_factor), h.coverage_outer == null ? "–" : M.pct(h.coverage_outer), h.approx_independent_windows == null ? "–" : `~${Math.round(h.approx_independent_windows)}`].forEach((text) => {
           const td = document.createElement("td");
           td.className = "numeral";
           td.textContent = text;
