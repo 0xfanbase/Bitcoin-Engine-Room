@@ -399,11 +399,39 @@ a {
   text-align: left;
 }
 
+/* Visually hidden until keyboard-focused (IMPROVEMENT_BACKLOG.md
+   2026-07-25): lets a keyboard user jump past ~15 info-toggles. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 10;
+  padding: 0.4rem 0.7rem;
+  background: var(--bg);
+  border: 1px solid var(--focus-ring);
+  border-radius: 2px;
+  color: var(--ink);
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
 /* ---------- Gauges grid ---------- */
+/* 3x2 at >=720px, 2 columns below (director ruling 12, 2026-10-01): the
+   old auto-fit grid put six cards into 4 + 2 orphans on desktop. */
 .gauges-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+@media (min-width: 720px) {
+  .gauges-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* Terminal chrome, not brand-engine skeuomorphism (director ruling: the
@@ -581,13 +609,30 @@ a {
 
 .chart-controls {
   display: flex;
-  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
+}
+
+.chip-group {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+/* One-line headline reading (director ruling 9): the model's answer first,
+   above the chart, in mono --ink. */
+.chart-headline {
+  margin: 0 0 0.6rem;
+  font-size: 0.9rem;
+  color: var(--ink);
 }
 
 .chip-btn {
   font-family: var(--font-data);
   font-size: 0.75rem;
+  min-height: 24px;
   padding: 0.25rem 0.55rem;
   border-radius: 2px;
   border: 1px solid var(--panel-border);
@@ -615,7 +660,176 @@ a {
 }
 
 .chart-canvas--hero {
-  height: 380px;
+  height: 420px;
+}
+
+.chart-canvas--tall {
+  height: 360px;
+}
+
+.chart-canvas--short {
+  height: 160px;
+}
+
+.chart-canvas:focus-visible {
+  outline: 1px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Loading / error states (director ruling 11): hairline frame plus one dim
+   mono line; --fail text only for a genuine fetch/render failure. */
+.chart-canvas[data-status="loading"],
+.chart-canvas[data-status="error"] {
+  position: relative;
+  border: 1px solid var(--panel-border);
+  border-radius: 2px;
+}
+
+.chart-canvas[data-status="loading"]::after,
+.chart-canvas[data-status="error"]::after {
+  content: attr(data-message);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+}
+
+.chart-canvas[data-status="error"]::after {
+  color: var(--fail);
+}
+
+/* Hero chart zoom cluster: absent from the resting chrome, revealed only
+   while the pointer is over the chart or it has keyboard focus (director
+   ruling 2 + implementer deviation, docs/UX_OVERHAUL_DIRECTOR_RULING.md).
+   Touch devices get pinch/drag instead, so it never shows there. */
+.chart-frame {
+  position: relative;
+}
+
+.chart-zoom {
+  position: absolute;
+  top: 34px;
+  left: 56px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+@media (hover: hover) {
+  .chart-frame:hover .chart-zoom,
+  .chart-frame:focus-within .chart-zoom {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (hover: none) {
+  .chart-zoom {
+    display: none;
+  }
+}
+
+.chart-zoom-btn {
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  line-height: 1;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 2px;
+  background: rgba(4, 16, 8, 0.96);
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+
+.chart-zoom-btn:hover,
+.chart-zoom-btn:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink-dim);
+}
+
+.chart-zoom-hint {
+  position: absolute;
+  top: 34px;
+  right: 12px;
+  margin: 0;
+  padding: 0.2rem 0.4rem;
+  font-size: 10px;
+  color: var(--ink-dim);
+  background: rgba(4, 16, 8, 0.96);
+  border: 1px solid var(--panel-border);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Model-at-date / price lookup (director ruling 5). */
+.lookup-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin: 0 0 0.6rem;
+}
+
+.lookup-row label {
+  min-width: 6.5rem;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.lookup-input {
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink);
+  color-scheme: dark;
+  min-height: 32px;
+}
+
+.lookup-input:focus-visible {
+  outline: 1px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.lookup-out {
+  flex: 1 1 18rem;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.track-record-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .track-record-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+@media (max-width: 480px) {
+  .cycle-tops-table th {
+    font-size: 0.65rem;
+  }
 }
 
 /* Plain-language takeaway (charts.js), sitting between the chart and its

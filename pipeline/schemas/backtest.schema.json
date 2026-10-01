@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/backtest.schema.json",
+  "title": "walk-forward backtest (data/backtest.json)",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "data_through", "method", "horizons", "short_term", "scenario", "signals", "z_buckets", "miss_by_year", "per_origin_1y"],
+  "additionalProperties": false,
+  "$defs": {
+    "num": {"type": ["number", "null"]},
+    "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated_at": {"type": "string"},
+    "data_through": {"$ref": "#/$defs/date"},
+    "method": {"type": "object", "required": ["origins", "error_unit", "caveat"]},
+    "horizons": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["horizon_days", "n_origins", "trend_mae_factor", "random_walk_mae_factor", "coverage_outer", "coverage_inner"],
+        "properties": {
+          "horizon_days": {"type": "integer"},
+          "n_origins": {"type": "integer", "minimum": 0},
+          "coverage_outer": {"$ref": "#/$defs/num"},
+          "coverage_inner": {"$ref": "#/$defs/num"}
+        }
+      }
+    },
+    "short_term": {"type": "array", "items": {"type": "object", "required": ["horizon_days", "n_origins"]}},
+    "scenario": {"type": "array", "items": {"type": "object", "required": ["horizon_days", "n_origins"]}},
+    "signals": {
+      "type": "array",
+      "items": {"type": "object", "required": ["signal", "n_months", "spearman_vs_fwd_1y"]}
+    },
+    "z_buckets": {
+      "type": "array",
+      "items": {"type": "object", "required": ["z_low", "z_high", "n_months", "episodes", "median_fwd_1y_pct", "share_negative"]}
+    },
+    "miss_by_year": {"type": "array", "items": {"type": "object", "required": ["year", "n", "mae_factor", "bias_pct"]}},
+    "per_origin_1y": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["origin", "target", "trend", "actual", "miss_log10", "inside_outer"],
+        "properties": {"origin": {"$ref": "#/$defs/date"}, "target": {"$ref": "#/$defs/date"}, "inside_outer": {"type": "boolean"}}
+      }
+    }
+  }
+}

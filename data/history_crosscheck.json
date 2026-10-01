@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-01T02:08:59Z",
+  "reference_source": "bitstamp",
+  "method": "committed daily price inside the reference day's [low, high] widened by 3%",
+  "range_tolerance": 0.03,
+  "years": [
+    {
+      "year": 2011,
+      "days_compared": 136,
+      "outside_range": 70,
+      "outside_share": 0.5147,
+      "median_abs_close_dev_pct": 6.36
+    },
+    {
+      "year": 2012,
+      "days_compared": 366,
+      "outside_range": 35,
+      "outside_share": 0.0956,
+      "median_abs_close_dev_pct": 1.98
+    },
+    {
+      "year": 2013,
+      "days_compared": 365,
+      "outside_range": 48,
+      "outside_share": 0.1315,
+      "median_abs_close_dev_pct": 3.5
+    },
+    {
+      "year": 2014,
+      "days_compared": 365,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.69
+    },
+    {
+      "year": 2015,
+      "days_compared": 365,
+      "outside_range": 2,
+      "outside_share": 0.0055,
+      "median_abs_close_dev_pct": 1.4
+    },
+    {
+      "year": 2016,
+      "days_compared": 366,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 0.86
+    },
+    {
+      "year": 2017,
+      "days_compared": 365,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 2.48
+    },
+    {
+      "year": 2018,
+      "days_compared": 365,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.98
+    },
+    {
+      "year": 2019,
+      "days_compared": 365,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.57
+    },
+    {
+      "year": 2020,
+      "days_compared": 366,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.45
+    },
+    {
+      "year": 2021,
+      "days_compared": 365,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 2.4
+    },
+    {
+      "year": 2022,
+      "days_compared": 365,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.49
+    },
+    {
+      "year": 2023,
+      "days_compared": 365,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.0
+    },
+    {
+      "year": 2024,
+      "days_compared": 366,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.37
+    },
+    {
+      "year": 2025,
+      "days_compared": 365,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.14
+    },
+    {
+      "year": 2026,
+      "days_compared": 273,
+      "outside_range": 0,
+      "outside_share": 0.0,
+      "median_abs_close_dev_pct": 1.11
+    }
+  ],
+  "fit_sensitivity": {
+    "days_substituted": 155,
+    "b_committed": 5.602096,
+    "b_with_bitstamp_substituted": 5.605305,
+    "trend_2030_committed": 357115.97,
+    "trend_2030_with_bitstamp_substituted": 357642.85,
+    "trend_2030_change_pct": 0.15
+  },
+  "largest_disagreements": [
+    {
+      "date": "2012-08-19",
+      "ours": 14.48,
+      "bitstamp_low": 7.1,
+      "bitstamp_high": 11.86,
+      "bitstamp_close": 8.06
+    },
+    {
+      "date": "2011-10-23",
+      "ours": 3.31,
+      "bitstamp_low": 2.27,
+      "bitstamp_high": 2.27,
+      "bitstamp_close": 2.27
+    },
+    {
+      "date": "2011-10-19",
+      "ours": 2.84,
+      "bitstamp_low": 3.92,
+      "bitstamp_high": 3.92,
+      "bitstamp_close": 3.92
+    },
+    {
+      "date": "2013-04-13",
+      "ours": 122.6,
+      "bitstamp_low": 85.0,
+      "bitstamp_high": 119.0,
+      "bitstamp_close": 91.64
+    },
+    {
+      "date": "2012-08-18",
+      "ours": 15.37,
+      "bitstamp_low": 11.11,
+      "bitstamp_high": 12.99,
+      "bitstamp_close": 11.54
+    },
+    {
+      "date": "2011-10-22",
+      "ours": 2.86,
+      "bitstamp_low": 2.27,
+      "bitstamp_high": 2.27,
+      "bitstamp_close": 2.27
+    },
+    {
+      "date": "2011-11-24",
+      "ours": 2.4,
+      "bitstamp_low": 2.54,
+      "bitstamp_high": 3.0,
+      "bitstamp_close": 3.0
+    },
+    {
+      "date": "2011-11-14",
+      "ours": 3.08,
+      "bitstamp_low": 2.47,
+      "bitstamp_high": 2.95,
+      "bitstamp_close": 2.47
+    },
+    {
+      "date": "2011-10-08",
+      "ours": 4.79,
+      "bitstamp_low": 3.99,
+      "bitstamp_high": 4.57,
+      "bitstamp_close": 3.99
+    },
+    {
+      "date": "2012-01-17",
+      "ours": 7.14,
+      "bitstamp_low": 6.0,
+      "bitstamp_high": 6.9,
+      "bitstamp_close": 6.0
+    }
+  ]
+}

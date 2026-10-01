@@ -115,7 +115,14 @@
 
     chip.dataset.status = audit.result;
     text.textContent = audit.result;
-    if (generatedAt) generatedAt.textContent = "audited " + audit.generated_at;
+    if (generatedAt) {
+      // Same "as of" vocabulary as the rest of the page instead of a raw ISO
+      // timestamp (IMPROVEMENT_BACKLOG.md 2026-07-25); exact time on hover.
+      const ageHours = Math.max(0, Math.floor((Date.now() - Date.parse(audit.generated_at)) / 3600000));
+      const age = ageHours < 1 ? "under an hour ago" : ageHours < 48 ? `${ageHours}h ago` : `${Math.floor(ageHours / 24)} days ago`;
+      generatedAt.textContent = `audited ${audit.generated_at.slice(0, 10)} · ${age}`;
+      generatedAt.title = audit.generated_at;
+    }
 
     findingsList.innerHTML = "";
     const findings = audit.findings || [];

@@ -30,6 +30,7 @@ Stack: GitHub Pages (hosting) + GitHub Actions (automation) + Python 3.12 (`requ
 | Supply (live, daily snapshot) | blockchain.info `/q/totalbc` (satoshis → BTC ÷1e8) | computed from tip height via `pipeline/subsidy.py`'s closed-form subsidy schedule | Coin Metrics dropped from this chain (401, see above); subsidy-schedule fallback matched a real observed value within 0.00006% |
 | Fear & Greed (live, daily snapshot) | alternative.me `?limit=1` | — (sole source) | |
 | Block height | mempool.space WS `blocks` (browser, P3) / REST `/blocks/tip/height` (pipeline, used only as a subsidy-schedule input) | blockchain.info `/q/getblockcount` | Not stored as its own history file — spec Section 5 doesn't list one; it's live-only / a computation input |
+| Price history cross-check (monthly, audit-only) | Bitstamp public OHLC `/api/v2/ohlc/btcusd/` (daily candles from 2011-08, 1000/request) | — (report kept; audit warns after 45 days) | Phase F (2026-10-01), `pipeline/crosscheck_history.py`. Never a site price source — checks that each committed daily price lies inside Bitstamp's daily [low, high] ±3%. 2011–2013 disagree on ~10–50% of days (thin markets) and are reported, not flagged; 2014+ agree on all but 2 days. Substituting Bitstamp on every disputed day moves `b` by only +0.003. |
 | Fees (live, browser only) | mempool.space `/api/v1/fees/recommended` | — (mark stale) | No fallback per spec; browser-only (P3), not part of the daily pipeline — no history file |
 
 **Follow-up (logged in `IMPROVEMENT_BACKLOG.md`):** either obtain a free Coin Metrics API key and wire it back into `CoinMetricsClient` for backfill AND daily-snapshot chains, or formally demote Coin Metrics to documented-fallback status throughout.
@@ -57,6 +58,7 @@ bitcoin-engine-room/
 ├── data/history/*.json            # P1 backfilled, P2 appends one row/day live
 ├── data/models.json               # P4
 ├── data/health.json               # P2
+├── data/backtest.json, data/forecasts.json, data/history_crosscheck.json   # 2026-10-01 (Phases A, F)
 ├── data/audit/                    # P5 — latest.json + one dated copy per day, 90-day retention
 ├── pipeline/
 │   ├── sources.py                 # P1 backfill fetchers + P2 live/failover clients
@@ -65,8 +67,11 @@ bitcoin-engine-room/
 │   ├── gh_issues.py                # P2 (data-outage) + P5 (audit-fail) issue automation, shared mechanics
 │   ├── backfill.py                # P1
 │   ├── fetch_snapshot.py          # P2
-│   ├── fit_models.py              # P4 — power law/cycle/Mayer/200WMA (deviation dial removed 2026-07-09, see IMPROVEMENT_BACKLOG.md)
-│   ├── audit.py                   # P5 — continuity/variance/drift/staleness/sanity-replay/site-integrity
+│   ├── fit_models.py              # P4 — power law/cycle/Mayer/200WMA (deviation dial removed 2026-07-09, see IMPROVEMENT_BACKLOG.md); 2026-10-01 adds empirical bands, trend fan, short-term path, scenario, point-in-time z
+│   ├── forecast.py                # 2026-10-01 — pure model-honesty math shared by fit_models + backtest
+│   ├── backtest.py                # 2026-10-01 — walk-forward backtest (data/backtest.json) + live forecast ledger (data/forecasts.json)
+│   ├── crosscheck_history.py      # 2026-10-01 — monthly Bitstamp cross-check of committed price history (data/history_crosscheck.json)
+│   ├── audit.py                   # P5 — continuity/variance/drift/staleness/sanity-replay/site-integrity; 2026-10-01 adds forecast_calibration + history cross-check
 │   ├── sanity_rules.json          # P1 (live_snapshot) + P2 (consumed by fetch_snapshot.py)
 │   ├── model_constants.json, MODEL_METHODOLOGY.md   # P1, consumed by P4's fit_models.py
 │   ├── known_gaps.json            # /improve (2026-07-09) -- verified, cited continuity-gap allowlist, consumed by audit.py

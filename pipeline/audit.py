@@ -1,6 +1,8 @@
 """Self-audit (P5, spec Section 11). Runs after each snapshot (or standalone)
 and checks: continuity, cross-source variance, model drift, staleness,
-sanity replay of the last 30 days, and site integrity. Writes
+sanity replay of the last 30 days, site integrity, and (Phase A,
+2026-10-01) forecast calibration -- whether the site's own published bands
+and live-ledger forecasts actually hold up. Writes
 data/audit/latest.json (+ a dated copy, pruning anything older than 90
 days), appends WARN/FAIL findings to IMPROVEMENT_BACKLOG.md, and
 opens/updates/closes a GitHub issue on FAIL/recovery.
@@ -16,6 +18,8 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+import jsonschema
+
 from pipeline import gh_issues
 from pipeline.validation import check_ascending_no_duplicate_dates, check_backfill_sanity
 
@@ -25,6 +29,10 @@ HEALTH_PATH = REPO_ROOT / "data" / "health.json"
 MODELS_PATH = REPO_ROOT / "data" / "models.json"
 SANITY_RULES_PATH = REPO_ROOT / "pipeline" / "sanity_rules.json"
 KNOWN_GAPS_PATH = REPO_ROOT / "pipeline" / "known_gaps.json"
+BACKTEST_PATH = REPO_ROOT / "data" / "backtest.json"
+LEDGER_PATH = REPO_ROOT / "data" / "forecasts.json"
+HISTORY_CROSSCHECK_PATH = REPO_ROOT / "data" / "history_crosscheck.json"
+AUDIT_SCHEMA_PATH = REPO_ROOT / "pipeline" / "schemas" / "audit.schema.json"
 AUDIT_DIR = REPO_ROOT / "data" / "audit"
 BACKLOG_PATH = REPO_ROOT / "IMPROVEMENT_BACKLOG.md"
 INDEX_HTML_PATH = REPO_ROOT / "index.html"
@@ -43,6 +51,23 @@ DRIFT_B_PCT_WARN = 0.005  # 0.5% day-over-day, per spec Section 11.3
 DRIFT_R_SQUARED_DROP_WARN = 0.01
 JSON_PAYLOAD_BUDGET_BYTES = 5 * 1024 * 1024
 AUDIT_RETENTION_DAYS = 90
+# Forecast calibration (Phase A, 2026-10-01). The outer band is nominally
+# the 2.5th-97.5th residual percentiles; walk-forward realised coverage has
+# run ~84-91% because each origin only knew a shorter history. Below 80% at
+# the 1-year horizon means the published Idle/Redline envelope is
+# materially overconfident -- worth a human look, not a hard failure.
+CALIBRATION_OUTER_MIN_COVERAGE = 0.80
+LEDGER_MIN_MATURED = 3
+LEDGER_MAX_OUTSIDE_SHARE = 0.25
+BACKTEST_MAX_LAG_DAYS = 2
+# Historical price cross-check vs Bitstamp (Phase F). 2011-2013 genuinely
+# disagree (thin, fragmented markets) and are reported, not flagged; from
+# the liquid era on, committed prices sit inside Bitstamp's daily range on
+# effectively every day, so a real rise means corrupted history.
+HISTORY_LIQUID_ERA_START_YEAR = 2014
+HISTORY_OUTSIDE_SHARE_WARN = 0.02
+HISTORY_CROSSCHECK_MAX_AGE_DAYS = 45
+HISTORY_FIT_SENSITIVITY_WARN_PCT = 10.0
 
 
 def load_json(path: Path) -> dict | None:
@@ -55,7 +80,7 @@ def load_json(path: Path) -> dict | None:
 def write_json(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2, allow_nan=False)
         f.write("\n")
 
 
@@ -116,9 +141,9 @@ def check_continuity() -> list[dict]:
 
 def check_cross_source_variance() -> list[dict]:
     health = load_json(HEALTH_PATH)
-    if not health:
-        return []
     findings = []
+    if not health:
+        return _check_history_crosscheck()
     price_health = health.get("metrics", {}).get("price_daily", {})
     if price_health.get("cross_source_variance_warn"):
         findings.append(
@@ -129,10 +154,39 @@ def check_cross_source_variance() -> list[dict]:
                 "price_daily",
             )
         )
+    findings.extend(_check_history_crosscheck())
     # hashrate: no cross-source check is currently recorded anywhere to audit
     # against -- each committed row has exactly one source, not parallel
     # readings from multiple sources for the same day. Logged as a known
     # limitation in IMPROVEMENT_BACKLOG.md rather than silently skipped.
+    return findings
+
+
+def _check_history_crosscheck(*, now: datetime | None = None) -> list[dict]:
+    """Committed price history vs an independent exchange (Bitstamp), from
+    data/history_crosscheck.json (pipeline/crosscheck_history.py)."""
+    now = now or datetime.now(timezone.utc)
+    report = load_json(HISTORY_CROSSCHECK_PATH)
+    if not report:
+        return [_finding("cross_source_variance", "WARN", "history_crosscheck.json missing -- run `python -m pipeline.crosscheck_history --force`", "price_daily")]
+    findings = []
+    generated = datetime.strptime(report["generated_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    age_days = (now - generated).days
+    if age_days > HISTORY_CROSSCHECK_MAX_AGE_DAYS:
+        findings.append(_finding("cross_source_variance", "WARN", f"price-history cross-check is {age_days} days old (refreshes every ~28 days; Bitstamp unreachable?)", "price_daily"))
+    for year in report.get("years", []):
+        if year["year"] >= HISTORY_LIQUID_ERA_START_YEAR and year["outside_share"] > HISTORY_OUTSIDE_SHARE_WARN:
+            findings.append(
+                _finding(
+                    "cross_source_variance",
+                    "WARN",
+                    f"{year['year']}: {year['outside_range']} of {year['days_compared']} committed daily prices fall outside Bitstamp's daily range -- possible corrupted history",
+                    "price_daily",
+                )
+            )
+    change = report.get("fit_sensitivity", {}).get("trend_2030_change_pct")
+    if change is not None and abs(change) > HISTORY_FIT_SENSITIVITY_WARN_PCT:
+        findings.append(_finding("cross_source_variance", "WARN", f"substituting Bitstamp for disputed days moves the 2030 trend by {change:+.1f}% -- the headline fit depends on contested data", "price_daily"))
     return findings
 
 
@@ -268,6 +322,9 @@ def check_site_integrity() -> list[dict]:
         total_bytes += MODELS_PATH.stat().st_size
     if HEALTH_PATH.exists():
         total_bytes += HEALTH_PATH.stat().st_size
+    for extra in (BACKTEST_PATH, LEDGER_PATH, HISTORY_CROSSCHECK_PATH):
+        if extra.exists():
+            total_bytes += extra.stat().st_size
     if total_bytes > JSON_PAYLOAD_BUDGET_BYTES:
         findings.append(
             _finding(
@@ -277,6 +334,62 @@ def check_site_integrity() -> list[dict]:
             )
         )
 
+    return findings
+
+
+# --------------------------------------------------------------------------
+# 7. Forecast calibration (Phase A)
+# --------------------------------------------------------------------------
+
+
+def check_forecast_calibration() -> list[dict]:
+    """Grades the site's own predictions, not just its data: are the
+    published bands calibrated in the walk-forward replay, is that replay
+    current, and are matured live-ledger forecasts landing inside them?"""
+    findings = []
+    backtest = load_json(BACKTEST_PATH)
+    if not backtest:
+        return [_finding("forecast_calibration", "WARN", "backtest.json missing -- run `python -m pipeline.backtest`")]
+
+    price = load_json(HISTORY_DIR / "price_daily.json")
+    real_rows = [r for r in (price or {}).get("series", []) if not r.get("carried_forward")]
+    if real_rows:
+        # Real rows only: the backtest (like every model) excludes
+        # carried-forward rows, so a price outage must not read as a stale
+        # backtest -- the staleness check already reports the outage itself.
+        last_price_date = date.fromisoformat(real_rows[-1]["date"])
+        lag = (last_price_date - date.fromisoformat(backtest["data_through"])).days
+        if lag > BACKTEST_MAX_LAG_DAYS:
+            findings.append(
+                _finding("forecast_calibration", "WARN", f"backtest.json is {lag} days behind price history (data_through {backtest['data_through']})")
+            )
+
+    for h in backtest.get("horizons", []):
+        if h["horizon_days"] == 365 and h.get("coverage_outer") is not None and h["coverage_outer"] < CALIBRATION_OUTER_MIN_COVERAGE:
+            findings.append(
+                _finding(
+                    "forecast_calibration",
+                    "WARN",
+                    f"1-year walk-forward: only {h['coverage_outer']:.0%} of outcomes landed inside the Idle-Redline band (nominal 95%, warn below {CALIBRATION_OUTER_MIN_COVERAGE:.0%}) -- bands are overconfident",
+                )
+            )
+
+    ledger = load_json(LEDGER_PATH)
+    if not ledger:
+        findings.append(_finding("forecast_calibration", "WARN", "forecasts.json (live forecast ledger) missing"))
+        return findings
+    matured = [hz["outcome"] for e in ledger.get("entries", []) for hz in e["horizons"] if hz.get("outcome")]
+    if len(matured) >= LEDGER_MIN_MATURED:
+        outside = sum(1 for o in matured if not o["inside_outer"])
+        share = outside / len(matured)
+        if share > LEDGER_MAX_OUTSIDE_SHARE:
+            findings.append(
+                _finding(
+                    "forecast_calibration",
+                    "WARN",
+                    f"live ledger: {outside} of {len(matured)} matured forecasts ({share:.0%}) landed outside the published Idle-Redline band",
+                )
+            )
     return findings
 
 
@@ -302,6 +415,7 @@ def run_audit(*, now: datetime | None = None, dry_run: bool = False) -> dict:
     findings.extend(check_staleness(now=now))
     findings.extend(check_sanity_replay())
     findings.extend(check_site_integrity())
+    findings.extend(check_forecast_calibration())
 
     document = {
         "schema_version": 1,
@@ -309,6 +423,9 @@ def run_audit(*, now: datetime | None = None, dry_run: bool = False) -> dict:
         "result": _result_from_findings(findings),
         "findings": findings,
     }
+
+    # Schema-gate the audit's own output (IMPROVEMENT_BACKLOG.md 2026-07-25).
+    jsonschema.validate(document, load_json(AUDIT_SCHEMA_PATH))
 
     if not dry_run:
         write_json(AUDIT_DIR / "latest.json", document)

@@ -279,6 +279,54 @@ class AlternativeMeFngClient:
         return rows[0]
 
 
+class BitstampClient:
+    """Bitstamp public OHLC -- free JSON, no key (Phase F, 2026-10-01).
+
+    Used only as an independent cross-check of committed price history
+    (pipeline/crosscheck_history.py), never as a price source for the site
+    itself. Daily candles back to 2011-08; 1000 candles per request, so the
+    full history is ~6 polite requests, run at most monthly.
+    """
+
+    URL = "https://www.bitstamp.net/api/v2/ohlc/btcusd/"
+    SOURCE_NAME = "bitstamp"
+    PAGE_LIMIT = 1000
+    DAY_SECONDS = 86400
+
+    def fetch_daily_ohlc(self, start_ts: int, end_ts: int, *, request_fn=request_with_retry) -> list[dict]:
+        rows: list[dict] = []
+        cursor = start_ts
+        while cursor < end_ts:
+            response = request_fn(
+                "GET",
+                self.URL,
+                source_name=self.SOURCE_NAME,
+                params={"step": self.DAY_SECONDS, "limit": self.PAGE_LIMIT, "start": cursor},
+            )
+            page = response.json().get("data", {}).get("ohlc", [])
+            if not page:
+                break
+            rows.extend(self.parse_ohlc(page))
+            last_ts = int(page[-1]["timestamp"])
+            if last_ts < cursor:
+                break
+            cursor = last_ts + self.DAY_SECONDS
+        return [r for r in rows if r["low"] > 0]
+
+    @classmethod
+    def parse_ohlc(cls, page: list[dict]) -> list[dict]:
+        return [
+            {
+                "date": _to_date_str(c["timestamp"]),
+                "low": float(c["low"]),
+                "high": float(c["high"]),
+                "close": float(c["close"]),
+                "source": cls.SOURCE_NAME,
+            }
+            for c in page
+        ]
+
+
 class MempoolSpaceClient:
     """mempool.space -- free REST + WebSocket, no auth. P2 (live snapshot) scope.
 

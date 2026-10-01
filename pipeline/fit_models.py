@@ -14,12 +14,16 @@ Run as a module from the repo root: `python -m pipeline.fit_models`.
 
 from __future__ import annotations
 
+import bisect
 import json
 import math
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+import jsonschema
 import numpy as np
+
+from pipeline import forecast
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PRICE_HISTORY_PATH = REPO_ROOT / "data" / "history" / "price_daily.json"
@@ -28,6 +32,25 @@ MODELS_OUT_PATH = REPO_ROOT / "data" / "models.json"
 SCHEMA_PATH = REPO_ROOT / "pipeline" / "schemas" / "models.schema.json"
 
 PROJECTION_YEARS = [2027, 2028, 2030, 2035]
+FAN_END_DATE = date(2035, 12, 31)
+FAN_POINTS = 40
+
+# Defaults for model_constants.json -> "honesty" (Phases B-D, 2026-10-01).
+# The committed constants file pins these; the defaults only exist so unit
+# tests with minimal synthetic constants still exercise the full path.
+HONESTY_DEFAULTS = {
+    "band_quantiles": {"outer": [0.025, 0.975], "inner": [0.16, 0.84]},
+    "bootstrap": {"block_days": 730, "reps": 300, "seed": 42, "percentiles": [5, 50, 95]},
+    "realtime_z_start_date": "2013-01-01",
+    "scenario_fit_start_date": "2017-01-01",
+    "short_term": {"sample_days": 30, "steps": 12},
+}
+
+
+def honesty_constants(constants: dict) -> dict:
+    merged = dict(HONESTY_DEFAULTS)
+    merged.update(constants.get("honesty", {}))
+    return merged
 MAYER_WINDOW_DAYS = 200
 WMA_WINDOW_WEEKS = 200
 
@@ -39,7 +62,7 @@ def load_json(path: Path) -> dict:
 
 def write_json(path: Path, data: dict) -> None:
     with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2, allow_nan=False)
         f.write("\n")
 
 
@@ -272,19 +295,51 @@ def fit_power_law(price_series: list[dict], constants: dict, previous_models: di
 
     residual_percentile = float(np.mean(residuals <= last_residual) * 100.0)
 
+    hc = honesty_constants(constants)
+    outer_q = hc["band_quantiles"]["outer"]
+    inner_q = hc["band_quantiles"]["inner"]
+    outer_lo, outer_hi = forecast.residual_quantiles(residuals, outer_q)
+    inner_lo, inner_hi = forecast.residual_quantiles(residuals, inner_q)
+
+    bs = hc["bootstrap"]
+    boot = forecast.bootstrap_trend(x, y, block_days=bs["block_days"], reps=bs["reps"], seed=bs["seed"])
+    p_lo, p_mid, p_hi = bs["percentiles"]
+
+    def trend_pcts(day: float) -> tuple[float, float, float]:
+        t = boot[:, 0] + boot[:, 1] * math.log10(day)
+        lo, mid, hi = np.percentile(t, [p_lo, p_mid, p_hi])
+        return float(lo), float(mid), float(hi)
+
     projections = []
     for year in PROJECTION_YEARS:
         target = date(year, 1, 1)
         d = _days_since_genesis(target, genesis)
         trend_log10 = a + b * math.log10(d)
+        t_lo, _t_mid, t_hi = trend_pcts(d)
         projections.append(
             {
                 "date": target.isoformat(),
-                "floor": round(10 ** (trend_log10 - 2 * sigma), 2),
+                "floor": round(10 ** (trend_log10 + outer_lo), 2),
+                "inner_low": round(10 ** (trend_log10 + inner_lo), 2),
                 "trend": round(10**trend_log10, 2),
-                "ceiling": round(10 ** (trend_log10 + 2 * sigma), 2),
+                "inner_high": round(10 ** (trend_log10 + inner_hi), 2),
+                "ceiling": round(10 ** (trend_log10 + outer_hi), 2),
+                "trend_low": round(10**t_lo, 2),
+                "trend_high": round(10**t_hi, 2),
             }
         )
+
+    fan = []
+    fan_start = float(last_d)
+    fan_end = float(_days_since_genesis(FAN_END_DATE, genesis))
+    for i in range(FAN_POINTS + 1):
+        day = fan_start * (fan_end / fan_start) ** (i / FAN_POINTS)
+        t_lo, t_mid, t_hi = trend_pcts(day)
+        fan.append({"day": round(day, 2), "low": round(t_lo, 6), "mid": round(t_mid, 6), "high": round(t_hi, 6)})
+
+    scenario = _fit_scenario(fit_rows, genesis, hc["scenario_fit_start_date"])
+    short_term = _short_term_path(residuals, last_date, last_d, a, b, hc["short_term"])
+    realtime_z = _realtime_z_series(fit_rows, genesis, hc["realtime_z_start_date"])
 
     previous_params = None
     if previous_models and previous_models.get("power_law", {}).get("params"):
@@ -316,9 +371,31 @@ def fit_power_law(price_series: list[dict], constants: dict, previous_models: di
             "floor_label": "Idle",
             "trend_label": "Cruise",
             "ceiling_label": "Redline",
-            "note": "floor/ceiling are trend * 10^(-/+ 2*sigma) in log10 space -- descriptive envelopes from historical fit residuals, not statistical confidence intervals (residuals are autocorrelated across multi-year cycles).",
+            "method": "empirical_residual_quantiles",
+            "outer_quantiles": outer_q,
+            "inner_quantiles": inner_q,
+            "outer_offsets_log10": [round(outer_lo, 6), round(outer_hi, 6)],
+            "inner_offsets_log10": [round(inner_lo, 6), round(inner_hi, 6)],
+            "in_sample_coverage": {
+                "outer": round(forecast.coverage(residuals, outer_lo, outer_hi), 4),
+                "inner": round(forecast.coverage(residuals, inner_lo, inner_hi), 4),
+            },
+            "note": "floor/ceiling (Idle/Redline) are the trend shifted by the 2.5th/97.5th percentiles of past fit residuals in log10 space, and the inner band by the 16th/84th -- empirical, skewed envelopes from history, not statistical confidence intervals (residuals are autocorrelated across multi-year cycles). Walk-forward calibration is published in data/backtest.json.",
         },
         "projections": projections,
+        "trend_uncertainty": {
+            "method": "circular_block_bootstrap",
+            "block_days": bs["block_days"],
+            "reps": bs["reps"],
+            "seed": bs["seed"],
+            "percentiles": bs["percentiles"],
+            "b_low": round(float(np.percentile(boot[:, 1], p_lo)), 6),
+            "b_high": round(float(np.percentile(boot[:, 1], p_hi)), 6),
+            "fan": fan,
+        },
+        "scenario": scenario,
+        "short_term": short_term,
+        "realtime_z": realtime_z,
         "cycle_tops": cycle_tops,
         "cycle_top_era_maxima_sigma": era_maxima,
     }
@@ -327,6 +404,88 @@ def fit_power_law(price_series: list[dict], constants: dict, previous_models: di
 # --------------------------------------------------------------------------
 # 4-year cycle overlay (spec Section 8.2)
 # --------------------------------------------------------------------------
+
+
+def _fit_scenario(fit_rows: list[dict], genesis: date, start_str: str) -> dict | None:
+    """Recent-window refit (default: since 2017) -- a counter-reading, not a
+    replacement: if returns are diminishing, a fit over only recent cycles
+    has a visibly flatter slope than the full-history one, and the site shows
+    both rather than silently picking one."""
+    start = _parse_date(start_str)
+    rows = [r for r in fit_rows if _parse_date(r["date"]) >= start]
+    if len(rows) < 365:
+        return None
+    x = np.log10([_days_since_genesis(_parse_date(r["date"]), genesis) for r in rows])
+    y = np.log10([r["value"] for r in rows])
+    a, b, sigma = forecast.ols_fit(x, y)
+    return {
+        "label": f"since-{start.year} fit",
+        "fit_start_date": start.isoformat(),
+        "a": round(a, 6),
+        "b": round(b, 6),
+        "sigma": round(sigma, 6),
+        "n_points": len(rows),
+    }
+
+
+def _short_term_path(residuals: np.ndarray, last_date: date, last_d: int, a: float, b: float, cfg: dict) -> dict:
+    """Trend + mean-reverting residual (AR(1) on residuals sampled every
+    `sample_days`). Backtested to roughly halve 90-day error vs trend-only
+    and add nothing beyond ~1 year, so it is only ever published as a
+    <=1-year path. Bands are gaussian on the AR innovations (68%/95%)."""
+    sample = cfg["sample_days"]
+    phi, innov = forecast.ar1_residual(residuals, sample)
+    r0 = float(residuals[-1])
+    path = []
+    for step, (mean, sd) in enumerate(forecast.ar1_path(r0, phi, innov, cfg["steps"]), start=1):
+        day = last_d + step * sample
+        trend = a + b * math.log10(day)
+        center = trend + mean
+        path.append(
+            {
+                "date": (last_date + timedelta(days=step * sample)).isoformat(),
+                "day": day,
+                "center": round(float(10**center), 2),
+                "inner_low": round(float(10 ** (center - sd)), 2),
+                "inner_high": round(float(10 ** (center + sd)), 2),
+                "outer_low": round(float(10 ** (center - 1.96 * sd)), 2),
+                "outer_high": round(float(10 ** (center + 1.96 * sd)), 2),
+            }
+        )
+    half_life = forecast.half_life_days(phi, sample)
+    return {
+        "method": "trend_plus_ar1_residual",
+        "sample_days": sample,
+        "phi": round(phi, 6),
+        "half_life_days": round(half_life, 1) if half_life is not None else None,
+        "path": path,
+    }
+
+
+def _realtime_z_series(fit_rows: list[dict], genesis: date, start_str: str) -> list[dict]:
+    """Point-in-time z-scores: on each month start, refit using ONLY data
+    before that date and score that day's price. The site's other
+    historical readings use today's fit (hindsight); this series is what a
+    visitor could actually have seen at the time."""
+    if not fit_rows:
+        return []
+    dates = [_parse_date(r["date"]) for r in fit_rows]
+    days = np.array([_days_since_genesis(d, genesis) for d in dates], dtype=float)
+    x = np.log10(days)
+    y = np.log10([r["value"] for r in fit_rows])
+    out = []
+    by_date = {d: i for i, d in enumerate(dates)}
+    for origin in forecast.month_starts(_parse_date(start_str), dates[-1]):
+        n_before = bisect.bisect_left(dates, origin)
+        if n_before < 365:
+            continue
+        a, b, sigma = forecast.ols_fit(x[:n_before], y[:n_before])
+        i = by_date.get(origin)
+        if i is None:
+            continue
+        resid = y[i] - (a + b * x[i])
+        out.append({"date": origin.isoformat(), "z": round(float(resid / sigma), 4) if sigma else 0.0, "b": round(b, 4)})
+    return out
 
 
 def _nearest_price_on_or_after(price_series: list[dict], target: date) -> dict | None:
@@ -409,7 +568,16 @@ def compute_cycle_overlay(price_series: list[dict], constants: dict) -> dict:
             "cycle_percentile_vs_prior_epochs": cycle_percentile,
         }
 
-    return {"epochs": epochs, "current_epoch": current_epoch_meta}
+    next_est = constants["cycle_overlay"].get("next_halving_est_date")
+    return {
+        "epochs": epochs,
+        "current_epoch": current_epoch_meta,
+        # Chart annotation inputs (2026-10-01): the hero chart marks every
+        # halving plus the next one's ESTIMATED month -- an estimate, labelled
+        # as such, never a fixed appointment (block times vary).
+        "halving_dates": [h.isoformat() for h in halving_dates],
+        "next_halving_est_date": next_est,
+    }
 
 
 # --------------------------------------------------------------------------
@@ -512,6 +680,11 @@ def run_fit(*, dry_run: bool = False) -> dict:
         "mayer_multiple": mayer_multiple,
         "wma_200": wma_200,
     }
+
+    # Schema-gate before writing (IMPROVEMENT_BACKLOG.md, 2026-07-25): a
+    # malformed refit must fail the job loudly, not commit and silently
+    # break the Price Models section.
+    jsonschema.validate(document, load_json(SCHEMA_PATH))
 
     if not dry_run:
         write_json(MODELS_OUT_PATH, document)
