@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/history_crosscheck.schema.json",
+  "title": "independent price-history cross-check (data/history_crosscheck.json)",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "reference_source", "method", "range_tolerance", "years", "fit_sensitivity", "largest_disagreements"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated_at": {"type": "string"},
+    "reference_source": {"type": "string"},
+    "method": {"type": "string"},
+    "range_tolerance": {"type": "number", "minimum": 0},
+    "years": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["year", "days_compared", "outside_range", "outside_share", "median_abs_close_dev_pct"],
+        "properties": {"year": {"type": "integer"}, "outside_share": {"type": "number", "minimum": 0, "maximum": 1}}
+      }
+    },
+    "fit_sensitivity": {
+      "type": "object",
+      "required": ["days_substituted", "b_committed", "b_with_bitstamp_substituted", "trend_2030_change_pct"]
+    },
+    "largest_disagreements": {"type": "array", "maxItems": 10}
+  }
+}

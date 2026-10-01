@@ -17,6 +17,8 @@ def _patch_paths(monkeypatch, tmp_path):
     monkeypatch.setattr(audit, "KNOWN_GAPS_PATH", tmp_path / "known_gaps.json")  # absent by default -- no allowlist
     monkeypatch.setattr(audit, "BACKTEST_PATH", tmp_path / "backtest.json")
     monkeypatch.setattr(audit, "LEDGER_PATH", tmp_path / "forecasts.json")
+    monkeypatch.setattr(audit, "HISTORY_CROSSCHECK_PATH", tmp_path / "history_crosscheck.json")
+    _write_crosscheck(tmp_path)
     _write_calibration(tmp_path)  # a clean, well-calibrated default -- tests opt into problems
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     (tmp_path / "history").mkdir(parents=True, exist_ok=True)
@@ -32,6 +34,16 @@ def _write_calibration(tmp_path, *, coverage_outer=0.9, data_through="2099-01-01
     ]
     ledger = {"schema_version": 1, "entries": [{"issued": "2025-01-01", "horizons": horizons}] if horizons else []}
     (tmp_path / "forecasts.json").write_text(json.dumps(ledger))
+
+
+def _write_crosscheck(tmp_path, *, generated_at=None, years=None, change_pct=0.1):
+    generated_at = generated_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    years = years if years is not None else [
+        {"year": 2012, "days_compared": 366, "outside_range": 35, "outside_share": 0.0956},
+        {"year": 2020, "days_compared": 366, "outside_range": 0, "outside_share": 0.0},
+    ]
+    doc = {"generated_at": generated_at, "years": years, "fit_sensitivity": {"trend_2030_change_pct": change_pct}}
+    (tmp_path / "history_crosscheck.json").write_text(json.dumps(doc))
 
 
 def _write_known_gaps(tmp_path, gaps):
@@ -401,3 +413,29 @@ def test_forecast_calibration_ledger_misses_warn_only_once_enough_matured(tmp_pa
     _write_calibration(tmp_path, outcomes=(False, True, True, False))  # 2 of 4 outside > 25%
     findings = audit.check_forecast_calibration()
     assert len(findings) == 1 and "2 of 4" in findings[0]["detail"]
+
+
+# --------------------------------------------------------------------------
+# Historical price cross-check (Phase F)
+# --------------------------------------------------------------------------
+
+
+def test_history_crosscheck_early_era_disagreement_is_not_flagged(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    assert audit._check_history_crosscheck() == []
+
+
+def test_history_crosscheck_liquid_era_disagreement_warns(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    _write_crosscheck(tmp_path, years=[{"year": 2021, "days_compared": 365, "outside_range": 20, "outside_share": 0.0548}])
+    findings = audit._check_history_crosscheck()
+    assert len(findings) == 1 and "2021" in findings[0]["detail"] and findings[0]["metric"] == "price_daily"
+
+
+def test_history_crosscheck_stale_missing_and_fit_sensitivity_warn(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    _write_crosscheck(tmp_path, generated_at="2020-01-01T00:00:00Z", change_pct=-14.0)
+    details = " | ".join(f["detail"] for f in audit._check_history_crosscheck())
+    assert "days old" in details and "2030 trend" in details
+    (tmp_path / "history_crosscheck.json").unlink()
+    assert "missing" in audit._check_history_crosscheck()[0]["detail"]

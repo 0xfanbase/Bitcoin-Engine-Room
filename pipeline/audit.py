@@ -31,6 +31,7 @@ SANITY_RULES_PATH = REPO_ROOT / "pipeline" / "sanity_rules.json"
 KNOWN_GAPS_PATH = REPO_ROOT / "pipeline" / "known_gaps.json"
 BACKTEST_PATH = REPO_ROOT / "data" / "backtest.json"
 LEDGER_PATH = REPO_ROOT / "data" / "forecasts.json"
+HISTORY_CROSSCHECK_PATH = REPO_ROOT / "data" / "history_crosscheck.json"
 AUDIT_SCHEMA_PATH = REPO_ROOT / "pipeline" / "schemas" / "audit.schema.json"
 AUDIT_DIR = REPO_ROOT / "data" / "audit"
 BACKLOG_PATH = REPO_ROOT / "IMPROVEMENT_BACKLOG.md"
@@ -59,6 +60,14 @@ CALIBRATION_OUTER_MIN_COVERAGE = 0.80
 LEDGER_MIN_MATURED = 3
 LEDGER_MAX_OUTSIDE_SHARE = 0.25
 BACKTEST_MAX_LAG_DAYS = 2
+# Historical price cross-check vs Bitstamp (Phase F). 2011-2013 genuinely
+# disagree (thin, fragmented markets) and are reported, not flagged; from
+# the liquid era on, committed prices sit inside Bitstamp's daily range on
+# effectively every day, so a real rise means corrupted history.
+HISTORY_LIQUID_ERA_START_YEAR = 2014
+HISTORY_OUTSIDE_SHARE_WARN = 0.02
+HISTORY_CROSSCHECK_MAX_AGE_DAYS = 45
+HISTORY_FIT_SENSITIVITY_WARN_PCT = 10.0
 
 
 def load_json(path: Path) -> dict | None:
@@ -132,9 +141,9 @@ def check_continuity() -> list[dict]:
 
 def check_cross_source_variance() -> list[dict]:
     health = load_json(HEALTH_PATH)
-    if not health:
-        return []
     findings = []
+    if not health:
+        return _check_history_crosscheck()
     price_health = health.get("metrics", {}).get("price_daily", {})
     if price_health.get("cross_source_variance_warn"):
         findings.append(
@@ -145,10 +154,39 @@ def check_cross_source_variance() -> list[dict]:
                 "price_daily",
             )
         )
+    findings.extend(_check_history_crosscheck())
     # hashrate: no cross-source check is currently recorded anywhere to audit
     # against -- each committed row has exactly one source, not parallel
     # readings from multiple sources for the same day. Logged as a known
     # limitation in IMPROVEMENT_BACKLOG.md rather than silently skipped.
+    return findings
+
+
+def _check_history_crosscheck(*, now: datetime | None = None) -> list[dict]:
+    """Committed price history vs an independent exchange (Bitstamp), from
+    data/history_crosscheck.json (pipeline/crosscheck_history.py)."""
+    now = now or datetime.now(timezone.utc)
+    report = load_json(HISTORY_CROSSCHECK_PATH)
+    if not report:
+        return [_finding("cross_source_variance", "WARN", "history_crosscheck.json missing -- run `python -m pipeline.crosscheck_history --force`", "price_daily")]
+    findings = []
+    generated = datetime.strptime(report["generated_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    age_days = (now - generated).days
+    if age_days > HISTORY_CROSSCHECK_MAX_AGE_DAYS:
+        findings.append(_finding("cross_source_variance", "WARN", f"price-history cross-check is {age_days} days old (refreshes every ~28 days; Bitstamp unreachable?)", "price_daily"))
+    for year in report.get("years", []):
+        if year["year"] >= HISTORY_LIQUID_ERA_START_YEAR and year["outside_share"] > HISTORY_OUTSIDE_SHARE_WARN:
+            findings.append(
+                _finding(
+                    "cross_source_variance",
+                    "WARN",
+                    f"{year['year']}: {year['outside_range']} of {year['days_compared']} committed daily prices fall outside Bitstamp's daily range -- possible corrupted history",
+                    "price_daily",
+                )
+            )
+    change = report.get("fit_sensitivity", {}).get("trend_2030_change_pct")
+    if change is not None and abs(change) > HISTORY_FIT_SENSITIVITY_WARN_PCT:
+        findings.append(_finding("cross_source_variance", "WARN", f"substituting Bitstamp for disputed days moves the 2030 trend by {change:+.1f}% -- the headline fit depends on contested data", "price_daily"))
     return findings
 
 
@@ -284,7 +322,7 @@ def check_site_integrity() -> list[dict]:
         total_bytes += MODELS_PATH.stat().st_size
     if HEALTH_PATH.exists():
         total_bytes += HEALTH_PATH.stat().st_size
-    for extra in (BACKTEST_PATH, LEDGER_PATH):
+    for extra in (BACKTEST_PATH, LEDGER_PATH, HISTORY_CROSSCHECK_PATH):
         if extra.exists():
             total_bytes += extra.stat().st_size
     if total_bytes > JSON_PAYLOAD_BUDGET_BYTES:

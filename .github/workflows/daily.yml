@@ -39,6 +39,9 @@ jobs:
       - name: Backtest + forecast ledger
         run: python -m pipeline.backtest
 
+      - name: Price-history cross-check (self-throttled to ~monthly)
+        run: python -m pipeline.crosscheck_history
+
       - name: Run audit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
