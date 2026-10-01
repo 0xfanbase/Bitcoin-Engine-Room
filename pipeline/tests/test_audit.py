@@ -15,9 +15,23 @@ def _patch_paths(monkeypatch, tmp_path):
     monkeypatch.setattr(audit, "INDEX_HTML_PATH", tmp_path / "index.html")
     monkeypatch.setattr(audit, "ASSETS_DIR", tmp_path / "assets")
     monkeypatch.setattr(audit, "KNOWN_GAPS_PATH", tmp_path / "known_gaps.json")  # absent by default -- no allowlist
+    monkeypatch.setattr(audit, "BACKTEST_PATH", tmp_path / "backtest.json")
+    monkeypatch.setattr(audit, "LEDGER_PATH", tmp_path / "forecasts.json")
+    _write_calibration(tmp_path)  # a clean, well-calibrated default -- tests opt into problems
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     (tmp_path / "history").mkdir(parents=True, exist_ok=True)
     (tmp_path / "IMPROVEMENT_BACKLOG.md").write_text("# Improvement Backlog\n")
+
+
+def _write_calibration(tmp_path, *, coverage_outer=0.9, data_through="2099-01-01", outcomes=()):
+    backtest = {"data_through": data_through, "horizons": [{"horizon_days": 365, "coverage_outer": coverage_outer}]}
+    (tmp_path / "backtest.json").write_text(json.dumps(backtest))
+    horizons = [
+        {"horizon_days": 365, "target_date": "2026-01-01", "outcome": None if o is None else {"inside_outer": o}}
+        for o in outcomes
+    ]
+    ledger = {"schema_version": 1, "entries": [{"issued": "2025-01-01", "horizons": horizons}] if horizons else []}
+    (tmp_path / "forecasts.json").write_text(json.dumps(ledger))
 
 
 def _write_known_gaps(tmp_path, gaps):
@@ -345,3 +359,45 @@ def test_run_audit_injected_bad_datum_causes_fail_and_opens_issue(tmp_path, monk
     post_call = [c for c in responses.calls if c.request.method == "POST"]
     assert len(post_call) == 1
     assert "audit-fail" in post_call[0].request.body.decode()
+
+
+# --------------------------------------------------------------------------
+# Forecast calibration (Phase A)
+# --------------------------------------------------------------------------
+
+
+def test_forecast_calibration_clean_by_default(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    assert audit.check_forecast_calibration() == []
+
+
+def test_forecast_calibration_missing_backtest_warns(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    (tmp_path / "backtest.json").unlink()
+    findings = audit.check_forecast_calibration()
+    assert [f["severity"] for f in findings] == ["WARN"]
+    assert "backtest.json missing" in findings[0]["detail"]
+
+
+def test_forecast_calibration_overconfident_bands_warn(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    _write_calibration(tmp_path, coverage_outer=0.7)
+    findings = audit.check_forecast_calibration()
+    assert len(findings) == 1 and "overconfident" in findings[0]["detail"]
+
+
+def test_forecast_calibration_stale_backtest_warns(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    _write_series(tmp_path, "price_daily", [("2026-07-01", 1), ("2026-07-10", 2)])
+    _write_calibration(tmp_path, data_through="2026-07-01")
+    findings = audit.check_forecast_calibration()
+    assert len(findings) == 1 and "9 days behind" in findings[0]["detail"]
+
+
+def test_forecast_calibration_ledger_misses_warn_only_once_enough_matured(tmp_path, monkeypatch):
+    _patch_paths(monkeypatch, tmp_path)
+    _write_calibration(tmp_path, outcomes=(False, False, None))  # only 2 matured -- too few to judge
+    assert audit.check_forecast_calibration() == []
+    _write_calibration(tmp_path, outcomes=(False, True, True, False))  # 2 of 4 outside > 25%
+    findings = audit.check_forecast_calibration()
+    assert len(findings) == 1 and "2 of 4" in findings[0]["detail"]

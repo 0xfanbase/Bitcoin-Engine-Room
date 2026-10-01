@@ -1,0 +1,1499 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-01T02:07:02Z",
+  "data_through": "2026-09-30",
+  "method": {
+    "origins": "first of every month from 2013-01-01, refit on data strictly before each origin",
+    "error_unit": "log10(actual / forecast); *_mae_factor = 10^mean|error| (x2.0 = typically off by a factor of 2 either way)",
+    "caveat": "monthly origins overlap heavily -- approx_independent_windows is the honest sample size, and it is small."
+  },
+  "horizons": [
+    {
+      "horizon_days": 365,
+      "n_origins": 153,
+      "approx_independent_windows": 12.8,
+      "trend_mae_factor": 1.995,
+      "trend_bias_pct": -15.6,
+      "random_walk_mae_factor": 2.401,
+      "coverage_outer": 0.8431,
+      "coverage_inner": 0.6667,
+      "coverage_gaussian_2sigma": 0.9542,
+      "share_below_outer": 0.1438,
+      "share_above_outer": 0.0131
+    },
+    {
+      "horizon_days": 730,
+      "n_origins": 141,
+      "approx_independent_windows": 5.9,
+      "trend_mae_factor": 1.825,
+      "trend_bias_pct": -25.9,
+      "random_walk_mae_factor": 3.187,
+      "coverage_outer": 0.8652,
+      "coverage_inner": 0.7872,
+      "coverage_gaussian_2sigma": 0.9433,
+      "share_below_outer": 0.1348,
+      "share_above_outer": 0.0
+    },
+    {
+      "horizon_days": 1461,
+      "n_origins": 117,
+      "approx_independent_windows": 2.4,
+      "trend_mae_factor": 1.776,
+      "trend_bias_pct": -22.9,
+      "random_walk_mae_factor": 8.61,
+      "coverage_outer": 0.906,
+      "coverage_inner": 0.7778,
+      "coverage_gaussian_2sigma": 0.9744,
+      "share_below_outer": 0.094,
+      "share_above_outer": 0.0
+    }
+  ],
+  "short_term": [
+    {
+      "horizon_days": 90,
+      "n_origins": 163,
+      "trend_mae_factor": 1.813,
+      "trend_plus_ar1_mae_factor": 1.435,
+      "random_walk_mae_factor": 1.419,
+      "ar1_coverage_68": 0.8344,
+      "ar1_coverage_95": 0.9816
+    },
+    {
+      "horizon_days": 180,
+      "n_origins": 160,
+      "trend_mae_factor": 1.896,
+      "trend_plus_ar1_mae_factor": 1.687,
+      "random_walk_mae_factor": 1.716,
+      "ar1_coverage_68": 0.75,
+      "ar1_coverage_95": 0.9812
+    },
+    {
+      "horizon_days": 365,
+      "n_origins": 153,
+      "trend_mae_factor": 1.995,
+      "trend_plus_ar1_mae_factor": 1.975,
+      "random_walk_mae_factor": 2.401,
+      "ar1_coverage_68": 0.6667,
+      "ar1_coverage_95": 0.9608
+    }
+  ],
+  "scenario": [
+    {
+      "horizon_days": 365,
+      "n_origins": 81,
+      "full_history_mae_factor": 1.574,
+      "full_history_bias_pct": -14.7,
+      "recent_window_mae_factor": 1.753,
+      "recent_window_bias_pct": -10.1
+    },
+    {
+      "horizon_days": 730,
+      "n_origins": 69,
+      "full_history_mae_factor": 1.571,
+      "full_history_bias_pct": -14.2,
+      "recent_window_mae_factor": 1.523,
+      "recent_window_bias_pct": -10.0
+    },
+    {
+      "horizon_days": 1461,
+      "n_origins": 45,
+      "full_history_mae_factor": 1.536,
+      "full_history_bias_pct": -33.5,
+      "recent_window_mae_factor": 1.965,
+      "recent_window_bias_pct": -34.2
+    }
+  ],
+  "signals": [
+    {
+      "signal": "power_law_z_realtime",
+      "n_months": 153,
+      "first_origin": "2013-01-01",
+      "spearman_vs_fwd_1y": -0.515,
+      "approx_independent_windows": 12.7
+    },
+    {
+      "signal": "mayer_multiple",
+      "n_months": 153,
+      "first_origin": "2013-01-01",
+      "spearman_vs_fwd_1y": 0.158,
+      "approx_independent_windows": 12.7
+    },
+    {
+      "signal": "wma200_distance",
+      "n_months": 135,
+      "first_origin": "2014-07-01",
+      "spearman_vs_fwd_1y": -0.495,
+      "approx_independent_windows": 11.2
+    },
+    {
+      "signal": "price_vs_hashrate_fit",
+      "n_months": 153,
+      "first_origin": "2013-01-01",
+      "spearman_vs_fwd_1y": -0.304,
+      "approx_independent_windows": 12.7
+    },
+    {
+      "signal": "fear_greed",
+      "n_months": 91,
+      "first_origin": "2018-03-01",
+      "spearman_vs_fwd_1y": 0.05,
+      "approx_independent_windows": 7.5
+    }
+  ],
+  "z_buckets": [
+    {
+      "z_low": -99.0,
+      "z_high": -1.0,
+      "n_months": 15,
+      "episodes": 3,
+      "median_fwd_1y_pct": 127.0,
+      "share_negative": 0.0
+    },
+    {
+      "z_low": -1.0,
+      "z_high": -0.5,
+      "n_months": 37,
+      "episodes": 7,
+      "median_fwd_1y_pct": 127.3,
+      "share_negative": 0.054
+    },
+    {
+      "z_low": -0.5,
+      "z_high": 0.0,
+      "n_months": 32,
+      "episodes": 9,
+      "median_fwd_1y_pct": 139.1,
+      "share_negative": 0.125
+    },
+    {
+      "z_low": 0.0,
+      "z_high": 0.5,
+      "n_months": 32,
+      "episodes": 10,
+      "median_fwd_1y_pct": 4.6,
+      "share_negative": 0.5
+    },
+    {
+      "z_low": 0.5,
+      "z_high": 1.0,
+      "n_months": 22,
+      "episodes": 6,
+      "median_fwd_1y_pct": -26.9,
+      "share_negative": 0.545
+    },
+    {
+      "z_low": 1.0,
+      "z_high": 99.0,
+      "n_months": 15,
+      "episodes": 5,
+      "median_fwd_1y_pct": -56.4,
+      "share_negative": 0.733
+    }
+  ],
+  "miss_by_year": [
+    {
+      "year": 2013,
+      "n": 12,
+      "mae_factor": 3.234,
+      "bias_pct": 219.4
+    },
+    {
+      "year": 2014,
+      "n": 12,
+      "mae_factor": 4.514,
+      "bias_pct": -77.8
+    },
+    {
+      "year": 2015,
+      "n": 12,
+      "mae_factor": 3.845,
+      "bias_pct": -74.0
+    },
+    {
+      "year": 2016,
+      "n": 12,
+      "mae_factor": 1.818,
+      "bias_pct": 3.1
+    },
+    {
+      "year": 2017,
+      "n": 12,
+      "mae_factor": 2.29,
+      "bias_pct": 121.2
+    },
+    {
+      "year": 2018,
+      "n": 12,
+      "mae_factor": 1.338,
+      "bias_pct": -20.5
+    },
+    {
+      "year": 2019,
+      "n": 12,
+      "mae_factor": 1.383,
+      "bias_pct": -26.9
+    },
+    {
+      "year": 2020,
+      "n": 12,
+      "mae_factor": 2.14,
+      "bias_pct": 114.0
+    },
+    {
+      "year": 2021,
+      "n": 12,
+      "mae_factor": 1.674,
+      "bias_pct": -18.3
+    },
+    {
+      "year": 2022,
+      "n": 12,
+      "mae_factor": 2.102,
+      "bias_pct": -52.4
+    },
+    {
+      "year": 2023,
+      "n": 12,
+      "mae_factor": 1.201,
+      "bias_pct": -14.3
+    },
+    {
+      "year": 2024,
+      "n": 12,
+      "mae_factor": 1.093,
+      "bias_pct": 2.9
+    },
+    {
+      "year": 2025,
+      "n": 9,
+      "mae_factor": 1.815,
+      "bias_pct": -44.9
+    }
+  ],
+  "per_origin_1y": [
+    {
+      "origin": "2013-01-01",
+      "target": "2014-01-01",
+      "trend": 73.74,
+      "actual": 732.0,
+      "miss_log10": 0.9968,
+      "inside_outer": false
+    },
+    {
+      "origin": "2013-02-01",
+      "target": "2014-02-01",
+      "trend": 75.65,
+      "actual": 803.0,
+      "miss_log10": 1.0259,
+      "inside_outer": false
+    },
+    {
+      "origin": "2013-03-01",
+      "target": "2014-03-01",
+      "trend": 82.05,
+      "actual": 553.0,
+      "miss_log10": 0.8286,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-04-01",
+      "target": "2014-04-01",
+      "trend": 97.86,
+      "actual": 457.49,
+      "miss_log10": 0.6698,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-05-01",
+      "target": "2014-05-01",
+      "trend": 126.36,
+      "actual": 452.03,
+      "miss_log10": 0.5535,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-06-01",
+      "target": "2014-06-01",
+      "trend": 157.98,
+      "actual": 626.5,
+      "miss_log10": 0.5983,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-07-01",
+      "target": "2014-07-01",
+      "trend": 188.27,
+      "actual": 638.99,
+      "miss_log10": 0.5307,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-08-01",
+      "target": "2014-08-01",
+      "trend": 215.46,
+      "actual": 582.04,
+      "miss_log10": 0.4316,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-09-01",
+      "target": "2014-09-01",
+      "trend": 246.89,
+      "actual": 478.87,
+      "miss_log10": 0.2877,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-10-01",
+      "target": "2014-10-01",
+      "trend": 281.5,
+      "actual": 390.18,
+      "miss_log10": 0.1418,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-11-01",
+      "target": "2014-11-01",
+      "trend": 323.31,
+      "actual": 337.79,
+      "miss_log10": 0.019,
+      "inside_outer": true
+    },
+    {
+      "origin": "2013-12-01",
+      "target": "2014-12-01",
+      "trend": 405.12,
+      "actual": 376.03,
+      "miss_log10": -0.0324,
+      "inside_outer": true
+    },
+    {
+      "origin": "2014-01-01",
+      "target": "2015-01-01",
+      "trend": 527.09,
+      "actual": 320.97,
+      "miss_log10": -0.2154,
+      "inside_outer": true
+    },
+    {
+      "origin": "2014-02-01",
+      "target": "2015-02-01",
+      "trend": 669.45,
+      "actual": 219.25,
+      "miss_log10": -0.4848,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-03-01",
+      "target": "2015-03-01",
+      "trend": 799.58,
+      "actual": 253.5,
+      "miss_log10": -0.4989,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-04-01",
+      "target": "2015-04-01",
+      "trend": 945.24,
+      "actual": 243.63,
+      "miss_log10": -0.5888,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-05-01",
+      "target": "2015-05-01",
+      "trend": 1070.54,
+      "actual": 235.97,
+      "miss_log10": -0.6567,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-06-01",
+      "target": "2015-06-01",
+      "trend": 1205.21,
+      "actual": 228.34,
+      "miss_log10": -0.7225,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-07-01",
+      "target": "2015-07-01",
+      "trend": 1362.07,
+      "actual": 262.43,
+      "miss_log10": -0.7152,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-08-01",
+      "target": "2015-08-01",
+      "trend": 1528.36,
+      "actual": 284.31,
+      "miss_log10": -0.7304,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-09-01",
+      "target": "2015-09-01",
+      "trend": 1677.33,
+      "actual": 230.25,
+      "miss_log10": -0.8624,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-10-01",
+      "target": "2015-10-01",
+      "trend": 1794.02,
+      "actual": 236.17,
+      "miss_log10": -0.8806,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-11-01",
+      "target": "2015-11-01",
+      "trend": 1881.84,
+      "actual": 310.18,
+      "miss_log10": -0.783,
+      "inside_outer": false
+    },
+    {
+      "origin": "2014-12-01",
+      "target": "2015-12-01",
+      "trend": 1960.16,
+      "actual": 377.27,
+      "miss_log10": -0.7156,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-01-01",
+      "target": "2016-01-01",
+      "trend": 2026.29,
+      "actual": 430.89,
+      "miss_log10": -0.6723,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-02-01",
+      "target": "2016-02-01",
+      "trend": 2041.46,
+      "actual": 367.86,
+      "miss_log10": -0.7443,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-03-01",
+      "target": "2016-02-29",
+      "trend": 2042.83,
+      "actual": 431.89,
+      "miss_log10": -0.6749,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-04-01",
+      "target": "2016-03-31",
+      "trend": 2059.8,
+      "actual": 413.74,
+      "miss_log10": -0.6971,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-05-01",
+      "target": "2016-04-30",
+      "trend": 2055.35,
+      "actual": 455.97,
+      "miss_log10": -0.6539,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-06-01",
+      "target": "2016-05-31",
+      "trend": 2048.86,
+      "actual": 526.42,
+      "miss_log10": -0.5902,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-07-01",
+      "target": "2016-06-30",
+      "trend": 2040.11,
+      "actual": 635.99,
+      "miss_log10": -0.5062,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-08-01",
+      "target": "2016-07-31",
+      "trend": 2049.01,
+      "actual": 654.68,
+      "miss_log10": -0.4955,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-09-01",
+      "target": "2016-08-31",
+      "trend": 2042.65,
+      "actual": 575.97,
+      "miss_log10": -0.5498,
+      "inside_outer": false
+    },
+    {
+      "origin": "2015-10-01",
+      "target": "2016-09-30",
+      "trend": 2026.1,
+      "actual": 604.13,
+      "miss_log10": -0.5255,
+      "inside_outer": true
+    },
+    {
+      "origin": "2015-11-01",
+      "target": "2016-10-31",
+      "trend": 2020.84,
+      "actual": 697.23,
+      "miss_log10": -0.4622,
+      "inside_outer": true
+    },
+    {
+      "origin": "2015-12-01",
+      "target": "2016-11-30",
+      "trend": 2043.63,
+      "actual": 730.02,
+      "miss_log10": -0.4471,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-01-01",
+      "target": "2016-12-31",
+      "trend": 2086.07,
+      "actual": 958.12,
+      "miss_log10": -0.3379,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-02-01",
+      "target": "2017-01-31",
+      "trend": 2122.26,
+      "actual": 920.0,
+      "miss_log10": -0.363,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-03-01",
+      "target": "2017-03-01",
+      "trend": 2150.09,
+      "actual": 1190.89,
+      "miss_log10": -0.2566,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-04-01",
+      "target": "2017-04-01",
+      "trend": 2181.05,
+      "actual": 1073.09,
+      "miss_log10": -0.308,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-05-01",
+      "target": "2017-05-01",
+      "trend": 2212.31,
+      "actual": 1354.8,
+      "miss_log10": -0.213,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-06-01",
+      "target": "2017-06-01",
+      "trend": 2247.67,
+      "actual": 2298.01,
+      "miss_log10": 0.0096,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-07-01",
+      "target": "2017-07-01",
+      "trend": 2313.41,
+      "actual": 2476.63,
+      "miss_log10": 0.0296,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-08-01",
+      "target": "2017-08-01",
+      "trend": 2383.11,
+      "actual": 2862.9,
+      "miss_log10": 0.0797,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-09-01",
+      "target": "2017-09-01",
+      "trend": 2434.4,
+      "actual": 4732.87,
+      "miss_log10": 0.2887,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-10-01",
+      "target": "2017-10-01",
+      "trend": 2485.45,
+      "actual": 4354.16,
+      "miss_log10": 0.2435,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-11-01",
+      "target": "2017-11-01",
+      "trend": 2541.29,
+      "actual": 6416.07,
+      "miss_log10": 0.4022,
+      "inside_outer": true
+    },
+    {
+      "origin": "2016-12-01",
+      "target": "2017-12-01",
+      "trend": 2606.18,
+      "actual": 9988.19,
+      "miss_log10": 0.5835,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-01-01",
+      "target": "2018-01-01",
+      "trend": 2684.01,
+      "actual": 13796.0,
+      "miss_log10": 0.711,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-02-01",
+      "target": "2018-02-01",
+      "trend": 2771.57,
+      "actual": 10204.0,
+      "miss_log10": 0.566,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-03-01",
+      "target": "2018-03-01",
+      "trend": 2864.29,
+      "actual": 10332.14,
+      "miss_log10": 0.5572,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-04-01",
+      "target": "2018-04-01",
+      "trend": 2972.2,
+      "actual": 6937.56,
+      "miss_log10": 0.3681,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-05-01",
+      "target": "2018-05-01",
+      "trend": 3082.24,
+      "actual": 9239.55,
+      "miss_log10": 0.4768,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-06-01",
+      "target": "2018-06-01",
+      "trend": 3246.85,
+      "actual": 7489.66,
+      "miss_log10": 0.363,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-07-01",
+      "target": "2018-07-01",
+      "trend": 3452.4,
+      "actual": 6408.91,
+      "miss_log10": 0.2687,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-08-01",
+      "target": "2018-08-01",
+      "trend": 3660.25,
+      "actual": 7735.28,
+      "miss_log10": 0.325,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-09-01",
+      "target": "2018-09-01",
+      "trend": 3930.95,
+      "actual": 7018.78,
+      "miss_log10": 0.2518,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-10-01",
+      "target": "2018-10-01",
+      "trend": 4210.8,
+      "actual": 6611.02,
+      "miss_log10": 0.1959,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-11-01",
+      "target": "2018-11-01",
+      "trend": 4548.2,
+      "actual": 6338.78,
+      "miss_log10": 0.1442,
+      "inside_outer": true
+    },
+    {
+      "origin": "2017-12-01",
+      "target": "2018-12-01",
+      "trend": 4948.36,
+      "actual": 4013.52,
+      "miss_log10": -0.0909,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-01-01",
+      "target": "2019-01-01",
+      "trend": 5506.94,
+      "actual": 3737.91,
+      "miss_log10": -0.1683,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-02-01",
+      "target": "2019-02-01",
+      "trend": 6073.49,
+      "actual": 3444.81,
+      "miss_log10": -0.2463,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-03-01",
+      "target": "2019-03-01",
+      "trend": 6544.28,
+      "actual": 3850.08,
+      "miss_log10": -0.2304,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-04-01",
+      "target": "2019-04-01",
+      "trend": 7076.3,
+      "actual": 4114.16,
+      "miss_log10": -0.2355,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-05-01",
+      "target": "2019-05-01",
+      "trend": 7575.15,
+      "actual": 5269.79,
+      "miss_log10": -0.1576,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-06-01",
+      "target": "2019-06-01",
+      "trend": 8121.84,
+      "actual": 8553.81,
+      "miss_log10": 0.0225,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-07-01",
+      "target": "2019-07-01",
+      "trend": 8603.63,
+      "actual": 10737.73,
+      "miss_log10": 0.0962,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-08-01",
+      "target": "2019-08-01",
+      "trend": 9120.71,
+      "actual": 10084.7,
+      "miss_log10": 0.0436,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-09-01",
+      "target": "2019-09-01",
+      "trend": 9628.55,
+      "actual": 9600.9,
+      "miss_log10": -0.0012,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-10-01",
+      "target": "2019-10-01",
+      "trend": 10120.79,
+      "actual": 8307.74,
+      "miss_log10": -0.0857,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-11-01",
+      "target": "2019-11-01",
+      "trend": 10627.82,
+      "actual": 9147.98,
+      "miss_log10": -0.0651,
+      "inside_outer": true
+    },
+    {
+      "origin": "2018-12-01",
+      "target": "2019-12-01",
+      "trend": 11059.02,
+      "actual": 7557.72,
+      "miss_log10": -0.1653,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-01-01",
+      "target": "2020-01-01",
+      "trend": 11372.24,
+      "actual": 7168.31,
+      "miss_log10": -0.2004,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-02-01",
+      "target": "2020-02-01",
+      "trend": 11677.29,
+      "actual": 9333.77,
+      "miss_log10": -0.0973,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-03-01",
+      "target": "2020-02-29",
+      "trend": 11946.77,
+      "actual": 8712.35,
+      "miss_log10": -0.1371,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-04-01",
+      "target": "2020-03-31",
+      "trend": 12263.95,
+      "actual": 6405.29,
+      "miss_log10": -0.2821,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-05-01",
+      "target": "2020-04-30",
+      "trend": 12657.95,
+      "actual": 8777.63,
+      "miss_log10": -0.159,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-06-01",
+      "target": "2020-05-31",
+      "trend": 13185.11,
+      "actual": 9698.1,
+      "miss_log10": -0.1334,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-07-01",
+      "target": "2020-06-30",
+      "trend": 13795.35,
+      "actual": 9185.35,
+      "miss_log10": -0.1766,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-08-01",
+      "target": "2020-07-31",
+      "trend": 14489.49,
+      "actual": 11114.93,
+      "miss_log10": -0.1151,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-09-01",
+      "target": "2020-08-31",
+      "trend": 15190.63,
+      "actual": 11707.78,
+      "miss_log10": -0.1131,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-10-01",
+      "target": "2020-09-30",
+      "trend": 15840.69,
+      "actual": 10840.8,
+      "miss_log10": -0.1647,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-11-01",
+      "target": "2020-10-31",
+      "trend": 16443.25,
+      "actual": 13564.72,
+      "miss_log10": -0.0836,
+      "inside_outer": true
+    },
+    {
+      "origin": "2019-12-01",
+      "target": "2020-11-30",
+      "trend": 17025.98,
+      "actual": 18191.6,
+      "miss_log10": 0.0288,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-01-01",
+      "target": "2020-12-31",
+      "trend": 17560.3,
+      "actual": 28856.59,
+      "miss_log10": 0.2157,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-02-01",
+      "target": "2021-01-31",
+      "trend": 18153.19,
+      "actual": 34318.1,
+      "miss_log10": 0.2766,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-03-01",
+      "target": "2021-03-01",
+      "trend": 18776.36,
+      "actual": 45113.92,
+      "miss_log10": 0.3807,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-04-01",
+      "target": "2021-04-01",
+      "trend": 19265.98,
+      "actual": 58735.25,
+      "miss_log10": 0.4841,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-05-01",
+      "target": "2021-05-01",
+      "trend": 19756.57,
+      "actual": 57796.62,
+      "miss_log10": 0.4662,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-06-01",
+      "target": "2021-06-01",
+      "trend": 20389.81,
+      "actual": 37310.54,
+      "miss_log10": 0.2624,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-07-01",
+      "target": "2021-07-01",
+      "trend": 21013.82,
+      "actual": 35047.36,
+      "miss_log10": 0.2222,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-08-01",
+      "target": "2021-08-01",
+      "trend": 21656.52,
+      "actual": 41659.06,
+      "miss_log10": 0.2841,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-09-01",
+      "target": "2021-09-01",
+      "trend": 22406.52,
+      "actual": 47155.87,
+      "miss_log10": 0.3232,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-10-01",
+      "target": "2021-10-01",
+      "trend": 23084.15,
+      "actual": 43757.81,
+      "miss_log10": 0.2777,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-11-01",
+      "target": "2021-11-01",
+      "trend": 23837.16,
+      "actual": 61373.44,
+      "miss_log10": 0.4107,
+      "inside_outer": true
+    },
+    {
+      "origin": "2020-12-01",
+      "target": "2021-12-01",
+      "trend": 24754.21,
+      "actual": 57025.79,
+      "miss_log10": 0.3624,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-01-01",
+      "target": "2022-01-01",
+      "trend": 25872.53,
+      "actual": 46249.56,
+      "miss_log10": 0.2523,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-02-01",
+      "target": "2022-02-01",
+      "trend": 27306.76,
+      "actual": 38521.79,
+      "miss_log10": 0.1494,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-03-01",
+      "target": "2022-03-01",
+      "trend": 28796.89,
+      "actual": 43226.36,
+      "miss_log10": 0.1764,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-04-01",
+      "target": "2022-04-01",
+      "trend": 30617.84,
+      "actual": 45539.22,
+      "miss_log10": 0.1724,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-05-01",
+      "target": "2022-05-01",
+      "trend": 32469.8,
+      "actual": 37661.19,
+      "miss_log10": 0.0644,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-06-01",
+      "target": "2022-06-01",
+      "trend": 34279.88,
+      "actual": 31776.27,
+      "miss_log10": -0.0329,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-07-01",
+      "target": "2022-07-01",
+      "trend": 35874.57,
+      "actual": 19865.7,
+      "miss_log10": -0.2567,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-08-01",
+      "target": "2022-08-01",
+      "trend": 37509.42,
+      "actual": 23326.49,
+      "miss_log10": -0.2063,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-09-01",
+      "target": "2022-09-01",
+      "trend": 39415.81,
+      "actual": 20047.68,
+      "miss_log10": -0.2936,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-10-01",
+      "target": "2022-10-01",
+      "trend": 41307.76,
+      "actual": 19427.2,
+      "miss_log10": -0.3276,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-11-01",
+      "target": "2022-11-01",
+      "trend": 43504.15,
+      "actual": 20499.29,
+      "miss_log10": -0.3268,
+      "inside_outer": true
+    },
+    {
+      "origin": "2021-12-01",
+      "target": "2022-12-01",
+      "trend": 45737.77,
+      "actual": 17170.62,
+      "miss_log10": -0.4255,
+      "inside_outer": false
+    },
+    {
+      "origin": "2022-01-01",
+      "target": "2023-01-01",
+      "trend": 47892.33,
+      "actual": 16526.78,
+      "miss_log10": -0.4621,
+      "inside_outer": false
+    },
+    {
+      "origin": "2022-02-01",
+      "target": "2023-02-01",
+      "trend": 49889.91,
+      "actual": 23133.91,
+      "miss_log10": -0.3338,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-03-01",
+      "target": "2023-03-01",
+      "trend": 51698.76,
+      "actual": 23128.3,
+      "miss_log10": -0.3493,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-04-01",
+      "target": "2023-04-01",
+      "trend": 53757.08,
+      "actual": 28479.75,
+      "miss_log10": -0.2759,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-05-01",
+      "target": "2023-05-01",
+      "trend": 55764.85,
+      "actual": 29264.14,
+      "miss_log10": -0.28,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-06-01",
+      "target": "2023-06-01",
+      "trend": 57539.09,
+      "actual": 27213.71,
+      "miss_log10": -0.3252,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-07-01",
+      "target": "2023-07-01",
+      "trend": 58955.31,
+      "actual": 30471.5,
+      "miss_log10": -0.2866,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-08-01",
+      "target": "2023-08-01",
+      "trend": 60254.89,
+      "actual": 29228.49,
+      "miss_log10": -0.3142,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-09-01",
+      "target": "2023-09-01",
+      "trend": 61601.32,
+      "actual": 25932.99,
+      "miss_log10": -0.3757,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-10-01",
+      "target": "2023-10-01",
+      "trend": 62745.65,
+      "actual": 26970.43,
+      "miss_log10": -0.3667,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-11-01",
+      "target": "2023-11-01",
+      "trend": 63902.04,
+      "actual": 34662.16,
+      "miss_log10": -0.2657,
+      "inside_outer": true
+    },
+    {
+      "origin": "2022-12-01",
+      "target": "2023-12-01",
+      "trend": 64875.73,
+      "actual": 37711.79,
+      "miss_log10": -0.2356,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-01-01",
+      "target": "2024-01-01",
+      "trend": 65818.42,
+      "actual": 42249.69,
+      "miss_log10": -0.1925,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-02-01",
+      "target": "2024-02-01",
+      "trend": 66945.49,
+      "actual": 42557.22,
+      "miss_log10": -0.1967,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-03-01",
+      "target": "2024-02-29",
+      "trend": 68135.28,
+      "actual": 62498.79,
+      "miss_log10": -0.0375,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-04-01",
+      "target": "2024-03-31",
+      "trend": 69523.07,
+      "actual": 69650.74,
+      "miss_log10": 0.0008,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-05-01",
+      "target": "2024-04-30",
+      "trend": 71046.61,
+      "actual": 63832.72,
+      "miss_log10": -0.0465,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-06-01",
+      "target": "2024-05-31",
+      "trend": 72552.56,
+      "actual": 68352.44,
+      "miss_log10": -0.0259,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-07-01",
+      "target": "2024-06-30",
+      "trend": 74002.01,
+      "actual": 60871.03,
+      "miss_log10": -0.0848,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-08-01",
+      "target": "2024-07-31",
+      "trend": 75608.14,
+      "actual": 66180.0,
+      "miss_log10": -0.0578,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-09-01",
+      "target": "2024-08-31",
+      "trend": 77100.35,
+      "actual": 59108.23,
+      "miss_log10": -0.1154,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-10-01",
+      "target": "2024-09-30",
+      "trend": 78449.92,
+      "actual": 65620.59,
+      "miss_log10": -0.0776,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-11-01",
+      "target": "2024-10-31",
+      "trend": 79990.15,
+      "actual": 72329.87,
+      "miss_log10": -0.0437,
+      "inside_outer": true
+    },
+    {
+      "origin": "2023-12-01",
+      "target": "2024-11-30",
+      "trend": 81771.8,
+      "actual": 97503.54,
+      "miss_log10": 0.0764,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-01-01",
+      "target": "2024-12-31",
+      "trend": 83825.32,
+      "actual": 92652.68,
+      "miss_log10": 0.0435,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-02-01",
+      "target": "2025-01-31",
+      "trend": 85896.56,
+      "actual": 104743.97,
+      "miss_log10": 0.0862,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-03-01",
+      "target": "2025-03-01",
+      "trend": 88023.44,
+      "actual": 84379.79,
+      "miss_log10": -0.0184,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-04-01",
+      "target": "2025-04-01",
+      "trend": 90793.86,
+      "actual": 82531.15,
+      "miss_log10": -0.0414,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-05-01",
+      "target": "2025-05-01",
+      "trend": 93468.12,
+      "actual": 94206.41,
+      "miss_log10": 0.0034,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-06-01",
+      "target": "2025-06-01",
+      "trend": 96217.83,
+      "actual": 104655.37,
+      "miss_log10": 0.0365,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-07-01",
+      "target": "2025-07-01",
+      "trend": 98918.01,
+      "actual": 107130.31,
+      "miss_log10": 0.0346,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-08-01",
+      "target": "2025-08-01",
+      "trend": 101633.09,
+      "actual": 115754.1,
+      "miss_log10": 0.0565,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-09-01",
+      "target": "2025-09-01",
+      "trend": 104285.27,
+      "actual": 108234.82,
+      "miss_log10": 0.0161,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-10-01",
+      "target": "2025-10-01",
+      "trend": 106859.54,
+      "actual": 114034.76,
+      "miss_log10": 0.0282,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-11-01",
+      "target": "2025-11-01",
+      "trend": 109671.64,
+      "actual": 109552.54,
+      "miss_log10": -0.0005,
+      "inside_outer": true
+    },
+    {
+      "origin": "2024-12-01",
+      "target": "2025-12-01",
+      "trend": 112868.7,
+      "actual": 90376.43,
+      "miss_log10": -0.0965,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-01-01",
+      "target": "2026-01-01",
+      "trend": 116467.78,
+      "actual": 87493.87,
+      "miss_log10": -0.1242,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-02-01",
+      "target": "2026-02-01",
+      "trend": 120126.22,
+      "actual": 78585.89,
+      "miss_log10": -0.1843,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-03-01",
+      "target": "2026-03-01",
+      "trend": 123389.74,
+      "actual": 67006.09,
+      "miss_log10": -0.2652,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-04-01",
+      "target": "2026-04-01",
+      "trend": 126790.53,
+      "actual": 68216.53,
+      "miss_log10": -0.2692,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-05-01",
+      "target": "2026-05-01",
+      "trend": 130116.97,
+      "actual": 76286.46,
+      "miss_log10": -0.2319,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-06-01",
+      "target": "2026-06-01",
+      "trend": 133953.07,
+      "actual": 73570.59,
+      "miss_log10": -0.2602,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-07-01",
+      "target": "2026-07-01",
+      "trend": 137742.47,
+      "actual": 58534.28,
+      "miss_log10": -0.3717,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-08-01",
+      "target": "2026-08-01",
+      "trend": 141870.37,
+      "actual": 63048.0,
+      "miss_log10": -0.3522,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-09-01",
+      "target": "2026-09-01",
+      "trend": 146033.02,
+      "actual": 78155.0,
+      "miss_log10": -0.2715,
+      "inside_outer": true
+    }
+  ]
+}

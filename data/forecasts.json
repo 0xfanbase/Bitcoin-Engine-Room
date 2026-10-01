@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "issued": "2026-09-30",
+      "price_at_issue": 85115.0,
+      "a": -16.209553,
+      "b": 5.602096,
+      "horizons": [
+        {
+          "horizon_days": 365,
+          "target_date": "2027-09-30",
+          "trend": 188895.59,
+          "inner_low": 97130.32,
+          "inner_high": 395749.9,
+          "floor": 76346.09,
+          "ceiling": 1000409.52,
+          "outcome": null
+        },
+        {
+          "horizon_days": 730,
+          "target_date": "2028-09-29",
+          "trend": 252716.3,
+          "inner_low": 129947.0,
+          "inner_high": 529458.9,
+          "floor": 102140.56,
+          "ceiling": 1338410.23,
+          "outcome": null
+        },
+        {
+          "horizon_days": 1461,
+          "target_date": "2030-09-30",
+          "trend": 434126.04,
+          "inner_low": 223228.09,
+          "inner_high": 909525.41,
+          "floor": 175461.1,
+          "ceiling": 2299173.99,
+          "outcome": null
+        }
+      ]
+    }
+  ],
+  "started": "2026-09-30",
+  "updated_at": "2026-09-30"
+}

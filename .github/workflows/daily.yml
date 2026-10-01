@@ -36,6 +36,9 @@ jobs:
       - name: Refit models
         run: python -m pipeline.fit_models
 
+      - name: Backtest + forecast ledger
+        run: python -m pipeline.backtest
+
       - name: Run audit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

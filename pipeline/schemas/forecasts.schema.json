@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0xfanbase.github.io/Bitcoin-Engine-Room/schemas/forecasts.schema.json",
+  "title": "live forecast ledger (data/forecasts.json) -- append-only; only `outcome` is ever filled in later",
+  "type": "object",
+  "required": ["schema_version", "entries"],
+  "additionalProperties": false,
+  "$defs": {"date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}},
+  "properties": {
+    "schema_version": {"const": 1},
+    "started": {"anyOf": [{"$ref": "#/$defs/date"}, {"type": "null"}]},
+    "updated_at": {"$ref": "#/$defs/date"},
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["issued", "price_at_issue", "a", "b", "horizons"],
+        "additionalProperties": false,
+        "properties": {
+          "issued": {"$ref": "#/$defs/date"},
+          "price_at_issue": {"type": "number", "exclusiveMinimum": 0},
+          "a": {"type": "number"},
+          "b": {"type": "number"},
+          "horizons": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["horizon_days", "target_date", "trend", "inner_low", "inner_high", "floor", "ceiling", "outcome"],
+              "additionalProperties": false,
+              "properties": {
+                "horizon_days": {"type": "integer"},
+                "target_date": {"$ref": "#/$defs/date"},
+                "trend": {"type": "number", "exclusiveMinimum": 0},
+                "inner_low": {"type": "number", "exclusiveMinimum": 0},
+                "inner_high": {"type": "number", "exclusiveMinimum": 0},
+                "floor": {"type": "number", "exclusiveMinimum": 0},
+                "ceiling": {"type": "number", "exclusiveMinimum": 0},
+                "outcome": {
+                  "anyOf": [
+                    {"type": "null"},
+                    {
+                      "type": "object",
+                      "required": ["actual_date", "actual", "miss_factor", "inside_inner", "inside_outer"],
+                      "additionalProperties": false,
+                      "properties": {
+                        "actual_date": {"$ref": "#/$defs/date"},
+                        "actual": {"type": "number"},
+                        "miss_factor": {"type": "number"},
+                        "inside_inner": {"type": "boolean"},
+                        "inside_outer": {"type": "boolean"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
