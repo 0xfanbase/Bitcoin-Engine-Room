@@ -352,8 +352,12 @@ def check_forecast_calibration() -> list[dict]:
         return [_finding("forecast_calibration", "WARN", "backtest.json missing -- run `python -m pipeline.backtest`")]
 
     price = load_json(HISTORY_DIR / "price_daily.json")
-    if price and price.get("series"):
-        last_price_date = date.fromisoformat(price["series"][-1]["date"])
+    real_rows = [r for r in (price or {}).get("series", []) if not r.get("carried_forward")]
+    if real_rows:
+        # Real rows only: the backtest (like every model) excludes
+        # carried-forward rows, so a price outage must not read as a stale
+        # backtest -- the staleness check already reports the outage itself.
+        last_price_date = date.fromisoformat(real_rows[-1]["date"])
         lag = (last_price_date - date.fromisoformat(backtest["data_through"])).days
         if lag > BACKTEST_MAX_LAG_DAYS:
             findings.append(

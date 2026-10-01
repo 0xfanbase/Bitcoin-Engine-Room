@@ -33,6 +33,7 @@ from pathlib import Path
 
 import jsonschema
 import numpy as np
+import requests
 
 from pipeline import forecast
 from pipeline.sources import BitstampClient, SourceFetchError
@@ -138,8 +139,11 @@ def run(*, force: bool = False, now: datetime | None = None, client: BitstampCli
     start_ts = int(datetime(BITSTAMP_START.year, BITSTAMP_START.month, BITSTAMP_START.day, tzinfo=timezone.utc).timestamp())
     try:
         ref_rows = client.fetch_daily_ohlc(start_ts, int(now.timestamp()))
-    except SourceFetchError as exc:
-        print(f"history cross-check skipped: {exc}", file=sys.stderr)
+    except (SourceFetchError, requests.RequestException, ValueError, KeyError, TypeError) as exc:
+        # A 4xx (raise_for_status -> HTTPError), an HTML error page (JSON
+        # decode -> ValueError) or a changed payload shape all mean "the
+        # reference is unavailable today" -- never a reason to fail the job.
+        print(f"history cross-check skipped: {exc!r}", file=sys.stderr)
         return None
     report = build_report(load_json(PRICE_PATH)["series"], ref_rows, load_json(CONSTANTS_PATH), now)
     jsonschema.validate(report, load_json(SCHEMA_PATH))

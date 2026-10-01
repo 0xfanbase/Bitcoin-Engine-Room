@@ -71,3 +71,18 @@ def test_run_skips_when_recent_and_survives_network_failure(tmp_path, monkeypatc
 
     assert crosscheck_history.run(now=now, force=True, client=Failing()) is None
     assert json.loads(out.read_text())["generated_at"] == "2026-09-20T00:00:00Z"  # previous report kept
+
+
+def test_run_survives_http_error_and_html_body(tmp_path, monkeypatch):
+    import requests
+
+    out = tmp_path / "x.json"
+    monkeypatch.setattr(crosscheck_history, "OUT_PATH", out)
+    now = datetime(2026, 10, 1, tzinfo=timezone.utc)
+    for exc in (requests.HTTPError("403 Forbidden"), ValueError("Expecting value: line 1 column 1")):
+        class Broken:
+            def fetch_daily_ohlc(self, *a, _exc=exc, **k):
+                raise _exc
+
+        assert crosscheck_history.run(now=now, force=True, client=Broken()) is None
+    assert not out.exists()

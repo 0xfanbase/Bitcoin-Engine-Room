@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-01T02:07:02Z",
+  "generated_at": "2026-10-01T02:30:05Z",
   "data_through": "2026-09-30",
   "method": {
     "origins": "first of every month from 2013-01-01, refit on data strictly before each origin",
@@ -108,35 +108,35 @@
       "signal": "power_law_z_realtime",
       "n_months": 153,
       "first_origin": "2013-01-01",
-      "spearman_vs_fwd_1y": -0.515,
+      "spearman_vs_fwd_1y": -0.51,
       "approx_independent_windows": 12.7
     },
     {
       "signal": "mayer_multiple",
       "n_months": 153,
       "first_origin": "2013-01-01",
-      "spearman_vs_fwd_1y": 0.158,
+      "spearman_vs_fwd_1y": 0.166,
       "approx_independent_windows": 12.7
     },
     {
       "signal": "wma200_distance",
       "n_months": 135,
       "first_origin": "2014-07-01",
-      "spearman_vs_fwd_1y": -0.495,
+      "spearman_vs_fwd_1y": -0.491,
       "approx_independent_windows": 11.2
     },
     {
       "signal": "price_vs_hashrate_fit",
       "n_months": 153,
       "first_origin": "2013-01-01",
-      "spearman_vs_fwd_1y": -0.304,
+      "spearman_vs_fwd_1y": -0.3,
       "approx_independent_windows": 12.7
     },
     {
       "signal": "fear_greed",
       "n_months": 91,
       "first_origin": "2018-03-01",
-      "spearman_vs_fwd_1y": 0.05,
+      "spearman_vs_fwd_1y": 0.064,
       "approx_independent_windows": 7.5
     }
   ],
@@ -146,48 +146,48 @@
       "z_high": -1.0,
       "n_months": 15,
       "episodes": 3,
-      "median_fwd_1y_pct": 127.0,
+      "median_fwd_1y_pct": 130.3,
       "share_negative": 0.0
     },
     {
       "z_low": -1.0,
       "z_high": -0.5,
-      "n_months": 37,
+      "n_months": 36,
       "episodes": 7,
-      "median_fwd_1y_pct": 127.3,
-      "share_negative": 0.054
+      "median_fwd_1y_pct": 127.2,
+      "share_negative": 0.028
     },
     {
       "z_low": -0.5,
       "z_high": 0.0,
-      "n_months": 32,
-      "episodes": 9,
-      "median_fwd_1y_pct": 139.1,
-      "share_negative": 0.125
+      "n_months": 34,
+      "episodes": 8,
+      "median_fwd_1y_pct": 143.4,
+      "share_negative": 0.147
     },
     {
       "z_low": 0.0,
       "z_high": 0.5,
       "n_months": 32,
       "episodes": 10,
-      "median_fwd_1y_pct": 4.6,
+      "median_fwd_1y_pct": 1.6,
       "share_negative": 0.5
     },
     {
       "z_low": 0.5,
       "z_high": 1.0,
-      "n_months": 22,
+      "n_months": 21,
       "episodes": 6,
-      "median_fwd_1y_pct": -26.9,
-      "share_negative": 0.545
+      "median_fwd_1y_pct": -40.7,
+      "share_negative": 0.571
     },
     {
       "z_low": 1.0,
       "z_high": 99.0,
       "n_months": 15,
       "episodes": 5,
-      "median_fwd_1y_pct": -56.4,
-      "share_negative": 0.733
+      "median_fwd_1y_pct": -56.2,
+      "share_negative": 0.8
     }
   ],
   "miss_by_year": [

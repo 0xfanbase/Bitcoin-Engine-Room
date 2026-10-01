@@ -270,12 +270,16 @@ def _realtime_signals(s: Series, fits: dict, hashrate_rows: list[dict], fng_rows
         "fear_greed": [],
     }
     for o, f in fits.items():
-        i0 = f["n"] - 1
+        # Origin-day reading (first row on/after the origin) scored against a
+        # fit made strictly before it -- out-of-sample, the same convention
+        # as fit_models' published realtime_z.
+        i0 = s.index_on_or_after(o)
         i1 = s.index_on_or_after(o + timedelta(days=365))
-        if i1 is None:
+        if i0 is None or i1 is None:
             continue
         fwd = float(s.y[i1] - s.y[i0])
-        z = float(f["resid"][-1] / f["sigma"]) if f["sigma"] else 0.0
+        resid0 = s.y[i0] - (f["a"] + f["b"] * s.x[i0])
+        z = float(resid0 / f["sigma"]) if f["sigma"] else 0.0
         values["power_law_z_realtime"].append((o, z, fwd))
         if i0 >= 199:
             sma = float(np.mean(10 ** s.y[i0 - 199 : i0 + 1]))
@@ -434,8 +438,12 @@ def update_ledger(ledger: dict | None, models: dict | None, s: Series) -> dict:
             target = date.fromisoformat(hz["target_date"])
             if target > s.dates[-1]:
                 continue
-            i = s.index_on_or_after(target)
-            if i is None:
+            # First REAL row on/after the target, with no proximity cap: a
+            # target that lands in an outage is scored on the first genuine
+            # price after it (actual_date records which day), instead of
+            # staying "due" forever.
+            i = bisect.bisect_left(s.dates, target)
+            if i >= len(s.dates):
                 continue
             actual = float(10 ** s.y[i])
             hz["outcome"] = {

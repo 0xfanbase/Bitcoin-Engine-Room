@@ -439,3 +439,24 @@ def test_history_crosscheck_stale_missing_and_fit_sensitivity_warn(tmp_path, mon
     assert "days old" in details and "2030 trend" in details
     (tmp_path / "history_crosscheck.json").unlink()
     assert "missing" in audit._check_history_crosscheck()[0]["detail"]
+
+
+def test_forecast_calibration_ignores_carried_forward_price_rows(tmp_path, monkeypatch):
+    """A price outage writes carried-forward rows the backtest (rightly)
+    excludes; that must not be reported as a stale backtest."""
+    _patch_paths(monkeypatch, tmp_path)
+    doc = {
+        "metric": "price_daily",
+        "unit": "USD",
+        "schema_version": 1,
+        "generated_at": "2026-07-09T00:00:00Z",
+        "series": [
+            {"date": "2026-07-01", "value": 1, "source": "test"},
+            {"date": "2026-07-02", "value": 1, "source": "test", "carried_forward": True},
+            {"date": "2026-07-03", "value": 1, "source": "test", "carried_forward": True},
+            {"date": "2026-07-04", "value": 1, "source": "test", "carried_forward": True},
+        ],
+    }
+    (tmp_path / "history" / "price_daily.json").write_text(json.dumps(doc))
+    _write_calibration(tmp_path, data_through="2026-07-01")
+    assert audit.check_forecast_calibration() == []

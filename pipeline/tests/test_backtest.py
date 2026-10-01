@@ -67,6 +67,23 @@ def test_ledger_appends_once_per_month_and_never_rewrites_forecasts():
     assert outcomes[1] is None and outcomes[2] is None
 
 
+def test_ledger_target_inside_a_data_gap_is_scored_on_the_next_real_row():
+    s = _series(-17.0, 5.8, date(2010, 7, 17), date(2016, 1, 1))
+    # Knock out 20 days around the 1y target (2015-06-30) -- an outage.
+    keep = [i for i, d in enumerate(s.dates) if not (date(2015, 6, 25) <= d <= date(2015, 7, 14))]
+    s.dates = [s.dates[i] for i in keep]
+    s.d, s.x, s.y = s.d[keep], s.x[keep], s.y[keep]
+    models = {
+        "power_law": {
+            "params": {"a": -17.0, "b": 5.8, "genesis_date": GENESIS.isoformat()},
+            "current": {"date": "2014-06-30", "price": 500.0},
+            "bands": {"outer_offsets_log10": [-0.4, 0.7], "inner_offsets_log10": [-0.3, 0.3]},
+        }
+    }
+    outcome = backtest.update_ledger(None, models, s)["entries"][0]["horizons"][0]["outcome"]
+    assert outcome is not None and outcome["actual_date"] == "2015-07-15"
+
+
 @pytest.mark.parametrize("name", ["backtest", "forecasts"])
 def test_committed_files_validate(name):
     path = REPO_ROOT / "data" / f"{name}.json"
