@@ -399,6 +399,26 @@ a {
   text-align: left;
 }
 
+/* Visually hidden until keyboard-focused (IMPROVEMENT_BACKLOG.md
+   2026-07-25): lets a keyboard user jump past ~15 info-toggles. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 10;
+  padding: 0.4rem 0.7rem;
+  background: var(--bg);
+  border: 1px solid var(--focus-ring);
+  border-radius: 2px;
+  color: var(--ink);
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
 /* ---------- Gauges grid ---------- */
 /* 3x2 at >=720px, 2 columns below (director ruling 12, 2026-10-01): the
    old auto-fit grid put six cards into 4 + 2 orphans on desktop. */
