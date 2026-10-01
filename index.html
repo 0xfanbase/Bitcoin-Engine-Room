@@ -212,24 +212,64 @@
       </div>
       <div class="chart-plate-stats numeral" id="power-law-stats">&mdash;</div>
     </div>
+    <p class="chart-headline numeral" id="power-law-headline">&mdash;</p>
     <div class="info-panel" id="info-power-law" hidden>
-      <p>A long-running model, published by Giovanni Santostasi, that fits Bitcoin's price history to a power-law curve in log-log space &mdash; the idea is that price has grown at a roughly steady rate of deceleration over time.</p>
-      <p>The colored bands (Idle &rarr; Cruise &rarr; Redline) show where today's price sits relative to that long-run trend &mdash; but they're descriptive envelopes from historical fit residuals, not statistical confidence intervals, and not a prediction of where price goes next.</p>
-      <p class="info-source">Source: model published by Giovanni Santostasi; refit nightly against this site's own historical price data</p>
+      <p>A long-running model, published by Giovanni Santostasi, that fits Bitcoin's price history to a power-law curve: a straight line when both price and time are on log scales. Cruise is that fitted line.</p>
+      <p>Idle and Redline bound the range price has actually spent ~95% of its history in, measured as the spread of past prices around the line (the inner band holds ~68%). They are descriptive, not confidence intervals, and not a prediction of where price goes next. The dashed fan to the right is how uncertain the line itself is; the dotted line is the same model fit only to data since 2017, which is flatter.</p>
+      <p class="info-source">Source: model published by Giovanni Santostasi; refit nightly against this site's own price history. Uncertainty, backtest and method: <a href="https://github.com/0xfanbase/Bitcoin-Engine-Room/blob/main/pipeline/MODEL_METHODOLOGY.md" target="_blank" rel="noopener">MODEL_METHODOLOGY.md</a></p>
     </div>
-    <div class="chart-controls" role="group" aria-label="Power law chart timeframe">
-      <button class="chip-btn" type="button" data-power-law-range="1y" aria-pressed="false">1Y</button>
-      <button class="chip-btn" type="button" data-power-law-range="4y" aria-pressed="false">4Y</button>
-      <button class="chip-btn is-active" type="button" data-power-law-range="all" aria-pressed="true">ALL</button>
+    <div class="chart-controls" role="group" aria-label="Power law chart view">
+      <div class="chip-group" role="group" aria-label="Time range">
+        <button class="chip-btn" type="button" data-power-law-range="1y" aria-pressed="false" title="One year back to one year ahead">1Y</button>
+        <button class="chip-btn is-active" type="button" data-power-law-range="2030" aria-pressed="true">&rarr;2030</button>
+        <button class="chip-btn" type="button" data-power-law-range="2035" aria-pressed="false">&rarr;2035</button>
+        <button class="chip-btn" type="button" data-power-law-range="all" aria-pressed="false">ALL</button>
+      </div>
+      <div class="chip-group" role="group" aria-label="Time axis">
+        <button class="chip-btn is-active" type="button" data-power-law-time="log" aria-pressed="true" title="Log time: the model's native scale, where the power law is a straight line">LOG T</button>
+        <button class="chip-btn" type="button" data-power-law-time="cal" aria-pressed="false" title="Calendar time: every year gets equal width">CAL T</button>
+      </div>
     </div>
-    <div id="power-law-chart" class="chart-canvas chart-canvas--hero" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
+    <div class="chart-frame">
+      <div id="power-law-chart" class="chart-canvas chart-canvas--hero" tabindex="0" role="img" aria-label="Power law corridor chart"></div>
+      <div class="chart-zoom" role="group" aria-label="Zoom">
+        <button class="chart-zoom-btn" type="button" data-power-law-zoom="left" aria-label="Pan back in time">&larr;</button>
+        <button class="chart-zoom-btn" type="button" data-power-law-zoom="out" aria-label="Zoom out">&minus;</button>
+        <button class="chart-zoom-btn" type="button" data-power-law-zoom="in" aria-label="Zoom in">+</button>
+        <button class="chart-zoom-btn" type="button" data-power-law-zoom="right" aria-label="Pan forward in time">&rarr;</button>
+        <button class="chart-zoom-btn" type="button" data-power-law-zoom="reset" aria-label="Reset view">reset</button>
+      </div>
+      <p class="chart-zoom-hint numeral" id="power-law-zoom-hint" hidden>wheel to zoom &middot; drag to box-zoom &middot; double-click resets</p>
+    </div>
     <p class="chart-plain-summary" id="power-law-summary"></p>
     <p class="chart-plain-summary" id="power-law-cycle-tops-summary"></p>
-    <p class="chart-caption">Model family published by Giovanni Santostasi. Bands are descriptive envelopes from historical fit residuals (±2σ in log10 space), not statistical confidence intervals. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#power-law-card" title="Link to this chart">#power-law</a></p>
+    <p class="chart-caption"><span id="power-law-bands-note"></span>. Bands are not confidence intervals. Model family published by Giovanni Santostasi. <a href="#" id="power-law-export-png">PNG</a> &middot; <a href="#" id="power-law-export-csv">CSV</a> &middot; <a href="#" id="power-law-copy-link">copy link</a></p>
+    <details class="info-disclosure" id="power-law-lookup-disclosure">
+      <summary>Look up the model at a date or price</summary>
+      <div class="info-panel">
+        <div class="lookup-row">
+          <label for="lookup-date">Date</label>
+          <input class="lookup-input numeral" type="date" id="lookup-date" min="2010-07-17" max="2035-12-31" />
+          <output class="numeral lookup-out" id="lookup-date-out" for="lookup-date"></output>
+        </div>
+        <div class="lookup-row">
+          <label for="lookup-price">Price (USD)</label>
+          <input class="lookup-input numeral" type="text" inputmode="decimal" id="lookup-price" placeholder="250000" />
+          <output class="numeral lookup-out" id="lookup-price-out" for="lookup-price"></output>
+        </div>
+        <table class="cycle-tops-table" aria-label="Published projections">
+          <thead>
+            <tr><th scope="col">Jan 1</th><th scope="col">Idle</th><th scope="col">Cruise</th><th scope="col">Redline</th><th scope="col">Trend range (5&ndash;95%)</th></tr>
+          </thead>
+          <tbody id="power-law-projections-tbody"></tbody>
+        </table>
+        <p>Each value is the published model evaluated at that date &mdash; a curve fit's extrapolation, not a price target.</p>
+      </div>
+    </details>
     <details class="info-disclosure" id="power-law-cycle-tops-disclosure">
       <summary>Where past cycles topped</summary>
       <div class="info-panel">
-        <p>Each row is a point where price ran unusually far above this same trend line -- admitted by one of three fixed rules, never picked by hand: a confirmed cycle top (price later fell at least 70% from it), a halving era's own peak reading above trend, or the current era's high so far. Measured against today's fitted trend, not what anyone could see at the time -- this is a retrospective reading, not a forecast in either direction.</p>
+        <p>Each row is a point where price ran unusually far above this same trend line &mdash; admitted by one of three fixed rules, never picked by hand: a confirmed cycle top (price later fell at least 70% from it), a halving era's own peak reading above trend, or the current era's high so far. Measured against today's fitted trend, not what anyone could see at the time.</p>
         <table class="cycle-tops-table" id="power-law-cycle-tops-table">
           <thead>
             <tr><th scope="col">Date</th><th scope="col">Price</th><th scope="col">vs trend</th><th scope="col">Status</th></tr>
@@ -255,8 +295,8 @@
         <p>Bitcoin's four-year halving cycle has historically rhymed with big price cycles &mdash; this is a way to see whether the current cycle is tracking, lagging, or outrunning past ones, not a guarantee it keeps rhyming.</p>
         <p class="info-source">Source: computed from this site's own historical price data, sliced at each halving-epoch boundary</p>
       </div>
-      <div id="cycle-overlay-chart" class="chart-canvas" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
-      <p class="chart-caption">% performance vs. days since halving, each epoch normalized to its halving-day price. 2012's +10,000% cycle starts toggled off in the legend so the current cycle is readable &mdash; tap its chip to bring it back. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#cycle-overlay-card" title="Link to this chart">#cycle</a></p>
+      <div id="cycle-overlay-chart" class="chart-canvas" role="img" aria-label="Halving cycle overlay"></div>
+      <p class="chart-caption">Growth multiple since each halving-day price, log scale, so every cycle reads on one chart. Three earlier cycles are a tiny sample -- a rhyme, not a rule. <a href="#cycle-overlay-card" title="Link to this chart">#cycle</a></p>
     </div>
 
     <div class="chart-card" id="market-sentiment-card">
@@ -272,8 +312,15 @@
         <p>This is sentiment, not valuation: it says something about the crowd's mood, not about where price is headed next. The gauge card above shows today's single reading; this chart shows how it's moved.</p>
         <p class="info-source">Source: alternative.me (sole source)</p>
       </div>
-      <div id="market-sentiment-chart" class="chart-canvas" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
-      <p class="chart-caption">Fear &amp; Greed Index, 0-100, daily. A sentiment gauge, not a price model -- replaced the former "Deviation Dial," which averaged three percentile ranks and was labeled a toy composite even in its own methodology note. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#market-sentiment-card" title="Link to this chart">#sentiment</a></p>
+      <div class="chart-controls">
+        <div class="chip-group" role="group" aria-label="Smoothing">
+          <button class="chip-btn" type="button" data-sentiment-window="1" aria-pressed="false">DAILY</button>
+          <button class="chip-btn is-active" type="button" data-sentiment-window="7" aria-pressed="true">7D</button>
+          <button class="chip-btn" type="button" data-sentiment-window="30" aria-pressed="false">30D</button>
+        </div>
+      </div>
+      <div id="market-sentiment-chart" class="chart-canvas" role="img" aria-label="Fear and Greed index history"></div>
+      <p class="chart-caption">Fear &amp; Greed Index, 0&ndash;100. Sentiment, not valuation: tested point-in-time it has had almost no relationship with the next year's return (see Track Record). <a href="#market-sentiment-card" title="Link to this chart">#sentiment</a></p>
     </div>
   </div>
 
@@ -287,12 +334,64 @@
     </div>
     <div class="info-panel" id="info-mayer-200wma" hidden>
       <p>Mayer Multiple is today's price divided by its own 200-day moving average &mdash; 1.0 means price sits exactly at that average; well above means it's run up fast, well below means it's pulled back hard. The 200-week moving average is a much slower version of the same idea, using 200 weeks instead of 200 days.</p>
-      <p>Mayer Multiple has historically flagged overheated (high) or oversold (low) conditions; the 200-week average has historically acted as a long-term floor &mdash; price has rarely stayed below it for long.</p>
+      <p>Mayer Multiple is often read as flagging overheated (high) or oversold (low) conditions, but this site's own point-in-time test found it has not reliably done so a year ahead (see Track Record). The 200-week average has historically acted as a long-term floor &mdash; price has rarely stayed below it for long.</p>
       <p class="info-source">Source: computed nightly from this site's own historical price data</p>
     </div>
-    <div id="mayer-200wma-chart" class="chart-canvas" title="Hold Shift and scroll, or pinch, to zoom &middot; double-click or tap twice to reset"></div>
+    <div id="mayer-200wma-chart" class="chart-canvas chart-canvas--tall" role="img" aria-label="Price with 200-week moving average, and Mayer Multiple"></div>
     <p class="chart-plain-summary" id="mayer-200wma-summary"></p>
-    <p class="chart-caption">Mayer Multiple = price / 200-day SMA. 200WMA = 200-week simple moving average. Zoom: hold Shift and scroll, or pinch &middot; reset: double-click or double-tap. <a href="#mayer-200wma-card" title="Link to this chart">#mayer</a></p>
+    <p class="chart-caption">Top: price and its 200-week simple moving average. Bottom: Mayer Multiple = price / 200-day average; shaded zones are the traditional &lt;0.8 and &gt;2.4 readings. <a href="#mayer-200wma-card" title="Link to this chart">#mayer</a></p>
+  </div>
+
+
+  <div class="chart-card" id="track-record-card">
+    <div class="chart-plate">
+      <div class="chart-plate-heading">
+        <h3>Track Record</h3>
+        <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-track-record" aria-label="Info">i</button>
+      </div>
+      <div class="chart-plate-stats numeral" id="track-record-stats">&mdash;</div>
+    </div>
+    <div class="info-panel" id="info-track-record" hidden>
+      <p>How well would the Power Law Corridor have done if you had used it in the past? On the first of every month since 2013, the exact model on this page is refit using only the prices known before that day, and its forecast is compared with what actually happened 1, 2 and 4 years later.</p>
+      <p>"Miss" is the typical factor between forecast and reality: &times;2.0 means off by about a factor of two, in either direction. "Price stays flat" is the naive benchmark. Monthly forecasts overlap heavily, so the honest sample size is the number of independent windows, shown in the last column &mdash; and it is small.</p>
+      <p class="info-source">Source: <code>data/backtest.json</code> and the live ledger <code>data/forecasts.json</code>, recomputed nightly by <code>pipeline/backtest.py</code></p>
+    </div>
+    <div class="track-record-grid">
+      <div>
+        <div id="track-record-chart" class="chart-canvas chart-canvas--short" role="img" aria-label="Typical one-year forecast miss by the year the forecast was made"></div>
+        <p class="chart-caption">Typical 1-year miss by the year each forecast was made (&times;1 = perfect).</p>
+      </div>
+      <div class="table-scroll">
+        <table class="cycle-tops-table" aria-label="Walk-forward forecast accuracy">
+          <thead><tr><th scope="col">Ahead</th><th scope="col">Model miss</th><th scope="col">Flat-price miss</th><th scope="col">In Idle&ndash;Redline</th><th scope="col">Indep. windows</th></tr></thead>
+          <tbody id="track-record-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <details class="info-disclosure">
+      <summary>Live forecast ledger</summary>
+      <div class="info-panel">
+        <p id="ledger-note"></p>
+        <div class="table-scroll">
+          <table class="cycle-tops-table" aria-label="Recorded forecasts">
+            <thead><tr><th scope="col">Made</th><th scope="col">Ahead</th><th scope="col">Cruise</th><th scope="col">Idle&ndash;Redline</th><th scope="col">Outcome</th></tr></thead>
+            <tbody id="ledger-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+    <details class="info-disclosure">
+      <summary>Which signals have predicted anything?</summary>
+      <div class="info-panel">
+        <p>Each reading below, taken point-in-time on the first of every month, ranked against the next year's price change. &minus;1 would mean "high reading, always lower returns"; 0 means no relationship. With roughly a dozen independent years of data, treat anything weaker than about &plusmn;0.3 as noise.</p>
+        <div class="table-scroll">
+          <table class="cycle-tops-table" aria-label="Signal scorecard">
+            <thead><tr><th scope="col">Signal</th><th scope="col">Rank corr.</th><th scope="col">Since</th><th scope="col">Indep. years</th></tr></thead>
+            <tbody id="signals-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </details>
   </div>
 
   <h2 class="plate">Engine Health</h2>
@@ -314,21 +413,22 @@
     <details class="info-disclosure" id="audit-glossary">
       <summary>What do these checks mean?</summary>
       <div class="info-panel">
-        <p>Every day this site runs six automated checks against its own data before publishing, rolling up to one overall result shown in the chip above: <strong>PASS</strong> (nothing found), <strong>WARN</strong> (worth a look, not urgent), or <strong>FAIL</strong> (a real problem). A findings list only appears above when a check flags something &mdash; a clean day shows none. Here's what each one actually looks for:</p>
+        <p>Every day this site runs seven automated checks against its own data and forecasts before publishing, rolling up to one overall result shown in the chip above: <strong>PASS</strong> (nothing found), <strong>WARN</strong> (worth a look, not urgent), or <strong>FAIL</strong> (a real problem). A findings list only appears above when a check flags something &mdash; a clean day shows none. Here's what each one actually looks for:</p>
         <p><strong>continuity</strong> &mdash; is there a gap in the daily history, a date with no saved snapshot?</p>
-        <p><strong>cross_source_variance</strong> &mdash; do two independent price sources agree with each other today?</p>
+        <p><strong>cross_source_variance</strong> &mdash; do two independent price sources agree with each other today, and does the committed price history agree with an independent exchange (Bitstamp) day by day?</p>
         <p><strong>model_drift</strong> &mdash; did last night's price-model refit change suspiciously overnight? (Usually bad input data, not a broken market.)</p>
         <p><strong>staleness</strong> &mdash; how long has any gauge been showing old, non-live data instead of a fresh reading?</p>
         <p><strong>sanity_replay</strong> &mdash; re-checking the last month of saved data for impossible values, in case something slipped through the day it was saved.</p>
         <p><strong>site_integrity</strong> &mdash; is the site itself intact &mdash; no broken files, no missing pages, no runaway file sizes?</p>
+        <p><strong>forecast_calibration</strong> &mdash; are the model's published bands actually holding up? Checks the walk-forward backtest and every matured entry in the live forecast ledger.</p>
       </div>
     </details>
     <ul id="audit-findings" class="audit-findings"></ul>
   </details>
 
   <footer class="site-footer">
-    <p><strong>Data sources:</strong> Price, fees, mempool and difficulty-adjustment data by <a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a>. Historical price/hash-rate/supply backfill and daily fallback by <a href="https://www.blockchain.com/explorer/charts" target="_blank" rel="noopener">blockchain.com</a>. Price cross-check by <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a> and <a href="https://www.coinbase.com" target="_blank" rel="noopener">Coinbase</a>. Fear &amp; Greed data by <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener">alternative.me</a>. Historical data cross-referenced against <a href="https://coinmetrics.io" target="_blank" rel="noopener">Coin Metrics Community</a>.</p>
-    <p class="disclaimer">Educational tool. Not financial advice. Models are curve fits, not guarantees.</p>
+    <p><strong>Data sources:</strong> Price, fees, mempool and difficulty-adjustment data by <a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a>. Historical price/hash-rate/supply backfill and daily fallback by <a href="https://www.blockchain.com/explorer/charts" target="_blank" rel="noopener">blockchain.com</a>. Price cross-check by <a href="https://www.coingecko.com" target="_blank" rel="noopener">CoinGecko</a> and <a href="https://www.coinbase.com" target="_blank" rel="noopener">Coinbase</a>. Fear &amp; Greed data by <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener">alternative.me</a>. Historical data cross-referenced against <a href="https://coinmetrics.io" target="_blank" rel="noopener">Coin Metrics Community</a>. Price history independently cross-checked against <a href="https://www.bitstamp.net" target="_blank" rel="noopener">Bitstamp</a>.</p>
+    <p class="disclaimer">Educational tool. Not financial advice. Models are curve fits, not guarantees &mdash; see Track Record for how far off they have been.</p>
     <p><a href="https://github.com/0xfanbase/Bitcoin-Engine-Room" target="_blank" rel="noopener">Source on GitHub</a> &middot; MIT licensed</p>
   </footer>
 
@@ -338,6 +438,7 @@
      only once the Price Models section nears the viewport (always below
      the fold, mobile especially), so the ~340KB(gz) CDN script isn't in
      every visit's critical path. -->
+<script src="assets/model-math.js" defer></script>
 <script src="assets/app.js" defer></script>
 <script src="assets/live.js" defer></script>
 <script src="assets/health.js" defer></script>

@@ -568,7 +568,16 @@ def compute_cycle_overlay(price_series: list[dict], constants: dict) -> dict:
             "cycle_percentile_vs_prior_epochs": cycle_percentile,
         }
 
-    return {"epochs": epochs, "current_epoch": current_epoch_meta}
+    next_est = constants["cycle_overlay"].get("next_halving_est_date")
+    return {
+        "epochs": epochs,
+        "current_epoch": current_epoch_meta,
+        # Chart annotation inputs (2026-10-01): the hero chart marks every
+        # halving plus the next one's ESTIMATED month -- an estimate, labelled
+        # as such, never a fixed appointment (block times vary).
+        "halving_dates": [h.isoformat() for h in halving_dates],
+        "next_halving_est_date": next_est,
+    }
 
 
 # --------------------------------------------------------------------------

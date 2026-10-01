@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-01T02:07:02Z",
+  "generated_at": "2026-10-01T02:11:04Z",
   "power_law": {
     "params": {
       "a": -16.209553,
@@ -11558,7 +11558,14 @@
       "pct_complete_of_avg_epoch": 61.1,
       "pct_performance": 33.36,
       "cycle_percentile_vs_prior_epochs": 0.0
-    }
+    },
+    "halving_dates": [
+      "2012-11-28",
+      "2016-07-09",
+      "2020-05-11",
+      "2024-04-20"
+    ],
+    "next_halving_est_date": "2028-04"
   },
   "mayer_multiple": {
     "current": {

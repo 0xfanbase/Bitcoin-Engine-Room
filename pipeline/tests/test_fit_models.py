@@ -414,6 +414,8 @@ def test_cycle_overlay_slices_epochs_and_normalizes_to_halving_price():
     result = fit_models.compute_cycle_overlay(series, TEST_CONSTANTS)
 
     assert len(result["epochs"]) == 2
+    assert result["halving_dates"] == ["2020-01-01", "2021-01-01"]
+    assert result["next_halving_est_date"] is None  # not pinned in these test constants
     epoch0 = result["epochs"][0]
     assert epoch0["halving_date"] == "2020-01-01"
     assert epoch0["epoch_end_date"] == "2021-01-01"

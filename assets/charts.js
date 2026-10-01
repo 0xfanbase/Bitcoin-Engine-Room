@@ -1,78 +1,59 @@
-/* charts.js -- PROJECTIONS section: power law corridor (the hero chart,
- * full-width log-log per director rule #7), 4-year cycle overlay, Mayer
- * Multiple / 200WMA strip, and Market Sentiment (Fear & Greed history).
- * Apache ECharts (CDN, spec Section 3). Colors are read from the current
- * CSS custom properties directly -- single source of truth stays the
- * design tokens, no separate hardcoded ECharts theme registrations.
+/* charts.js -- PRICE MODELS section: Power Law Corridor (the hero), 4-Year
+ * Cycle Overlay, Market Sentiment, Mayer Multiple / 200-week MA, and Track
+ * Record. Apache ECharts (CDN, SRI-pinned). Colors come from the CSS custom
+ * properties -- the design tokens stay the single source of truth.
  *
- * Everything in this module is loaded lazily, on an IntersectionObserver
- * watching the Price Models section, not on ber:booted: the ECharts CDN
- * script (~340KB gzipped) and the two full history files this module
- * charts (price_daily.json, fng_daily.json -- the other three history
- * files are never fetched at all now that app.js paints gauges from
- * health.json's last_value digest) used to load unconditionally on every
- * visit, mobile included, even though every chart sits below the fold.
- * See IMPROVEMENT_BACKLOG.md.
+ * 2026-10-01 rebuild (owner-approved UX overhaul, director ruling in
+ * docs/UX_OVERHAUL_DIRECTOR_RULING.md). All model math and formatting lives
+ * in assets/model-math.js (window.BER.math) so it is unit-tested under Node;
+ * this file only wires data into ECharts and the DOM.
+ *
+ * Everything here loads lazily on an IntersectionObserver watching the Price
+ * Models section: the ECharts script (~340KB gz) and the history files the
+ * charts need are not in the critical path of a visit that never scrolls
+ * this far. See IMPROVEMENT_BACKLOG.md.
  */
 (function () {
   "use strict";
 
   const BER = (window.BER = window.BER || {});
+  const M = BER.math;
   const ECHARTS_CDN_URL = "https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js";
-  // Subresource Integrity: the version is exactly pinned, so this hash
-  // (computed from that same pinned file) never needs to change until the
-  // pinned version itself does. Without it, the one third-party executable
-  // byte on this page has no defense against a CDN compromise -- a real
-  // gap on a site presenting financial figures. A hash mismatch fails the
-  // load the same way a network failure already does (see the onerror
-  // handler below), never a silent partial script.
+  // Subresource Integrity: exact pinned version, so this hash never changes
+  // until the pinned version does. A mismatch fails the load the same way a
+  // network failure does (error state below), never a partial script.
   const ECHARTS_CDN_INTEGRITY = "sha384-Mx5lkUEQPM1pOJCwFtUICyX45KNojXbkWdYhkKUKsbv391mavbfoAmONbzkgYPzR";
-  let charts = {};
+
+  const charts = {};
   let modelsDoc = null;
+  let backtestDoc = null;
+  let ledgerDoc = null;
   let priceHistorySeries = [];
   let fngHistorySeries = [];
-  let powerLawRange = "all";
 
-  // Wheel-to-zoom trap fix: ECharts' "inside" dataZoom prevents the page's
-  // native wheel-scroll the instant a pointer lands on the chart, REGARDLESS
-  // of zoomOnMouseWheel's modifier-key setting -- a long-standing ECharts
-  // bug (apache/echarts#10079), not something zoomOnMouseWheel: "shift"
-  // alone fixes despite that being its documented purpose. Confirmed in
-  // isolation: with `zoomOnMouseWheel: "shift"` alone, a plain (no-shift)
-  // wheel over the chart still doesn't scroll the page at all. The
-  // documented workaround (same GitHub issue) is what's used here instead:
-  // start every chart with zoomLock: true (wheel/drag do nothing chart-side,
-  // so the page scrolls normally), and only flip zoomLock: false for the
-  // instant Shift is actually held, locking again on keyup -- verified this
-  // combination lets a plain wheel scroll the page, a Shift+wheel zoom the
-  // chart without moving the page, and scrolling resume normally the moment
-  // Shift is released. Touch devices (no Shift key to hold) start unlocked
-  // instead, so pinch-zoom keeps working there; moveOnMouseMove: false
-  // separately stops a single-finger drag from being read as chart-pan
-  // (which is what would otherwise trap a touch scroll/swipe).
-  const CHARTS_COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
+  const COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
+  const HOVER_CAPABLE = window.matchMedia("(hover: hover)").matches;
+  const END_DATE = "2035-12-31";
+  const MIN_WINDOW_DAYS = 45;
+  const ZOOM_HINT_KEY = "ber_zoom_hint";
 
-  function setChartsZoomLock(locked) {
-    Object.values(charts).forEach((c) => {
-      if (!c) return;
-      const dz = c.getOption().dataZoom;
-      if (!dz || !dz.length) return;
-      c.setOption({ dataZoom: dz.map(() => ({ zoomLock: locked })) });
-    });
-  }
+  // Power-law view state. `view` is null when a preset owns the window, or
+  // {minDay, maxDay} after a manual zoom/pan. Default preset is "2030", not
+  // "all" (director ruling 1): ALL-by-default is what made the future read
+  // as missing.
+  const urlState = M.parseViewState(window.location.search);
+  const plState = {
+    range: urlState.range || "2030",
+    timeScale: urlState.timeScale || "log",
+    view: null,
+    focused: false,
+  };
+  let sentimentSmoothing = 7;
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Shift") setChartsZoomLock(false);
-  });
-  document.addEventListener("keyup", (e) => {
-    if (e.key === "Shift") setChartsZoomLock(true);
-  });
+  // ---------- generic helpers ----------
 
-  // Default (not "no-store") cache mode, unlike live.js's genuinely
-  // real-time endpoints: these are daily-immutable committed files, so
-  // letting the browser's normal HTTP cache (conditional requests / 304s)
-  // work saves a full re-download on repeat same-day visits, mobile
-  // cellular especially.
+  // Default (not "no-store") cache mode: these are daily-immutable committed
+  // files, so the browser's normal HTTP cache (304s) saves re-downloads.
   function fetchJSON(path) {
     return fetch(path).then((r) => {
       if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
@@ -84,6 +65,10 @@
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
+  // Full font stack, not just its first family: a canvas given only
+  // "IBM Plex Mono" falls back to the browser default (a serif) whenever the
+  // web font isn't loaded at draw time. Charts also re-render once
+  // document.fonts settles (see loadAndRender).
   function colorTokens() {
     const style = getComputedStyle(document.documentElement);
     const get = (name) => style.getPropertyValue(name).trim();
@@ -91,19 +76,19 @@
       ink: get("--ink"),
       inkDim: get("--ink-dim"),
       accent: get("--accent"),
-      ok: get("--ok"),
-      warn: get("--warn"),
       fail: get("--fail"),
       border: get("--panel-border"),
-      fontData: get("--font-data").split(",")[0].replace(/"/g, ""),
+      fontData: get("--font-data") || "ui-monospace, monospace",
     };
   }
 
-  // One shared tooltip look across all 4 charts -- previously the power-law
-  // chart had its own custom (and too-low-contrast: --ink-dim text on an
-  // --ink background is ~2.8:1) styling while the other three used
-  // ECharts' default white tooltip, off-identity. `extra` lets a chart add
-  // its own formatter/valueFormatter on top of the shared base.
+  function rgba(hex, alpha) {
+    const h = hex.replace("#", "");
+    const n = parseInt(h.length === 3 ? h.replace(/(.)/g, "$1$1") : h, 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  }
+
+  // One shared tooltip look across every chart.
   function baseTooltip(colors, extra) {
     return Object.assign(
       {
@@ -111,417 +96,619 @@
         borderColor: colors.border,
         borderWidth: 1,
         textStyle: { color: colors.ink, fontFamily: colors.fontData, fontSize: 12 },
+        confine: true,
       },
       extra
     );
   }
 
-  function daysSinceGenesis(dateStr, genesis) {
-    const d = Date.parse(dateStr + "T00:00:00Z");
-    const g = Date.parse(genesis + "T00:00:00Z");
-    return Math.round((d - g) / 86400000);
+  function crossPointer(colors, labelFormatter) {
+    return {
+      type: "cross",
+      snap: false,
+      lineStyle: { color: colors.inkDim, opacity: 0.5, width: 1, type: [2, 3] },
+      crossStyle: { color: colors.inkDim, opacity: 0.5, width: 1, type: [2, 3] },
+      label: {
+        backgroundColor: "rgba(4, 16, 8, 0.96)",
+        borderColor: colors.border,
+        borderWidth: 1,
+        color: colors.ink,
+        fontFamily: colors.fontData,
+        fontSize: 10,
+        formatter: labelFormatter,
+      },
+    };
   }
 
-  function yearFromDays(days, genesis) {
-    const g = Date.parse(genesis + "T00:00:00Z");
-    return new Date(g + days * 86400000).getUTCFullYear();
-  }
-
-  function dateFromDays(days, genesis) {
-    const g = Date.parse(genesis + "T00:00:00Z");
-    return new Date(g + days * 86400000);
-  }
-
-  // Power-law y-axis ticks land on exact decade boundaries (log10 space,
-  // interval: 1), so abbreviation is always a clean "1" + unit, never a
-  // rounding artifact. Director ruling (Fable, mobile-legibility review):
-  // instrument readouts abbreviate ("1.00M" on a multimeter) -- spelled-out,
-  // comma-grouped dollars are prose convention, not instrument convention.
-  // Applies on every viewport, not just mobile: one code path, no
-  // width-measurement JS, kills the whole axis-label-clipping bug class
-  // instead of patching around it per breakpoint. The tooltip keeps full
-  // precision via toLocaleString -- this formatter is for axis graduations
-  // only.
-  function formatAxisDollar(v) {
-    const n = Math.round(v);
-    if (n < 0) return "$" + Math.pow(10, n).toFixed(-n);
-    if (n >= 9) return "$" + Math.pow(10, n - 9).toLocaleString() + "B";
-    if (n >= 6) return "$" + Math.pow(10, n - 6).toLocaleString() + "M";
-    if (n >= 3) return "$" + Math.pow(10, n - 3).toLocaleString() + "K";
-    return "$" + Math.pow(10, n).toLocaleString();
-  }
-
-  const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function formatDateShort(d) {
-    return `${MONTH_ABBR[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
   }
 
-  // One evenly-spaced tick per calendar year, keyed by exact day-offset so the
-  // formatter can look values up directly (ECharts drops the `index` arg it'd
-  // otherwise pass a formatter once `customValues` is set). Log-scale compresses
-  // recent years into a shrinking fraction of the axis width as day-numbers grow,
-  // so per-year is already the practical ceiling for *static* label density near
-  // "today" -- the tooltip formatter below carries exact month/day precision on
-  // hover instead of cramming more static labels into that compressed region.
-  function buildYearTicks(minDay, maxDay, genesis) {
-    const startYear = yearFromDays(minDay, genesis);
-    const endYear = yearFromDays(maxDay, genesis);
-    const ticks = new Map();
-    for (let y = startYear; y <= endYear; y++) {
-      const day = daysSinceGenesis(`${y}-01-01`, genesis);
-      if (day >= minDay && day <= maxDay) ticks.set(day, String(y));
-    }
-    return ticks;
+  function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+    return el;
   }
 
-  // Zoom (director-minimal: `inside` dataZoom adds no visible chrome) --
-  // Shift+wheel or pinch to zoom, double-click/tap resets; see the zoomLock
-  // comment above for why plain wheel/drag no longer get hijacked into
-  // chart-panning. No slider/toolbox, so the screensaver test still applies
-  // cleanly; the interaction hint lives in each chart's caption (visible on
-  // touch, not just a hover-only title attribute).
+  // Loading / error states (director ruling 11): a hairline frame with one
+  // dim line of mono text; --fail only when a fetch genuinely failed.
+  function setChartStatus(id, status, message) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.dataset.status = status;
+    el.dataset.message = message || "";
+  }
+
   function getOrInitChart(id) {
     if (!charts[id]) {
       const el = document.getElementById(id);
       if (!el || typeof echarts === "undefined") return null;
-      const chart = echarts.init(el);
-      el.addEventListener("dblclick", () => {
-        chart.dispatchAction({ type: "dataZoom", start: 0, end: 100 });
-      });
-      charts[id] = chart;
+      charts[id] = echarts.init(el);
     }
     return charts[id];
   }
 
-  // ---------- Power Law Corridor (the hero) ----------
+  // ======================================================================
+  // Power Law Corridor (the hero)
+  // ======================================================================
+
+  function plContext() {
+    const pl = modelsDoc.power_law;
+    const genesis = pl.params.genesis_date;
+    const firstDate = priceHistorySeries.length ? priceHistorySeries[0].date : pl.params.fit_start_date;
+    return {
+      pl,
+      genesis,
+      todayDay: M.dayFromDate(pl.current.date, genesis),
+      firstDay: Math.max(M.dayFromDate(firstDate, genesis), 1),
+      endDay: M.dayFromDate(END_DATE, genesis),
+    };
+  }
+
+  function plWindow(ctx) {
+    if (plState.view) return [plState.view.minDay, plState.view.maxDay];
+    return M.rangeBounds(plState.range, ctx);
+  }
+
+  function clampWindow(minDay, maxDay, ctx) {
+    let span = Math.max(maxDay - minDay, MIN_WINDOW_DAYS);
+    const fullSpan = ctx.endDay - ctx.firstDay;
+    span = Math.min(span, fullSpan);
+    let lo = Math.max(minDay, ctx.firstDay);
+    let hi = lo + span;
+    if (hi > ctx.endDay) {
+      hi = ctx.endDay;
+      lo = hi - span;
+    }
+    return [lo, hi];
+  }
+
+  // Price rows as [day, log10] once per load (the series is ~6k rows).
+  let plPriceCache = null;
+  function plPricePoints(genesis) {
+    if (!plPriceCache) {
+      plPriceCache = priceHistorySeries
+        .filter((r) => r.value > 0)
+        .map((r) => [M.dayFromDate(r.date, genesis), Math.log10(r.value)]);
+    }
+    return plPriceCache;
+  }
+
+  function priceOnDay(day, genesis) {
+    const pts = plPricePoints(genesis);
+    let lo = 0;
+    let hi = pts.length - 1;
+    if (!pts.length || day < pts[0][0] - 1 || day > pts[hi][0] + 1) return null;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (pts[mid][0] < day) lo = mid + 1;
+      else hi = mid;
+    }
+    const cand = [pts[lo], pts[lo - 1]].filter(Boolean);
+    const best = cand.reduce((p, q) => (Math.abs(q[0] - day) < Math.abs(p[0] - day) ? q : p));
+    return Math.abs(best[0] - day) <= 1 ? Math.pow(10, best[1]) : null;
+  }
+
+  function halvingDays(ctx) {
+    const co = modelsDoc.cycle_overlay || {};
+    const out = (co.halving_dates || []).map((d) => ({ day: M.dayFromDate(d, ctx.genesis), label: d, est: false }));
+    if (co.next_halving_est_date) {
+      const est = co.next_halving_est_date.length === 7 ? co.next_halving_est_date + "-15" : co.next_halving_est_date;
+      out.push({ day: M.dayFromDate(est, ctx.genesis), label: co.next_halving_est_date, est: true });
+    }
+    return out;
+  }
 
   function renderPowerLaw(colors) {
     if (!modelsDoc) return;
     const chart = getOrInitChart("power-law-chart");
     if (!chart) return;
-    const pl = modelsDoc.power_law;
-    const genesis = pl.params.genesis_date;
+    const ctx = plContext();
+    const { pl, genesis } = ctx;
+    const mode = plState.timeScale;
+    const X = (day) => M.toX(day, mode);
+    const [minDay, maxDay] = plWindow(ctx);
+    const xMin = X(minDay);
+    const xMax = X(maxDay);
 
-    let filtered = priceHistorySeries;
-    // Cycle-top markers respect the same 1Y/4Y/ALL timeframe as the price
-    // line -- a 1Y view showing zero or one marker is correct, not a bug.
-    let cycleTopsFiltered = pl.cycle_tops || [];
-    if (powerLawRange !== "all") {
-      const years = powerLawRange === "1y" ? 1 : 4;
-      const cutoff = new Date();
-      cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
-      const cutoffStr = cutoff.toISOString().slice(0, 10);
-      filtered = priceHistorySeries.filter((r) => r.date >= cutoffStr);
-      cycleTopsFiltered = cycleTopsFiltered.filter((t) => t.date >= cutoffStr);
-    }
-    // Series values are log10(price), not price, plotted on a linear y-axis
-    // (formatted back to dollars for display) rather than a genuine log
-    // y-axis. This is a workaround for a real ECharts 5.5.1 rendering bug,
-    // not a style choice: stacking two areaStyle line series (the standard
-    // "invisible floor + visible band" technique for filling between two
-    // curves) renders a diagonal compositing artifact instead of the
-    // intended band, on ANY axis type, not just log -- confirmed in
-    // isolation with flat, non-log test data (stack: 'x' on two constant
-    // series produces a diagonal wipe between them instead of a clean
-    // boundary; removing `stack` renders correctly; this is the actual bug,
-    // not "log axes can't be stacked"). The corridor is instead drawn by a
-    // single `type: 'custom'` series whose renderItem builds the ceiling
-    // curve forward and the floor curve backward into one closed polygon,
-    // sidestepping stacking entirely. The log10 transform is kept anyway
-    // (rather than reverting to type:"log") because it makes the corridor's
-    // ±2σ width a constant additive offset instead of a multiplicative one,
-    // which is what the model actually defines it as.
-    const actualPoints = filtered.map((r) => [daysSinceGenesis(r.date, genesis), Math.log10(r.value)]);
-    const todayDay = daysSinceGenesis(pl.current.date, genesis);
-    // Unconfirmed points (the current era's still-open running high) render
-    // dashed/dimmer -- a plotting convention, not a text label, so it stays
-    // inside director rule #7's "no permanent per-marker text on the chart
-    // face" -- the exact numbers live in the tooltip and the table below.
-    const cycleTopPoints = cycleTopsFiltered.map((t) => ({
-      value: [daysSinceGenesis(t.date, genesis), Math.log10(t.price)],
-      itemStyle: t.confirmed ? undefined : { opacity: 0.5, borderType: "dashed" },
-    }));
+    // Visible price (one neighbour either side so the line meets the edges).
+    const allPrice = plPricePoints(genesis);
+    let i0 = allPrice.findIndex((p) => p[0] >= minDay);
+    if (i0 === -1) i0 = allPrice.length;
+    let i1 = i0;
+    while (i1 < allPrice.length && allPrice[i1][0] <= maxDay) i1++;
+    const visiblePrice = allPrice.slice(Math.max(i0 - 1, 0), Math.min(i1 + 1, allPrice.length));
+    const priceData = visiblePrice.map((p) => [X(p[0]), p[1]]);
 
-    const { a, b, sigma } = pl.params;
-    const minDay = Math.max(actualPoints.length ? actualPoints[0][0] : 1, 1);
-    const maxDay = daysSinceGenesis("2035-12-31", genesis);
-    const steps = 80;
-    const trendPoints = [];
-    const floorPoints = [];
-    const ceilPoints = [];
-    for (let i = 0; i <= steps; i++) {
-      const d = minDay * Math.pow(maxDay / minDay, i / steps);
-      const trendLog10 = a + b * Math.log10(d);
-      trendPoints.push([d, trendLog10]);
-      floorPoints.push([d, trendLog10 - 2 * sigma]);
-      ceilPoints.push([d, trendLog10 + 2 * sigma]);
-    }
+    // Model curves sampled evenly in screen space, whichever time scale.
+    const N = 220;
+    const sampleDays = [];
+    for (let i = 0; i <= N; i++) sampleDays.push(M.fromX(xMin + ((xMax - xMin) * i) / N, mode));
+    const off = M.bandOffsets(pl);
+    const { a, b } = pl.params;
+    const curve = (offset) => sampleDays.map((d) => [X(d), M.trendLog10(d, a, b) + offset]);
+    const idle = curve(off.outer[0]);
+    const innerLow = curve(off.inner[0]);
+    const trend = curve(0);
+    const innerHigh = curve(off.inner[1]);
+    const redline = curve(off.outer[1]);
 
-    const yearTicks = buildYearTicks(minDay, maxDay, genesis);
-    const yearTickValues = Array.from(yearTicks.keys());
+    // Trend-uncertainty fan: future only.
+    const fan = pl.trend_uncertainty && pl.trend_uncertainty.fan;
+    const fanDays = sampleDays.filter((d) => M.fanAt(d, fan));
+    const fanLow = fanDays.map((d) => [X(d), Math.log10(M.fanAt(d, fan).low)]);
+    const fanHigh = fanDays.map((d) => [X(d), Math.log10(M.fanAt(d, fan).high)]);
+
+    // Recent-window scenario: drawn from its own fit start onward.
+    const sc = pl.scenario;
+    const scStart = sc ? M.dayFromDate(sc.fit_start_date, genesis) : Infinity;
+    const scenarioData = sc ? sampleDays.filter((d) => d >= scStart).map((d) => [X(d), Math.log10(M.scenarioAt(d, sc))]) : [];
+
+    // <=1-year short-term path (trend + mean-reverting residual).
+    const st = pl.short_term && pl.short_term.path ? pl.short_term.path : [];
+    const stAnchor = [X(ctx.todayDay), Math.log10(pl.current.price)];
+    const stVisible = st.filter((p) => p.day >= minDay && p.day <= maxDay);
+    const stCenter = stVisible.length ? [stAnchor, ...stVisible.map((p) => [X(p.day), Math.log10(p.center)])] : [];
+    const stLow = stVisible.length ? [stAnchor, ...stVisible.map((p) => [X(p.day), Math.log10(p.inner_low)])] : [];
+    const stHigh = stVisible.length ? [stAnchor, ...stVisible.map((p) => [X(p.day), Math.log10(p.inner_high)])] : [];
+
+    const projections = (pl.projections || [])
+      .map((p) => ({ ...p, day: M.dayFromDate(p.date, genesis) }))
+      .filter((p) => p.day >= minDay && p.day <= maxDay);
+
+    const cycleTops = (pl.cycle_tops || [])
+      .map((t) => ({ ...t, day: M.dayFromDate(t.date, genesis) }))
+      .filter((t) => t.day >= minDay && t.day <= maxDay);
+
+    const halvings = halvingDays(ctx).filter((h) => h.day >= minDay && h.day <= maxDay);
+
+    // y auto-fit to everything that can be visible in this window.
+    const ys = [];
+    priceData.forEach((p) => ys.push(p[1]));
+    idle.forEach((p) => ys.push(p[1]));
+    redline.forEach((p) => ys.push(p[1]));
+    fanLow.forEach((p) => ys.push(p[1]));
+    fanHigh.forEach((p) => ys.push(p[1]));
+    let yMin = Math.min(...ys);
+    let yMax = Math.max(...ys);
+    const pad = Math.max((yMax - yMin) * 0.04, 0.02);
+    yMin -= pad;
+    yMax += pad;
+    const yTicks = M.dollarTicks(yMin, yMax);
+
+    // Year ticks thinned by real pixel spacing so labels never collide.
+    const plotWidth = Math.max(chart.getWidth() - 110, 120);
+    const pxPerUnit = plotWidth / (xMax - xMin || 1);
+    const years = M.timeTicks(minDay, maxDay, genesis, (d) => X(d) * pxPerUnit, 44);
+    const yearLabel = new Map(years.map((t) => [X(t.day).toFixed(6), t.label]));
+
+    const accent = colors.accent;
+    const ink = colors.ink;
+    const inkDim = colors.inkDim;
+    const narrow = chart.getWidth() < 560;
+
+    const polygonSeries = (name, upper, lower, fill, z) => ({
+      name,
+      type: "custom",
+      silent: true,
+      z,
+      itemStyle: { color: legendColor[name] || fill },
+      itemStyle: { color: fill },
+      data: upper.length ? [0] : [],
+      renderItem: (params, api) => {
+        const pts = [];
+        for (let i = 0; i < upper.length; i++) pts.push(api.coord(upper[i]));
+        for (let i = lower.length - 1; i >= 0; i--) pts.push(api.coord(lower[i]));
+        return { type: "polygon", shape: { points: pts }, style: { fill } };
+      },
+      tooltip: { show: false },
+    });
+
+    // Legend swatches in the site's own palette (ECharts' default rainbow
+    // palette is off-identity: accent is the only data hue).
+    const legendColor = {
+      Bands: rgba(accent, 0.55),
+      Fan: rgba(accent, 0.8),
+      "Next 12 mo": ink,
+      Scenario: inkDim,
+      Halvings: inkDim,
+      "Cycle tops": accent,
+    };
+    // Lines never show hover dots: the axis pointer + tooltip carry values.
+    const line = (o) =>
+      Object.assign({ type: "line", symbol: "none", showSymbol: false, emphasis: { disabled: true }, labelLayout: { moveOverlap: "shiftY" }, itemStyle: { color: legendColor[o.name] || accent } }, o);
+
+    const edgeLabel = (text, color) => ({ show: !narrow, formatter: text, color, fontFamily: colors.fontData, fontSize: 10 });
+
+    const series = [
+      polygonSeries("Bands", redline, idle, rgba(accent, 0.1), 1),
+      polygonSeries("Bands", innerHigh, innerLow, rgba(accent, 0.18), 1),
+      line({ name: "Bands", data: redline, silent: true, lineStyle: { opacity: 0 }, endLabel: edgeLabel("Redline", inkDim), z: 2 }),
+      line({ name: "Bands", data: idle, silent: true, lineStyle: { opacity: 0 }, endLabel: edgeLabel("Idle", inkDim), z: 2 }),
+      polygonSeries("Fan", fanHigh, fanLow, rgba(accent, 0.07), 2),
+      line({ name: "Fan", data: fanHigh, silent: true, lineStyle: { color: accent, width: 1, type: [4, 4], opacity: 0.6 }, z: 3 }),
+      line({ name: "Fan", data: fanLow, silent: true, lineStyle: { color: accent, width: 1, type: [4, 4], opacity: 0.6 }, z: 3 }),
+      polygonSeries("Next 12 mo", stHigh, stLow, rgba(ink, 0.1), 3),
+      line({ name: "Next 12 mo", data: stCenter, silent: true, lineStyle: { color: ink, width: 1, type: [3, 3], opacity: 0.8 }, z: 4 }),
+      line({
+        name: "Scenario",
+        data: scenarioData,
+        showSymbol: false,
+        silent: true,
+        lineStyle: { color: inkDim, width: 1, type: [1, 3] },
+        endLabel: edgeLabel(sc ? sc.label : "", inkDim),
+        z: 4,
+      }),
+      line({
+        name: "Cruise",
+        data: trend,
+        showSymbol: false,
+        silent: true,
+        lineStyle: { color: accent, width: 1.5 },
+        endLabel: edgeLabel("Cruise", accent),
+        z: 5,
+      }),
+      line({
+        name: "Price",
+        data: priceData,
+        showSymbol: false,
+        silent: true,
+        lineStyle: { color: ink, width: 1.75 },
+        z: 6,
+        markLine: {
+          silent: true,
+          symbol: "none",
+          label: { show: false },
+          lineStyle: { type: [2, 3], color: inkDim, opacity: 0.5, width: 1 },
+          data: ctx.todayDay >= minDay && ctx.todayDay <= maxDay ? [{ xAxis: X(ctx.todayDay) }] : [],
+        },
+        markPoint: {
+          silent: true,
+          symbol: "circle",
+          symbolSize: 8,
+          itemStyle: { color: ink, borderColor: accent, borderWidth: 1.5 },
+          label: { show: false },
+          data: ctx.todayDay >= minDay && ctx.todayDay <= maxDay ? [{ coord: [X(ctx.todayDay), Math.log10(pl.current.price)] }] : [],
+        },
+      }),
+      line({
+        name: "Halvings",
+        data: [],
+        silent: true,
+        markLine: {
+          silent: true,
+          symbol: "none",
+          label: { show: false },
+          lineStyle: { color: inkDim, opacity: 0.35, width: 1, type: [2, 4] },
+          data: halvings.map((h) => ({ xAxis: X(h.day) })),
+        },
+      }),
+      {
+        name: "Projections",
+        type: "scatter",
+        data: projections.map((p) => [X(p.day), Math.log10(p.trend)]),
+        symbol: "diamond",
+        symbolSize: 7,
+        silent: true,
+        itemStyle: { color: "transparent", borderColor: accent, borderWidth: 1.5 },
+        z: 7,
+      },
+      {
+        name: "Cycle tops",
+        type: "scatter",
+        data: cycleTops.map((t) => ({
+          value: [X(t.day), Math.log10(t.price)],
+          itemStyle: t.confirmed ? undefined : { opacity: 0.5, borderType: "dashed" },
+        })),
+        symbol: "circle",
+        symbolSize: 8,
+        silent: true,
+        itemStyle: { color: "transparent", borderColor: accent, borderWidth: 1.5, opacity: 0.85 },
+        z: 7,
+      },
+    ];
+
+    const legendItems = ["Bands", "Fan", "Next 12 mo", "Scenario", "Halvings", "Cycle tops"];
 
     chart.setOption(
       {
         backgroundColor: "transparent",
-        animation: !prefersReducedMotion(),
-        textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        // Percentage margins, not fixed pixels (mobile audit finding): a
-        // fixed 60/50px gutter ate ~110px of a 375px phone screen (over
-        // 1/4 of the hero chart) and never adapted back down on resize
-        // either, since ECharts only recomputes percentage-based grid
-        // margins on .resize() -- fixed pixel ones just sit there. Right
-        // stays wider than left to leave room for the Idle/Cruise/Redline
-        // endLabel text, which renders inside this margin. Left uses
-        // containLabel instead of a guessed percentage/px width: a fixed
-        // guess clipped the "$" (and sometimes a digit) off labels like
-        // $100K on narrow viewports where the guessed gutter came in
-        // narrower than the label actually needed -- containLabel sizes the
-        // reserved space to the real rendered label width instead.
-        grid: { left: 8, right: "13%", top: 20, bottom: 40, containLabel: true },
+        animation: false,
+        textStyle: { fontFamily: colors.fontData, color: inkDim },
+        grid: { left: 8, right: narrow ? 12 : 92, top: narrow ? 62 : 34, bottom: 28, containLabel: true },
+        legend: {
+          data: legendItems.map((name) => ({ name, itemStyle: { color: legendColor[name] }, lineStyle: { color: legendColor[name] } })),
+          top: 0,
+          right: 0,
+          left: narrow ? 0 : "auto",
+          type: "plain",
+          itemWidth: 14,
+          itemHeight: 8,
+          itemGap: 10,
+          textStyle: { color: inkDim, fontSize: 11, fontFamily: colors.fontData },
+          inactiveColor: colors.border,
+          pageIconColor: inkDim,
+          pageTextStyle: { color: inkDim },
+        },
         xAxis: {
-          type: "log",
-          min: minDay,
-          max: maxDay,
+          type: "value",
+          min: xMin,
+          max: xMax,
           axisLine: { lineStyle: { color: colors.border } },
+          axisTick: { customValues: years.map((t) => X(t.day)), lineStyle: { color: colors.border } },
           axisLabel: {
-            color: colors.inkDim,
-            customValues: yearTickValues,
-            formatter: (val) => yearTicks.get(val) || "",
-            hideOverlap: true,
+            color: inkDim,
+            customValues: years.map((t) => X(t.day)),
+            formatter: (v) => yearLabel.get(Number(v).toFixed(6)) || "",
           },
-          axisTick: { customValues: yearTickValues },
           splitLine: { show: false },
+          axisPointer: { label: { formatter: (p) => formatDateShort(M.dateFromDay(M.fromX(p.value, mode), genesis)) } },
         },
         yAxis: {
           type: "value",
-          min: (val) => Math.floor(val.min),
-          max: (val) => Math.ceil(val.max),
-          interval: 1,
+          min: yMin,
+          max: yMax,
           axisLine: { lineStyle: { color: colors.border } },
-          axisLabel: { color: colors.inkDim, formatter: formatAxisDollar },
-          splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
+          axisTick: { customValues: yTicks },
+          axisLabel: { color: inkDim, customValues: yTicks, formatter: (v) => M.formatDollarCompact(Math.pow(10, v)) },
+          splitLine: { show: false },
+          axisPointer: { label: { formatter: (p) => M.formatDollarCompact(Math.pow(10, p.value)) } },
         },
-        series: [
+        // Gridlines drawn as a markLine set on an empty series: ECharts'
+        // splitLine ignores customValues, so a 1-2-5 grid needs this.
+        series: series.concat([
           {
-            name: "Idle (floor)",
+            name: "_grid",
             type: "line",
-            data: floorPoints,
-            showSymbol: false,
-            lineStyle: { opacity: 0 },
+            data: [],
             silent: true,
-            endLabel: { show: true, formatter: "Idle", color: colors.inkDim, fontFamily: colors.fontData, fontSize: 10 },
-          },
-          {
-            name: "Redline (ceiling)",
-            type: "line",
-            data: ceilPoints,
-            showSymbol: false,
-            lineStyle: { opacity: 0 },
-            silent: true,
-            endLabel: { show: true, formatter: "Redline", color: colors.inkDim, fontFamily: colors.fontData, fontSize: 10 },
-          },
-          {
-            name: "Corridor band",
-            type: "custom",
-            silent: true,
-            data: [floorPoints[0]],
-            renderItem: function (params, api) {
-              const points = [];
-              for (let i = 0; i < ceilPoints.length; i++) points.push(api.coord(ceilPoints[i]));
-              for (let i = floorPoints.length - 1; i >= 0; i--) points.push(api.coord(floorPoints[i]));
-              return { type: "polygon", shape: { points }, style: { fill: colors.accent, opacity: 0.12 } };
-            },
-          },
-          {
-            name: "Cruise (trend)",
-            type: "line",
-            data: trendPoints,
-            showSymbol: false,
-            lineStyle: { color: colors.accent, width: 1.5, type: "dashed" },
-            endLabel: { show: true, formatter: "Cruise", color: colors.accent, fontFamily: colors.fontData, fontSize: 10 },
-          },
-          {
-            name: "Price",
-            type: "line",
-            data: actualPoints,
-            showSymbol: false,
-            lineStyle: { color: colors.ink, width: 2 },
             markLine: {
               silent: true,
               symbol: "none",
-              label: {
-                formatter: "Today",
-                color: colors.inkDim,
-                fontFamily: colors.fontData,
-                fontSize: 10,
-                position: "insideEndTop",
-              },
-              lineStyle: { type: "dashed", color: colors.inkDim, opacity: 0.6, width: 1 },
-              data: [{ xAxis: todayDay }],
-            },
-            markPoint: {
-              silent: true,
-              symbol: "circle",
-              symbolSize: 8,
-              itemStyle: { color: colors.ink, borderColor: colors.accent, borderWidth: 1.5 },
               label: { show: false },
-              data: [{ coord: [todayDay, Math.log10(pl.current.price)] }],
+              lineStyle: { color: colors.border, opacity: 0.45, width: 1, type: "solid" },
+              data: yTicks.map((v) => ({ yAxis: v })),
             },
+            z: 0,
           },
-          {
-            name: "Cycle tops",
-            type: "scatter",
-            data: cycleTopPoints,
-            symbol: "circle",
-            symbolSize: 8,
-            itemStyle: { color: "transparent", borderColor: colors.accent, borderWidth: 1.5, opacity: 0.85 },
-            emphasis: { scale: 1.3 },
-            // Its reading joins the shared axis tooltip below (via a
-            // proximity check against the hovered day) rather than trying to
-            // show its own per-series item tooltip -- ECharts' nearest-point
-            // matching for a ~9-point series sharing an axis with dense
-            // (Price, ~5800pt) and sparse-but-continuous (bands, 81pt) series
-            // proved unreliable to hit exactly, especially deep in the
-            // historical region. Visually it's still its own dedicated,
-            // non-silent series (director requirement) -- only the tooltip
-            // wiring is folded into the one proven formatter below.
-            tooltip: { show: false },
-          },
-        ],
+        ]),
         tooltip: baseTooltip(colors, {
           trigger: "axis",
-          formatter: (params) => {
-            if (!params || !params.length) return "";
-            const day = params[0].axisValue;
-            // Fixed high-to-low order regardless of the series-declaration
-            // order ECharts hands back in params (Idle, Redline, Corridor
-            // band, Cruise, Price) -- matches the endLabel/legend reading
-            // order on the chart itself. "Corridor band" is intentionally
-            // absent: it's a single-dummy-point fill series, not a real
-            // per-date value.
-            const order = ["Redline (ceiling)", "Cruise (trend)", "Idle (floor)", "Price"];
-            const bySeries = new Map(params.map((p) => [p.seriesName, p]));
-            const rows = order
-              .filter((name) => bySeries.has(name))
-              .map((name) => {
-                const p = bySeries.get(name);
-                return `${p.marker} ${p.seriesName}: $${Math.round(Math.pow(10, p.data[1])).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-              });
-            // A cycle-top reading joins the box only when the hovered day is
-            // genuinely close to one -- 20 days is imperceptible on a chart
-            // spanning 2010-2035, so this can't misfire onto an unrelated
-            // date. Picks the CLOSEST candidate, not the first-in-date-order
-            // one: two real tops (2013-11-30 and 2013-12-05) sit only 5 days
-            // apart, both within a naive threshold check of each other.
-            const HOVER_MATCH_DAYS = 20;
-            let nearTop = null;
-            let nearTopDistance = Infinity;
-            for (const t of cycleTopsFiltered) {
-              const distance = Math.abs(daysSinceGenesis(t.date, genesis) - day);
-              if (distance <= HOVER_MATCH_DAYS && distance < nearTopDistance) {
-                nearTop = t;
-                nearTopDistance = distance;
-              }
-            }
-            if (nearTop) {
-              const sign = nearTop.sigma_vs_trend >= 0 ? "+" : "";
-              const suffix = nearTop.confirmed ? "" : ` -- ${cycleTopStatus(nearTop)}`;
-              // Carries its own date rather than relying on the header above
-              // (which shows whatever calendar date the axis snapped the
-              // hover to -- for a sparse marker that can land a day off the
-              // marker's own real date).
-              const topDate = formatDateShort(new Date(nearTop.date + "T00:00:00Z"));
-              rows.push(`○ Cycle top (${topDate}): $${Math.round(nearTop.price).toLocaleString()} (${sign}${nearTop.sigma_vs_trend.toFixed(2)}σ vs trend)${suffix}`);
-            }
-            return `${formatDateShort(dateFromDays(day, genesis))}<br/>${rows.join("<br/>")}`;
-          },
+          axisPointer: crossPointer(colors),
+          formatter: (params) => powerLawTooltip(params, ctx, mode),
         }),
+        toolbox: {
+          show: true,
+          itemSize: 0,
+          showTitle: false,
+          right: -100,
+          feature: { dataZoom: { yAxisIndex: "none", brushStyle: { borderColor: inkDim, borderWidth: 1, color: rgba(accent, 0.06) } } },
+        },
         dataZoom: [
-          { type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false },
-          { type: "inside", yAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false },
+          {
+            type: "inside",
+            xAxisIndex: 0,
+            filterMode: "none",
+            zoomLock: !(plState.focused || COARSE_POINTER),
+            zoomOnMouseWheel: true,
+            moveOnMouseMove: COARSE_POINTER,
+            moveOnMouseWheel: "shift",
+            // The axis min/max above already ARE the zoomed window, so the
+            // dataZoom itself always resets to the full axis extent.
+            start: 0,
+            end: 100,
+          },
         ],
       },
-      true
+      // Merge (not notMerge): a full replace on every zoom step disposed the
+      // tooltip mid-hover (ECharts then threw on its pending reposition).
+      // Series are replaced wholesale; legend selection persists by merge.
+      { replaceMerge: ["series"] }
     );
 
-    const statsEl = document.getElementById("power-law-stats");
-    if (statsEl) {
-      statsEl.textContent = `b=${pl.params.b} · R²=${pl.params.r_squared} · σ=${pl.params.sigma} · last refit ${modelsDoc.generated_at.slice(0, 10)} · ${pl.current.deviation_pct}% vs trend`;
+    // Drag-to-box-zoom on fine pointers (director ruling 2). On touch, a
+    // drag pans and a pinch zooms instead.
+    if (!COARSE_POINTER) {
+      chart.dispatchAction({ type: "takeGlobalCursor", key: "dataZoomSelect", dataZoomSelectActive: true });
     }
 
-    const summaryEl = document.getElementById("power-law-summary");
-    if (summaryEl) {
-      const dev = pl.current.deviation_pct;
-      const direction = dev >= 0 ? "above" : "below";
-      summaryEl.textContent = `Today: price is about ${Math.abs(dev).toFixed(0)}% ${direction} the long-run trend line -- ${describeCorridorPosition(dev, sigma)}.`;
-    }
-
-    const cycleTopsSummaryEl = document.getElementById("power-law-cycle-tops-summary");
-    if (cycleTopsSummaryEl) cycleTopsSummaryEl.textContent = describeCycleTops(pl);
-
-    renderCycleTopsTable(pl);
+    setChartStatus("power-law-chart", "ready");
+    updatePowerLawText(ctx);
+    updatePowerLawAria(ctx, minDay, maxDay);
   }
 
-  // Plain-language read of where today's price sits in the corridor, for
-  // readers who aren't going to parse "b=5.62 -51.54% vs trend" -- derived
-  // from the same deviation_pct/sigma the calibration plate already shows,
-  // not a new number.
-  function describeCorridorPosition(deviationPct, sigma) {
-    const logRatio = Math.log10(1 + deviationPct / 100);
-    const fraction = Math.min(Math.max((logRatio + 2 * sigma) / (4 * sigma), 0), 1);
-    if (fraction <= 0.15) return "at the corridor floor (Idle)";
-    if (fraction <= 0.4) return "in the lower half of the corridor";
-    if (fraction <= 0.6) return "near the trend line (Cruise)";
-    if (fraction <= 0.85) return "in the upper half of the corridor";
+  function powerLawTooltip(params, ctx, mode) {
+    if (!params || !params.length) return "";
+    const { pl, genesis } = ctx;
+    const xValue = params[0].axisValue;
+    const day = M.fromX(xValue, mode);
+    if (!(day > 0)) return "";
+    const m = M.modelAt(day, pl);
+    const future = day > ctx.todayDay + 0.5;
+    const rows = [];
+    const row = (label, value, dim) => rows.push(`<span style="opacity:${dim ? 0.7 : 1}">${label}</span> ${value}`);
+    row("Redline", M.formatDollarFull(m.redline));
+    row("Cruise ", M.formatDollarFull(m.trend));
+    row("Idle   ", M.formatDollarFull(m.idle));
+    const price = priceOnDay(day, genesis);
+    if (price != null) row("Price  ", M.formatDollarFull(price));
+    const fan = M.fanAt(day, pl.trend_uncertainty && pl.trend_uncertainty.fan);
+    if (future && fan) row("Trend range", `${M.formatDollarCompact(fan.low)}–${M.formatDollarCompact(fan.high)}`, true);
+    const st = future ? M.shortTermAt(day, pl.short_term) : null;
+    if (st) row("Next-12-mo path", `${M.formatDollarCompact(st.center)} (${M.formatDollarCompact(st.inner_low)}–${M.formatDollarCompact(st.inner_high)})`, true);
+    if (pl.scenario && day >= M.dayFromDate(pl.scenario.fit_start_date, genesis)) row(pl.scenario.label, M.formatDollarFull(M.scenarioAt(day, pl.scenario)), true);
+
+    const near = (list, getDay, tol) => {
+      let best = null;
+      list.forEach((item) => {
+        const dist = Math.abs(getDay(item) - day);
+        if (dist <= tol && (!best || dist < best.dist)) best = { item, dist };
+      });
+      return best && best.item;
+    };
+    const tol = Math.max(10, (day * 0.004));
+    const top = near(pl.cycle_tops || [], (t) => M.dayFromDate(t.date, genesis), tol);
+    if (top) {
+      const sign = top.sigma_vs_trend >= 0 ? "+" : "";
+      rows.push(`○ Cycle top ${formatDateShort(new Date(top.date + "T00:00:00Z"))}: ${M.formatDollarFull(top.price)} (${sign}${top.sigma_vs_trend.toFixed(2)}σ)`);
+    }
+    const halving = near(halvingDays(ctx), (h) => h.day, tol * 2);
+    if (halving) rows.push(`┆ Halving ${halving.est ? halving.label + " (est.)" : formatDateShort(new Date(halving.label + "T00:00:00Z"))}`);
+    if (future) rows.push(`<span style="opacity:0.7">projection · uncertainty widens with distance</span>`);
+    return `${formatDateShort(M.dateFromDay(day, genesis))}<br/>${rows.join("<br/>")}`;
+  }
+
+  // ---------- power-law text, controls, lookup, export ----------
+
+  function bandCoverageText() {
+    const pl = modelsDoc.power_law;
+    const cov = pl.bands && pl.bands.in_sample_coverage;
+    const oneYear = backtestDoc && backtestDoc.horizons ? backtestDoc.horizons.find((h) => h.horizon_days === 365) : null;
+    const parts = [];
+    if (cov) parts.push(`Idle–Redline holds ${M.pct(cov.outer)} of history, the inner band ${M.pct(cov.inner)}`);
+    if (oneYear) parts.push(`tested forward, the 1-year trend forecast has typically missed by ×${oneYear.trend_mae_factor.toFixed(1)} and landed inside Idle–Redline ${M.pct(oneYear.coverage_outer)} of the time`);
+    return parts.join("; ");
+  }
+
+  function describeCorridorPosition(ctx) {
+    const { pl } = ctx;
+    const m = M.modelAt(ctx.todayDay, pl);
+    const pos = (Math.log10(pl.current.price) - Math.log10(m.idle)) / (Math.log10(m.redline) - Math.log10(m.idle));
+    if (pos <= 0.05) return "at the corridor floor (Idle)";
+    if (pl.current.price < m.innerLow) return "below the inner band, in the lower part of the corridor";
+    if (pl.current.price <= m.innerHigh) return "inside the inner band around the trend";
+    if (pos < 0.95) return "above the inner band, in the upper part of the corridor";
     return "at the corridor ceiling (Redline)";
   }
 
-  // Always-visible one-liner (director ruling, Fable, 2026-07-26): describes
-  // the cycle-top markers without editorializing in either direction. Worded
-  // as a standing historical fact ("Historically, ...") rather than "the
-  // small markers show" -- the latter would misdescribe a 1Y/4Y zoom where
-  // most of these points aren't currently drawn on the chart at all. The
-  // "each era topped lower than the last" framing is only used when
-  // cycle_top_era_maxima_sigma is genuinely non-increasing AND every cited
-  // value is genuinely above trend on THIS refit -- both are observed
-  // properties of the data, not rules this code assumes hold.
+  function ordinal(n) {
+    const v = Math.round(n);
+    const s = ["th", "st", "nd", "rd"];
+    const r = v % 100;
+    return v + (s[(r - 20) % 10] || s[r] || s[0]);
+  }
+
+  function updatePowerLawText(ctx) {
+    const { pl } = ctx;
+    const p = pl.params;
+    setText("power-law-stats", `b ${p.b.toFixed(2)} · R² ${p.r_squared.toFixed(3)} · σ ${p.sigma.toFixed(2)} · refit ${modelsDoc.generated_at.slice(0, 10).replace(/-/g, "\u2011")}`);
+
+    const dev = pl.current.deviation_pct;
+    const co = modelsDoc.cycle_overlay && modelsDoc.cycle_overlay.current_epoch;
+    const headline = [
+      `${M.formatDollarFull(pl.current.price)}`,
+      `${Math.abs(dev).toFixed(0)}% ${dev >= 0 ? "above" : "below"} trend`,
+      `${ordinal(pl.current.residual_percentile)} percentile of history`,
+    ];
+    if (co) headline.push(`halving cycle ${Math.round(co.pct_complete_of_avg_epoch)}% through`);
+    setText("power-law-headline", headline.join(" · "));
+
+    setText(
+      "power-law-summary",
+      `Today price is ${describeCorridorPosition(ctx)}. The model's Cruise line reaches ${projectionPhrase(pl)}.`
+    );
+    setText("power-law-cycle-tops-summary", describeCycleTops(pl));
+    setText("power-law-bands-note", bandCoverageText());
+    renderCycleTopsTable(pl);
+    renderProjectionTable(ctx);
+  }
+
+  function projectionPhrase(pl) {
+    const p2030 = (pl.projections || []).find((p) => p.date.startsWith("2030"));
+    if (!p2030) return "its published projections below";
+    let text = `${M.formatDollarCompact(p2030.trend)} on Jan 1, 2030 (trend range ${M.formatDollarCompact(p2030.trend_low)}–${M.formatDollarCompact(p2030.trend_high)}; Idle–Redline ${M.formatDollarCompact(p2030.floor)}–${M.formatDollarCompact(p2030.ceiling)})`;
+    if (pl.scenario) {
+      const scDay = M.dayFromDate("2030-01-01", pl.params.genesis_date);
+      text += `; the ${pl.scenario.label} says ${M.formatDollarCompact(M.scenarioAt(scDay, pl.scenario))}`;
+    }
+    return text;
+  }
+
+  function renderProjectionTable(ctx) {
+    const tbody = document.getElementById("power-law-projections-tbody");
+    if (!tbody) return;
+    tbody.textContent = "";
+    (ctx.pl.projections || []).forEach((p) => {
+      const tr = document.createElement("tr");
+      [
+        p.date.slice(0, 4),
+        M.formatDollarCompact(p.floor),
+        M.formatDollarCompact(p.trend),
+        M.formatDollarCompact(p.ceiling),
+        `${M.formatDollarCompact(p.trend_low)}–${M.formatDollarCompact(p.trend_high)}`,
+      ].forEach((text) => {
+        const td = document.createElement("td");
+        td.className = "numeral";
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updatePowerLawAria(ctx, minDay, maxDay) {
+    const el = document.getElementById("power-law-chart");
+    if (!el) return;
+    const from = M.isoFromDay(minDay, ctx.genesis);
+    const to = M.isoFromDay(maxDay, ctx.genesis);
+    el.setAttribute(
+      "aria-label",
+      `Power law corridor chart, ${from} to ${to}, ${plState.timeScale === "cal" ? "calendar" : "logarithmic"} time axis. ` +
+        `Current price ${M.formatDollarFull(ctx.pl.current.price)}, trend ${M.formatDollarFull(ctx.pl.current.trend_price)}. ` +
+        "Use plus and minus to zoom, arrow keys to pan, 0 to reset. Projection values are listed in the table below the chart."
+    );
+  }
+
+  // Cycle-top copy (unchanged in substance from the 2026-07-26 ruling; the
+  // Redline threshold now comes from the empirical band, not a fixed 2σ).
   function describeCycleTops(pl) {
     const maxima = pl.cycle_top_era_maxima_sigma || [];
     if (maxima.length < 2) return "";
     const first = maxima[0];
     const last = maxima[maxima.length - 1];
     if (first.sigma_vs_trend <= 0 || last.sigma_vs_trend <= 0) return "";
-
-    const fmtSigma = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}σ`;
-    const firstYear = new Date(first.date + "T00:00:00Z").getUTCFullYear();
+    const fmt = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}σ`;
+    const firstYear = first.date.slice(0, 4);
     const monotonic = maxima.every((m, i) => i === 0 || m.sigma_vs_trend <= maxima[i - 1].sigma_vs_trend + 1e-9);
-
     return monotonic
-      ? `Historically, each halving era's biggest run above this same trend line has been smaller than the one before it -- from about ${fmtSigma(first.sigma_vs_trend)} in ${firstYear} to ${fmtSigma(last.sigma_vs_trend)} so far this era.`
-      : `Historically, each halving era's biggest run above this same trend line has varied -- about ${fmtSigma(first.sigma_vs_trend)} in ${firstYear}, ${fmtSigma(last.sigma_vs_trend)} so far this era.`;
+      ? `Each halving era's biggest run above trend has been smaller than the last -- from ${fmt(first.sigma_vs_trend)} in ${firstYear} to ${fmt(last.sigma_vs_trend)} so far this era.`
+      : `Each halving era's biggest run above trend has varied -- ${fmt(first.sigma_vs_trend)} in ${firstYear}, ${fmt(last.sigma_vs_trend)} so far this era.`;
   }
 
-  // The most recent DATE (not just year -- two same-year points can have
-  // different status) whose cycle-top point reached/exceeded the +2σ
-  // Redline band, PROVIDED nothing more recent has matched it -- returns
-  // null (nothing shown) the moment a newer point reaches Redline again, so
-  // this can't go stale into a false claim on a future refit.
-  function redlineFreeSinceDate(tops) {
-    const REDLINE_SIGMA = 2.0;
-    let lastAtOrAboveIndex = -1;
+  function redlineSigma(pl) {
+    const off = M.bandOffsets(pl);
+    return pl.params.sigma ? off.outer[1] / pl.params.sigma : 2;
+  }
+
+  function redlineFreeSinceDate(pl) {
+    const tops = pl.cycle_tops || [];
+    const threshold = redlineSigma(pl);
+    let lastAt = -1;
     tops.forEach((t, i) => {
-      if (t.sigma_vs_trend >= REDLINE_SIGMA) lastAtOrAboveIndex = i;
+      if (t.sigma_vs_trend >= threshold) lastAt = i;
     });
-    if (lastAtOrAboveIndex === -1 || lastAtOrAboveIndex === tops.length - 1) return null;
-    return tops[lastAtOrAboveIndex].date;
-  }
-
-  function describeCycleTopsCaveat(pl) {
-    const base =
-      "That's an observed pattern in past data, measured against today's fitted trend -- not a law, and nothing prevents a future cycle from breaking it in either direction.";
-    const sinceDate = redlineFreeSinceDate(pl.cycle_tops || []);
-    if (!sinceDate) return base;
-    return `${base} No cycle top since ${formatDateShort(new Date(sinceDate + "T00:00:00Z"))} has reached the Redline band.`;
+    if (lastAt === -1 || lastAt === tops.length - 1) return null;
+    return tops[lastAt].date;
   }
 
   const CYCLE_TOP_KIND_LABEL = {
@@ -531,29 +718,23 @@
     unconfirmed_top: "unconfirmed top",
   };
 
-  // Every confirmed:false entry carries drawdown_so_far_pct (computed
-  // uniformly in fit_models.py regardless of kind) -- but it isn't always a
-  // genuine drawdown: an era's peak-SIGMA day isn't necessarily its
-  // peak-PRICE day, so a later, higher-dollar point in the same era can make
-  // this negative (price has since risen past it, not fallen from it).
   function cycleTopStatus(t) {
     const label = CYCLE_TOP_KIND_LABEL[t.kind] || t.kind;
     if (t.confirmed) return label;
     const dd = t.drawdown_so_far_pct;
-    const change = dd >= 0 ? `down ${dd}% since` : `up ${Math.abs(dd)}% since`;
-    return `${label} so far (${change})`;
+    return `${label} so far (${dd >= 0 ? `down ${dd}% since` : `up ${Math.abs(dd)}% since`})`;
   }
 
   function renderCycleTopsTable(pl) {
     const tbody = document.getElementById("power-law-cycle-tops-tbody");
     if (tbody) {
-      tbody.innerHTML = ""; // clear only -- rows below are built with createElement/textContent, not markup strings
+      tbody.textContent = "";
       (pl.cycle_tops || []).forEach((t) => {
         const tr = document.createElement("tr");
         const sign = t.sigma_vs_trend >= 0 ? "+" : "";
         [
           [formatDateShort(new Date(t.date + "T00:00:00Z")), true],
-          [`$${Math.round(t.price).toLocaleString()}`, true],
+          [M.formatDollarFull(t.price), true],
           [`${sign}${t.sigma_vs_trend.toFixed(2)}σ`, true],
           [cycleTopStatus(t), false],
         ].forEach(([text, numeral]) => {
@@ -565,233 +746,512 @@
         tbody.appendChild(tr);
       });
     }
+    const base =
+      "An observed pattern in past data, measured against today's fitted trend -- not a law; a future cycle can break it in either direction.";
+    const since = redlineFreeSinceDate(pl);
+    setText("power-law-cycle-tops-caveat", since ? `${base} No cycle top since ${formatDateShort(new Date(since + "T00:00:00Z"))} has reached Redline.` : base);
+  }
 
-    const caveatEl = document.getElementById("power-law-cycle-tops-caveat");
-    if (caveatEl) caveatEl.textContent = describeCycleTopsCaveat(pl);
+  function syncPowerLawControls() {
+    document.querySelectorAll("[data-power-law-range]").forEach((b) => {
+      const active = !plState.view && b.dataset.powerLawRange === plState.range;
+      b.classList.toggle("is-active", active);
+      b.setAttribute("aria-pressed", String(active));
+    });
+    document.querySelectorAll("[data-power-law-time]").forEach((b) => {
+      const active = b.dataset.powerLawTime === plState.timeScale;
+      b.classList.toggle("is-active", active);
+      b.setAttribute("aria-pressed", String(active));
+    });
+    try {
+      const next = M.serializeViewState(window.location.search, plState);
+      window.history.replaceState(null, "", next + window.location.hash);
+    } catch (e) {
+      /* file:// or sandboxed iframe -- sharing state is a convenience only */
+    }
+  }
+
+  function rerenderPowerLaw() {
+    renderPowerLaw(colorTokens());
+    syncPowerLawControls();
+  }
+
+  // Zoom/pan in the CURRENT axis space (log or calendar), so "zoom in"
+  // always means the same visual amount whichever scale is showing.
+  function zoomPowerLaw(factor, centerFrac) {
+    if (!modelsDoc) return;
+    const ctx = plContext();
+    const mode = plState.timeScale;
+    const [lo, hi] = plWindow(ctx);
+    const xLo = M.toX(lo, mode);
+    const xHi = M.toX(hi, mode);
+    const c = xLo + (xHi - xLo) * (centerFrac == null ? 0.5 : centerFrac);
+    const nLo = c - (c - xLo) * factor;
+    const nHi = c + (xHi - c) * factor;
+    const [minDay, maxDay] = clampWindow(M.fromX(nLo, mode), M.fromX(nHi, mode), ctx);
+    plState.view = { minDay, maxDay };
+    rerenderPowerLaw();
+  }
+
+  function panPowerLaw(frac) {
+    if (!modelsDoc) return;
+    const ctx = plContext();
+    const mode = plState.timeScale;
+    const [lo, hi] = plWindow(ctx);
+    const xLo = M.toX(lo, mode);
+    const xHi = M.toX(hi, mode);
+    const shift = (xHi - xLo) * frac;
+    const span = hi - lo;
+    let nLo = M.fromX(xLo + shift, mode);
+    let nHi = M.fromX(xHi + shift, mode);
+    if (nLo < ctx.firstDay) {
+      nLo = ctx.firstDay;
+      nHi = mode === "cal" ? nLo + span : M.fromX(M.toX(nLo, mode) + (xHi - xLo), mode);
+    }
+    if (nHi > ctx.endDay) {
+      nHi = ctx.endDay;
+      nLo = mode === "cal" ? nHi - span : M.fromX(M.toX(nHi, mode) - (xHi - xLo), mode);
+    }
+    const [minDay, maxDay] = clampWindow(nLo, nHi, ctx);
+    plState.view = { minDay, maxDay };
+    rerenderPowerLaw();
+  }
+
+  function resetPowerLawView() {
+    plState.view = null;
+    rerenderPowerLaw();
+  }
+
+  // ECharts' own wheel / pinch / box-zoom fire `datazoom`; translate the
+  // resulting window back into our view state and re-render (which also
+  // re-fits y and re-thins the tick labels) on the next frame.
+  let pendingZoomFrame = 0;
+  function onPowerLawDataZoom() {
+    if (pendingZoomFrame) return;
+    pendingZoomFrame = requestAnimationFrame(() => {
+      pendingZoomFrame = 0;
+      const chart = charts["power-law-chart"];
+      if (!chart || !modelsDoc) return;
+      const dz = (chart.getOption().dataZoom || []).find((z) => z.xAxisIndex != null || z.xAxisId != null) || chart.getOption().dataZoom[0];
+      const opt = chart.getOption();
+      const xAxis = opt.xAxis[0];
+      const startV = dz && dz.startValue != null ? dz.startValue : xAxis.min;
+      const endV = dz && dz.endValue != null ? dz.endValue : xAxis.max;
+      if (startV == null || endV == null || endV <= startV) return;
+      const ctx = plContext();
+      const [minDay, maxDay] = clampWindow(M.fromX(startV, plState.timeScale), M.fromX(endV, plState.timeScale), ctx);
+      plState.view = { minDay, maxDay };
+      rerenderPowerLaw();
+    });
+  }
+
+  function setPowerLawFocus(focused) {
+    plState.focused = focused;
+    const chart = charts["power-law-chart"];
+    if (!chart) return;
+    const dz = chart.getOption().dataZoom || [];
+    chart.setOption({ dataZoom: dz.map(() => ({ zoomLock: !(focused || COARSE_POINTER) })) });
+    if (focused) showZoomHint();
+  }
+
+  function showZoomHint() {
+    let seen = false;
+    try {
+      seen = window.localStorage.getItem(ZOOM_HINT_KEY) === "1";
+      window.localStorage.setItem(ZOOM_HINT_KEY, "1");
+    } catch (e) {
+      /* storage blocked -- show the hint, just don't remember it */
+    }
+    if (seen) return;
+    const hint = document.getElementById("power-law-zoom-hint");
+    if (!hint) return;
+    hint.hidden = false;
+    setTimeout(() => {
+      hint.hidden = true;
+    }, 3500);
   }
 
   function initPowerLawControls() {
     document.querySelectorAll("[data-power-law-range]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        powerLawRange = btn.dataset.powerLawRange;
-        // Render before flipping is-active/aria-pressed: if the render fails
-        // or no-ops (data not loaded yet), the control must not claim a
-        // range the chart isn't actually showing.
-        renderPowerLaw(colorTokens());
-        document.querySelectorAll("[data-power-law-range]").forEach((b) => {
-          b.classList.toggle("is-active", b === btn);
-          b.setAttribute("aria-pressed", String(b === btn));
-        });
+        plState.range = btn.dataset.powerLawRange;
+        plState.view = null;
+        rerenderPowerLaw();
       });
     });
+    document.querySelectorAll("[data-power-law-time]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        plState.timeScale = btn.dataset.powerLawTime;
+        rerenderPowerLaw();
+      });
+    });
+    document.querySelectorAll("[data-power-law-zoom]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const action = btn.dataset.powerLawZoom;
+        if (action === "in") zoomPowerLaw(0.6);
+        else if (action === "out") zoomPowerLaw(1 / 0.6);
+        else if (action === "left") panPowerLaw(-0.25);
+        else if (action === "right") panPowerLaw(0.25);
+        else resetPowerLawView();
+      });
+    });
+
+    const el = document.getElementById("power-law-chart");
+    if (el) {
+      el.addEventListener("focus", () => setPowerLawFocus(true));
+      el.addEventListener("blur", () => setPowerLawFocus(false));
+      el.addEventListener("pointerdown", () => {
+        if (document.activeElement !== el) el.focus({ preventScroll: true });
+      });
+      el.addEventListener("dblclick", resetPowerLawView);
+      el.addEventListener("keydown", (e) => {
+        const keys = { "+": () => zoomPowerLaw(0.6), "=": () => zoomPowerLaw(0.6), "-": () => zoomPowerLaw(1 / 0.6), _: () => zoomPowerLaw(1 / 0.6), 0: resetPowerLawView, ArrowLeft: () => panPowerLaw(-0.15), ArrowRight: () => panPowerLaw(0.15) };
+        const fn = keys[e.key];
+        if (fn) {
+          e.preventDefault();
+          fn();
+        }
+        if (e.key === "Escape") el.blur();
+      });
+    }
+
+    initLookup();
+    initExport();
+    syncPowerLawControls();
   }
 
-  // ---------- 4-Year Cycle Overlay ----------
+  // G5: model at a date / when a price is reached.
+  function initLookup() {
+    const dateInput = document.getElementById("lookup-date");
+    const priceInput = document.getElementById("lookup-price");
+    if (dateInput) {
+      dateInput.addEventListener("input", () => {
+        if (!modelsDoc) return;
+        const ctx = plContext();
+        const v = dateInput.value;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+          setText("lookup-date-out", "");
+          return;
+        }
+        const day = M.dayFromDate(v, ctx.genesis);
+        if (day < 1) {
+          setText("lookup-date-out", "before Bitcoin existed");
+          return;
+        }
+        const m = M.modelAt(day, ctx.pl);
+        const fan = M.fanAt(day, ctx.pl.trend_uncertainty && ctx.pl.trend_uncertainty.fan);
+        const price = priceOnDay(day, ctx.genesis);
+        let text = `Idle ${M.formatDollarFull(m.idle)} · Cruise ${M.formatDollarFull(m.trend)} · Redline ${M.formatDollarFull(m.redline)}`;
+        if (fan) text += ` · trend range ${M.formatDollarCompact(fan.low)}–${M.formatDollarCompact(fan.high)}`;
+        if (price != null) text += ` · actual ${M.formatDollarFull(price)}`;
+        setText("lookup-date-out", text);
+      });
+    }
+    if (priceInput) {
+      priceInput.addEventListener("input", () => {
+        if (!modelsDoc) return;
+        const ctx = plContext();
+        const price = Number(String(priceInput.value).replace(/[$,\s]/g, ""));
+        if (!(price > 0)) {
+          setText("lookup-price-out", "");
+          return;
+        }
+        const days = M.crossingDays(price, ctx.pl);
+        const fmt = (d) => (d == null ? "–" : d <= ctx.todayDay ? `${formatDateShort(M.dateFromDay(d, ctx.genesis))} (past)` : formatDateShort(M.dateFromDay(d, ctx.genesis)));
+        setText("lookup-price-out", `Redline line reaches it ${fmt(days.redline)} · Cruise ${fmt(days.trend)} · Idle ${fmt(days.idle)}`);
+      });
+    }
+  }
+
+  // G8: PNG / CSV / link.
+  function initExport() {
+    const png = document.getElementById("power-law-export-png");
+    const csv = document.getElementById("power-law-export-csv");
+    const link = document.getElementById("power-law-copy-link");
+    const download = (href, name) => {
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    };
+    if (png) {
+      png.addEventListener("click", (e) => {
+        e.preventDefault();
+        const chart = charts["power-law-chart"];
+        if (!chart) return;
+        download(chart.getDataURL({ type: "png", pixelRatio: 2, backgroundColor: "#020804" }), "btc-power-law-corridor.png");
+      });
+    }
+    if (csv) {
+      csv.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (!modelsDoc) return;
+        const ctx = plContext();
+        const [minDay, maxDay] = plWindow(ctx);
+        const step = Math.max(1, Math.round((maxDay - minDay) / 2000));
+        const rows = [];
+        for (let d = Math.ceil(minDay); d <= maxDay; d += step) {
+          const m = M.modelAt(d, ctx.pl);
+          const price = priceOnDay(d, ctx.genesis);
+          rows.push([M.isoFromDay(d, ctx.genesis), price == null ? "" : price.toFixed(2), m.idle.toFixed(2), m.innerLow.toFixed(2), m.trend.toFixed(2), m.innerHigh.toFixed(2), m.redline.toFixed(2)]);
+        }
+        const body = M.toCsv(["date", "price_usd", "idle", "inner_low", "cruise", "inner_high", "redline"], rows);
+        download(URL.createObjectURL(new Blob([body], { type: "text/csv" })), "btc-power-law-corridor.csv");
+      });
+    }
+    if (link) {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const url = window.location.origin + window.location.pathname + M.serializeViewState(window.location.search, plState) + "#power-law-card";
+        const done = () => {
+          link.textContent = "link copied";
+          setTimeout(() => (link.textContent = "copy link"), 2000);
+        };
+        if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, () => window.prompt("Copy this link", url));
+        else window.prompt("Copy this link", url);
+      });
+    }
+  }
+
+  // ======================================================================
+  // 4-Year Cycle Overlay -- log "x since halving" (director ruling 10)
+  // ======================================================================
 
   function renderCycleOverlay(colors) {
     const chart = getOrInitChart("cycle-overlay-chart");
     if (!chart) return;
     const epochs = modelsDoc.cycle_overlay.epochs;
-
-    // Historical cycles all render in the same muted --ink-dim tone, dimmer
-    // for older cycles and brighter for more recent ones (an ordinal recency
-    // ramp, not a hue-per-index palette) -- the old palette assigned --ok to
-    // one historical line, and --ok is literally the same hex as --accent, so
-    // that cycle and the live one were rendering in an identical color.
-    const historicalEpochs = epochs.filter((e) => !e.is_current);
-    const historicalOpacity = (epoch) => {
-      const i = historicalEpochs.indexOf(epoch);
-      const n = Math.max(historicalEpochs.length - 1, 1);
-      return 0.35 + (0.4 * i) / n;
+    const historical = epochs.filter((e) => !e.is_current);
+    const opacityFor = (epoch) => {
+      const i = historical.indexOf(epoch);
+      return 0.35 + (0.4 * i) / Math.max(historical.length - 1, 1);
     };
+    const toLogMult = (pct) => Math.log10(Math.max(1 + pct / 100, 0.01));
+    const ys = [];
 
     const series = epochs.map((epoch) => {
       const year = epoch.halving_date.slice(0, 4);
       const color = epoch.is_current ? colors.accent : colors.inkDim;
-      const opacity = epoch.is_current ? 1 : historicalOpacity(epoch);
-      const lastIdx = epoch.days_since_halving.length - 1;
+      const opacity = epoch.is_current ? 1 : opacityFor(epoch);
+      const data = epoch.days_since_halving.map((d, j) => {
+        const y = toLogMult(epoch.pct_performance[j]);
+        ys.push(y);
+        return [d, y];
+      });
+      const last = data[data.length - 1];
       const s = {
         name: year,
         type: "line",
         showSymbol: false,
-        data: epoch.days_since_halving.map((d, j) => [d, epoch.pct_performance[j]]),
+        data,
         lineStyle: { width: epoch.is_current ? 2.5 : 1.25, color, opacity },
         itemStyle: { color },
         z: epoch.is_current ? 10 : 1,
-        endLabel: {
-          show: true,
-          formatter: () => year,
-          color,
-          opacity: epoch.is_current ? 1 : Math.min(opacity + 0.25, 1),
-          fontFamily: colors.fontData,
-          fontSize: 11,
-        },
+        endLabel: { show: true, formatter: () => year, color, opacity: epoch.is_current ? 1 : Math.min(opacity + 0.25, 1), fontFamily: colors.fontData, fontSize: 11 },
         emphasis: { focus: "series", lineStyle: { opacity: 1, width: epoch.is_current ? 2.5 : 2 } },
         blur: { lineStyle: { opacity: 0.12 } },
       };
-      if (epoch.is_current) {
+      if (epoch.is_current && last) {
         s.markPoint = {
           silent: true,
           symbol: "circle",
           symbolSize: 9,
           itemStyle: { color: colors.accent, borderColor: colors.ink, borderWidth: 1.5 },
-          label: {
-            show: true,
-            formatter: () => `${epoch.pct_performance[lastIdx].toFixed(0)}%`,
-            color: colors.ink,
-            fontFamily: colors.fontData,
-            fontSize: 11,
-            position: "top",
-            distance: 6,
-          },
-          data: [{ coord: [epoch.days_since_halving[lastIdx], epoch.pct_performance[lastIdx]] }],
+          label: { show: true, formatter: () => `×${Math.pow(10, last[1]).toFixed(2)}`, color: colors.ink, fontFamily: colors.fontData, fontSize: 11, position: "top", distance: 6 },
+          data: [{ coord: last }],
+        };
+        s.markLine = {
+          silent: true,
+          symbol: "none",
+          label: { show: false },
+          lineStyle: { color: colors.inkDim, type: [2, 3], opacity: 0.6, width: 1 },
+          data: [{ yAxis: 0 }],
         };
       }
       return s;
     });
+
+    const yMin = Math.min(...ys, 0) - 0.05;
+    const yMax = Math.max(...ys) + 0.1;
+    const ticks = M.dollarTicks(yMin, yMax);
+    const fmtMult = (v) => {
+      const m = Math.pow(10, v);
+      return "×" + (m >= 10 ? Math.round(m).toLocaleString("en-US") : Number(m.toPrecision(2)).toString());
+    };
 
     chart.setOption(
       {
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        // containLabel: same clipping-prevention fix as the hero chart's
-        // grid (see its comment) -- swept across all four charts.
         grid: { left: 8, right: 45, top: 30, bottom: 35, containLabel: true },
-        // 2012's +10,000% cycle otherwise owns the whole y-axis, squashing
-        // every later cycle (including the current one) into a flat line
-        // near 0%. Deselected by default, not hidden -- its legend chip is
-        // still there, one tap away, so nothing is actually removed from
-        // the chart, just given sane default axis scale.
-        legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 }, selected: { 2012: false } },
+        legend: { top: 0, itemWidth: 14, itemHeight: 8, icon: "roundRect", textStyle: { color: colors.inkDim, fontSize: 11 }, inactiveColor: colors.border },
         labelLayout: { moveOverlap: "shiftY" },
         xAxis: {
           type: "value",
           name: "days since halving",
           nameLocation: "middle",
           nameGap: 22,
+          min: 0,
+          max: 1461,
+          interval: 365,
           axisLine: { lineStyle: { color: colors.border } },
           axisLabel: { color: colors.inkDim },
           splitLine: { show: false },
         },
         yAxis: {
           type: "value",
-          axisLabel: { color: colors.inkDim, formatter: "{value}%" },
+          min: yMin,
+          max: yMax,
+          axisLabel: { color: colors.inkDim, customValues: ticks, formatter: fmtMult },
+          axisTick: { customValues: ticks },
           axisLine: { lineStyle: { color: colors.border } },
-          splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
+          splitLine: { show: false },
         },
         series,
-        tooltip: baseTooltip(colors, { trigger: "axis", valueFormatter: (v) => v.toFixed(1) + "%" }),
-        dataZoom: [
-          { type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false },
-          { type: "inside", yAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false },
-        ],
+        tooltip: baseTooltip(colors, {
+          trigger: "axis",
+          axisPointer: { type: "line", lineStyle: { color: colors.inkDim, opacity: 0.5, type: [2, 3] } },
+          formatter: (params) => {
+            if (!params.length) return "";
+            const day = Math.round(params[0].axisValue);
+            const rows = params
+              .filter((p) => p.data)
+              .map((p) => `${p.marker} ${p.seriesName}: ×${Math.pow(10, p.data[1]).toFixed(2)}`);
+            return `day ${day} after halving<br/>${rows.join("<br/>")}`;
+          },
+        }),
       },
       true
     );
+    setChartStatus("cycle-overlay-chart", "ready");
 
-    const statsEl = document.getElementById("cycle-overlay-stats");
     const current = modelsDoc.cycle_overlay.current_epoch;
-    if (statsEl && current) {
-      const sign = current.pct_performance >= 0 ? "+" : "";
-      statsEl.textContent = `${current.pct_complete_of_avg_epoch}% of the way through this cycle · ${sign}${current.pct_performance}% since halving`;
+    if (current) {
+      const mult = 1 + current.pct_performance / 100;
+      setText("cycle-overlay-stats", `${Math.round(current.pct_complete_of_avg_epoch)}% through · ×${mult.toFixed(2)} since halving`);
+      const el = document.getElementById("cycle-overlay-chart");
+      if (el) el.setAttribute("aria-label", `Cycle overlay: the current cycle is ${current.days_into_epoch} days past its halving, up ×${mult.toFixed(2)}, ranked at the ${current.cycle_percentile_vs_prior_epochs}th percentile of prior cycles at the same point.`);
     }
   }
 
-  // ---------- Mayer Multiple / 200WMA strip ----------
+  // ======================================================================
+  // Mayer Multiple / 200-week MA -- two stacked panels (director ruling 10)
+  // ======================================================================
 
   function renderMayerAnd200wma(colors) {
     const chart = getOrInitChart("mayer-200wma-chart");
     if (!chart) return;
-    const mayerSeries = modelsDoc.mayer_multiple.series.map((r) => [r.date, r.value]);
-    const wmaDistanceSeries = modelsDoc.wma_200.series.map((r) => [r.date, r.distance_pct]);
+    const priceData = priceHistorySeries.filter((r) => r.value > 0).map((r) => [r.date, Math.log10(r.value)]);
+    const wmaData = modelsDoc.wma_200.series.map((r) => [r.date, Math.log10(r.wma_200w)]);
+    const mayerData = modelsDoc.mayer_multiple.series.map((r) => [r.date, r.value]);
+    const ys = priceData.map((p) => p[1]);
+    const yMin = Math.floor(Math.min(...ys));
+    const yMax = Math.ceil(Math.max(...ys));
+    const ticks = M.dollarTicks(yMin, yMax);
+    const zoneColor = rgba(colors.inkDim, 0.08);
 
     chart.setOption(
       {
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        // containLabel: same clipping-prevention fix as the hero chart's
-        // grid (see its comment) -- swept across all four charts.
-        grid: { left: 8, right: 50, top: 30, bottom: 35, containLabel: true },
-        legend: { top: 0, textStyle: { color: colors.inkDim, fontSize: 11 } },
-        xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
-        // No axis `name` on either side (director ruling, mobile-legibility
-        // review): a value-axis name duplicating a legend item duplicating
-        // the plate-stats line above the chart fails the screensaver test
-        // on any viewport, and on narrow ones it collided with the legend
-        // outright. The right axis's `%` formatter already disambiguates
-        // which axis is which.
+        axisPointer: { link: [{ xAxisIndex: "all" }] },
+        legend: { top: 0, itemWidth: 14, itemHeight: 8, icon: "roundRect", textStyle: { color: colors.inkDim, fontSize: 11 }, inactiveColor: colors.border, data: ["Price", "200-week MA", "Mayer"] },
+        grid: [
+          { left: 8, right: 16, top: 30, height: "50%", containLabel: true },
+          { left: 8, right: 16, top: "70%", bottom: 28, containLabel: true },
+        ],
+        xAxis: [
+          { type: "time", gridIndex: 0, axisLabel: { show: false }, axisLine: { lineStyle: { color: colors.border } }, axisTick: { show: false } },
+          { type: "time", gridIndex: 1, axisLabel: { color: colors.inkDim }, axisLine: { lineStyle: { color: colors.border } } },
+        ],
         yAxis: [
-          { type: "value", position: "left", axisLabel: { color: colors.inkDim }, splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } } },
-          { type: "value", position: "right", axisLabel: { color: colors.inkDim, formatter: "{value}%" }, splitLine: { show: false } },
+          {
+            type: "value",
+            gridIndex: 0,
+            min: yMin,
+            max: yMax,
+            axisLabel: { color: colors.inkDim, customValues: ticks, formatter: (v) => M.formatDollarCompact(Math.pow(10, v)) },
+            axisTick: { customValues: ticks },
+            splitLine: { show: false },
+          },
+          {
+            type: "value",
+            gridIndex: 1,
+            min: 0,
+            max: 6,
+            interval: 2,
+            axisLabel: { color: colors.inkDim, formatter: (v) => v.toFixed(0) },
+            splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
+          },
         ],
         series: [
+          { name: "Price", type: "line", xAxisIndex: 0, yAxisIndex: 0, showSymbol: false, data: priceData, lineStyle: { color: colors.ink, width: 1.25 }, itemStyle: { color: colors.ink } },
+          { name: "200-week MA", type: "line", xAxisIndex: 0, yAxisIndex: 0, showSymbol: false, data: wmaData, lineStyle: { color: colors.accent, width: 1.5 }, itemStyle: { color: colors.accent } },
           {
-            // Short, plate-stats-vocabulary legend labels ("Mayer 0.8662 ..."
-            // above already uses this exact wording) -- fits one legend row
-            // at mobile widths without wrapping or colliding.
             name: "Mayer",
             type: "line",
-            showSymbol: false,
-            data: mayerSeries,
-            lineStyle: { color: colors.accent, width: 1.5 },
-            itemStyle: { color: colors.accent },
-            yAxisIndex: 0,
-            markLine: {
-              silent: true,
-              symbol: "none",
-              lineStyle: { type: "dashed", color: colors.inkDim, opacity: 0.6, width: 1 },
-              // Label cut, line kept (director ruling): "price = 200-day avg"
-              // is explanatory prose sitting on the plot face, off-identity
-              // per the mono-is-the-machine/sans-is-the-human typography
-              // rule -- the info panel already explains Mayer=1.0 the same
-              // way. A bare hairline at the axis's %-formatted zero line
-              // reads as the reference point on its own.
-              label: { show: false },
-              data: [{ yAxis: 1 }],
-            },
-          },
-          {
-            name: "200WMA dist",
-            type: "line",
-            showSymbol: false,
-            data: wmaDistanceSeries,
-            lineStyle: { color: colors.ink, width: 1 },
-            itemStyle: { color: colors.ink },
+            xAxisIndex: 1,
             yAxisIndex: 1,
+            showSymbol: false,
+            data: mayerData,
+            lineStyle: { color: colors.accent, width: 1.25 },
+            itemStyle: { color: colors.accent },
+            markArea: { silent: true, itemStyle: { color: zoneColor }, data: [[{ yAxis: 0 }, { yAxis: 0.8 }], [{ yAxis: 2.4 }, { yAxis: 6 }]] },
+            markLine: { silent: true, symbol: "none", label: { show: false }, lineStyle: { type: [2, 3], color: colors.inkDim, opacity: 0.6, width: 1 }, data: [{ yAxis: 1 }] },
           },
         ],
-        tooltip: baseTooltip(colors, { trigger: "axis" }),
-        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false }],
+        tooltip: baseTooltip(colors, {
+          trigger: "axis",
+          axisPointer: { type: "line", lineStyle: { color: colors.inkDim, opacity: 0.5, type: [2, 3] } },
+          formatter: (params) => {
+            if (!params.length) return "";
+            const date = formatDateShort(new Date(params[0].axisValue));
+            const rows = params.map((p) => {
+              const v = p.data[1];
+              const text = p.seriesName === "Mayer" ? v.toFixed(2) : M.formatDollarFull(Math.pow(10, v));
+              return `${p.marker} ${p.seriesName}: ${text}`;
+            });
+            return `${date}<br/>${rows.join("<br/>")}`;
+          },
+        }),
+        dataZoom: [{ type: "inside", xAxisIndex: [0, 1], filterMode: "none", zoomLock: !COARSE_POINTER, moveOnMouseMove: false }],
       },
       true
     );
+    setChartStatus("mayer-200wma-chart", "ready");
 
-    const statsEl = document.getElementById("mayer-200wma-stats");
     const mayer = modelsDoc.mayer_multiple.current;
     const wma = modelsDoc.wma_200.current;
-    if (statsEl && mayer && wma) {
-      statsEl.textContent = `Mayer ${mayer.multiple} (${mayer.percentile}th pctile) · 200WMA dist ${wma.distance_pct}%`;
-    }
-
-    const summaryEl = document.getElementById("mayer-200wma-summary");
-    if (summaryEl && mayer) {
+    if (mayer && wma) {
+      setText("mayer-200wma-stats", `Mayer ${mayer.multiple.toFixed(2)} (${ordinal(mayer.percentile)} pctile) · ${wma.distance_pct >= 0 ? "+" : ""}${wma.distance_pct.toFixed(0)}% vs 200WMA`);
       const pctFromAvg = (mayer.multiple - 1) * 100;
-      const direction = pctFromAvg >= 0 ? "above" : "below";
-      summaryEl.textContent = `Mayer Multiple is ${mayer.multiple} -- price is about ${Math.abs(pctFromAvg).toFixed(0)}% ${direction} its own 200-day average.`;
+      const sig = signalLine("mayer_multiple");
+      setText(
+        "mayer-200wma-summary",
+        `Price is ${Math.abs(pctFromAvg).toFixed(0)}% ${pctFromAvg >= 0 ? "above" : "below"} its 200-day average and ${Math.abs(wma.distance_pct).toFixed(0)}% ${wma.distance_pct >= 0 ? "above" : "below"} its 200-week average.${sig}`
+      );
     }
   }
 
-  // ---------- Market Sentiment (Fear & Greed history) ----------
-  // Replaces the former "Deviation Dial" (director ruling, 2026-07-09):
-  // that composite averaged three percentile ranks and was labeled a toy
-  // in its own methodology note, presenting a non-model with model-grade
-  // visual weight. Fear & Greed is real, sourced daily data -- but it's
-  // sentiment, not valuation, so the card says so and the classification
-  // zones render as dim reference bands (--panel-border, graduated
-  // opacity), never accent -- rule 4 stays accent-as-data-only even for a
-  // "zone," since these are structural reference chrome, not a reading.
+  function signalLine(name) {
+    if (!backtestDoc) return "";
+    const s = (backtestDoc.signals || []).find((x) => x.signal === name);
+    if (!s || s.spearman_vs_fwd_1y == null) return "";
+    const r = s.spearman_vs_fwd_1y;
+    const strength = Math.abs(r) < 0.2 ? "little" : Math.abs(r) < 0.4 ? "some" : "a fairly strong";
+    const direction = r < 0 ? "high readings were followed by lower returns" : "high readings were, if anything, followed by higher returns";
+    return ` Tested point-in-time since ${s.first_origin.slice(0, 4)}, this has had ${strength} relationship with the next year's return (rank corr. ${r.toFixed(2)}: ${direction}).`;
+  }
+
+  // ======================================================================
+  // Market Sentiment (Fear & Greed history)
+  // ======================================================================
+  // Sentiment, not valuation. Zones are dim reference bands (never accent);
+  // their names live on a right-hand axis so they never sit on the data.
   const SENTIMENT_ZONES = [
     { from: 0, to: 25, opacity: 0.18, label: "Extreme Fear" },
     { from: 25, to: 45, opacity: 0.1, label: "Fear" },
@@ -803,81 +1263,257 @@
   function renderMarketSentiment(colors) {
     const chart = getOrInitChart("market-sentiment-chart");
     if (!chart) return;
-    const points = fngHistorySeries.map((r) => [r.date, r.value]);
+    if (!fngHistorySeries.length) {
+      setChartStatus("market-sentiment-chart", "error", "sentiment history unavailable");
+      return;
+    }
+    const values = fngHistorySeries.map((r) => r.value);
+    const smoothed = M.movingAverage(values, sentimentSmoothing);
+    const points = fngHistorySeries.map((r, i) => [r.date, smoothed[i] == null ? null : Number(smoothed[i].toFixed(1))]);
+    const zoneMids = SENTIMENT_ZONES.map((z) => (z.from + z.to) / 2);
+    const zoneByMid = new Map(SENTIMENT_ZONES.map((z) => [(z.from + z.to) / 2, z.label]));
+    const narrow = chart.getWidth() < 420;
 
     chart.setOption(
       {
         backgroundColor: "transparent",
         animation: !prefersReducedMotion(),
         textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
-        // containLabel: same clipping-prevention fix as the hero chart's
-        // grid (see its comment) -- swept across all four charts.
-        grid: { left: 8, right: 20, top: 20, bottom: 35, containLabel: true },
+        grid: { left: 8, right: narrow ? 44 : 78, top: 14, bottom: 30, containLabel: true },
         xAxis: { type: "time", axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim } },
-        yAxis: {
-          type: "value",
-          min: 0,
-          max: 100,
-          axisLine: { lineStyle: { color: colors.border } },
-          axisLabel: { color: colors.inkDim },
-          splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } },
-        },
+        yAxis: [
+          { type: "value", min: 0, max: 100, interval: 25, axisLine: { lineStyle: { color: colors.border } }, axisLabel: { color: colors.inkDim }, splitLine: { show: false } },
+          {
+            type: "value",
+            min: 0,
+            max: 100,
+            position: "right",
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { show: false },
+            axisLabel: { color: colors.inkDim, fontSize: 9, margin: 6, customValues: zoneMids, formatter: (v) => (narrow ? (zoneByMid.get(v) || "").replace("Extreme ", "Ext. ") : zoneByMid.get(v) || "") },
+          },
+        ],
         series: [
           {
             name: "Fear & Greed",
             type: "line",
             showSymbol: false,
+            connectNulls: false,
             data: points,
-            lineStyle: { color: colors.accent, width: 1.5 },
+            lineStyle: { color: colors.accent, width: 1.25 },
+            itemStyle: { color: colors.accent },
             markArea: {
               silent: true,
-              label: {
-                show: true,
-                formatter: "{b}",
-                position: "insideTop",
-                color: colors.inkDim,
-                fontFamily: colors.fontData,
-                fontSize: 9,
-              },
-              data: SENTIMENT_ZONES.map((z) => [
-                { yAxis: z.from, name: z.label, itemStyle: { color: colors.border, opacity: z.opacity } },
-                { yAxis: z.to },
-              ]),
+              label: { show: false },
+              data: SENTIMENT_ZONES.map((z) => [{ yAxis: z.from, itemStyle: { color: colors.border, opacity: z.opacity } }, { yAxis: z.to }]),
             },
           },
         ],
-        tooltip: baseTooltip(colors, { trigger: "axis" }),
-        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !CHARTS_COARSE_POINTER, moveOnMouseMove: false }],
+        tooltip: baseTooltip(colors, {
+          trigger: "axis",
+          axisPointer: { type: "line", lineStyle: { color: colors.inkDim, opacity: 0.5, type: [2, 3] } },
+          formatter: (params) => {
+            const p = params[0];
+            if (!p) return "";
+            const idx = p.dataIndex;
+            const raw = fngHistorySeries[idx];
+            const smooth = sentimentSmoothing > 1 && p.data[1] != null ? ` (${sentimentSmoothing}-day avg ${p.data[1]})` : "";
+            return `${formatDateShort(new Date(raw.date + "T00:00:00Z"))}<br/>${raw.value} · ${raw.classification}${smooth}`;
+          },
+        }),
+        dataZoom: [{ type: "inside", xAxisIndex: 0, filterMode: "none", zoomLock: !COARSE_POINTER, moveOnMouseMove: false }],
       },
       true
     );
+    setChartStatus("market-sentiment-chart", "ready");
 
-    const statsEl = document.getElementById("market-sentiment-stats");
-    const latest = fngHistorySeries.length ? fngHistorySeries[fngHistorySeries.length - 1] : null;
-    if (statsEl && latest) {
-      statsEl.textContent = `${latest.value} · ${latest.classification} · as of ${latest.date}`;
-    }
+    const latest = fngHistorySeries[fngHistorySeries.length - 1];
+    setText("market-sentiment-stats", `${latest.value} · ${latest.classification} · ${latest.date}`);
+    document.querySelectorAll("[data-sentiment-window]").forEach((b) => {
+      const active = Number(b.dataset.sentimentWindow) === sentimentSmoothing;
+      b.classList.toggle("is-active", active);
+      b.setAttribute("aria-pressed", String(active));
+    });
   }
 
-  // ---------- lifecycle ----------
+  function initSentimentControls() {
+    document.querySelectorAll("[data-sentiment-window]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        sentimentSmoothing = Number(btn.dataset.sentimentWindow);
+        if (modelsDoc) renderMarketSentiment(colorTokens());
+      });
+    });
+  }
+
+  // ======================================================================
+  // Track Record -- the model graded against reality (director ruling 8)
+  // ======================================================================
+
+  function renderTrackRecord(colors) {
+    if (!backtestDoc) {
+      setChartStatus("track-record-chart", "error", "backtest unavailable");
+      return;
+    }
+    const oneYear = backtestDoc.horizons.find((h) => h.horizon_days === 365);
+    if (oneYear) {
+      setText(
+        "track-record-stats",
+        `1y miss ×${oneYear.trend_mae_factor.toFixed(1)} · bias ${oneYear.trend_bias_pct >= 0 ? "+" : ""}${oneYear.trend_bias_pct.toFixed(0)}% · band hit ${M.pct(oneYear.coverage_outer)}`
+      );
+    }
+
+    const chart = getOrInitChart("track-record-chart");
+    if (chart) {
+      const rows = backtestDoc.miss_by_year || [];
+      chart.setOption(
+        {
+          backgroundColor: "transparent",
+          animation: false,
+          textStyle: { fontFamily: colors.fontData, color: colors.inkDim },
+          grid: { left: 8, right: 8, top: 12, bottom: 22, containLabel: true },
+          xAxis: { type: "category", data: rows.map((r) => String(r.year).slice(2)), axisLabel: { color: colors.inkDim, fontSize: 10, formatter: (v) => "'" + v }, axisLine: { lineStyle: { color: colors.border } }, axisTick: { show: false } },
+          yAxis: { type: "value", min: 1, axisLabel: { color: colors.inkDim, fontSize: 10, formatter: (v) => "×" + v }, splitLine: { lineStyle: { color: colors.border, opacity: 0.3 } } },
+          series: [
+            {
+              type: "bar",
+              data: rows.map((r) => r.mae_factor),
+              itemStyle: { color: rgba(colors.accent, 0.6) },
+              barMaxWidth: 14,
+              markLine: { silent: true, symbol: "none", label: { show: false }, lineStyle: { type: [2, 3], color: colors.inkDim, width: 1 }, data: [{ yAxis: 1 }] },
+            },
+          ],
+          tooltip: baseTooltip(colors, {
+            trigger: "axis",
+            formatter: (params) => {
+              const r = rows[params[0].dataIndex];
+              return `forecasts made in ${r.year} (1y ahead)<br/>typical miss ×${r.mae_factor.toFixed(2)} · bias ${r.bias_pct >= 0 ? "+" : ""}${r.bias_pct.toFixed(0)}%`;
+            },
+          }),
+        },
+        true
+      );
+      setChartStatus("track-record-chart", "ready");
+    }
+
+    const tbody = document.getElementById("track-record-tbody");
+    if (tbody) {
+      tbody.textContent = "";
+      backtestDoc.horizons.forEach((h) => {
+        const tr = document.createElement("tr");
+        [`${Math.round(h.horizon_days / 365)}y`, `×${h.trend_mae_factor.toFixed(2)}`, `×${h.random_walk_mae_factor.toFixed(2)}`, M.pct(h.coverage_outer), `~${Math.round(h.approx_independent_windows)}`].forEach((text) => {
+          const td = document.createElement("td");
+          td.className = "numeral";
+          td.textContent = text;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    renderLedger();
+    renderSignals();
+  }
+
+  function renderLedger() {
+    const tbody = document.getElementById("ledger-tbody");
+    if (!tbody) return;
+    tbody.textContent = "";
+    const entries = (ledgerDoc && ledgerDoc.entries) || [];
+    const rows = [];
+    entries
+      .slice()
+      .reverse()
+      .forEach((e) =>
+        e.horizons.forEach((h) => rows.push({ issued: e.issued, h }))
+      );
+    rows.slice(0, 12).forEach(({ issued, h }) => {
+      const tr = document.createElement("tr");
+      const outcome = h.outcome
+        ? `${M.formatDollarCompact(h.outcome.actual)} (×${h.outcome.miss_factor.toFixed(2)}${h.outcome.inside_outer ? "" : ", outside band"})`
+        : `due ${h.target_date}`;
+      [issued, `${Math.round(h.horizon_days / 365)}y`, M.formatDollarCompact(h.trend), `${M.formatDollarCompact(h.floor)}–${M.formatDollarCompact(h.ceiling)}`, outcome].forEach((text, i) => {
+        const td = document.createElement("td");
+        if (i < 4) td.className = "numeral";
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    const matured = rows.filter((r) => r.h.outcome).length;
+    setText(
+      "ledger-note",
+      ledgerDoc && ledgerDoc.started
+        ? `Live ledger started ${ledgerDoc.started}: one forecast frozen per month, never edited. ${matured ? `${matured} matured so far.` : "The first one matures a year after it was made -- until then this only proves the forecasts were recorded in advance."}`
+        : ""
+    );
+  }
+
+  const SIGNAL_LABELS = {
+    power_law_z_realtime: "Distance from power-law trend (point-in-time)",
+    wma200_distance: "Distance from 200-week MA",
+    price_vs_hashrate_fit: "Price vs hash-rate fit",
+    mayer_multiple: "Mayer Multiple",
+    fear_greed: "Fear & Greed",
+  };
+
+  function renderSignals() {
+    const tbody = document.getElementById("signals-tbody");
+    if (!tbody || !backtestDoc) return;
+    tbody.textContent = "";
+    (backtestDoc.signals || [])
+      .slice()
+      .sort((p, q) => Math.abs(q.spearman_vs_fwd_1y || 0) - Math.abs(p.spearman_vs_fwd_1y || 0))
+      .forEach((s) => {
+        const tr = document.createElement("tr");
+        [SIGNAL_LABELS[s.signal] || s.signal, s.spearman_vs_fwd_1y == null ? "–" : s.spearman_vs_fwd_1y.toFixed(2), s.first_origin ? s.first_origin.slice(0, 4) : "–", s.approx_independent_windows == null ? "–" : `~${Math.round(s.approx_independent_windows)}`].forEach((text, i) => {
+          const td = document.createElement("td");
+          if (i > 0) td.className = "numeral";
+          td.textContent = text;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+  }
+
+  // ======================================================================
+  // lifecycle
+  // ======================================================================
+
+  function safely(id, fn) {
+    try {
+      fn();
+    } catch (err) {
+      console.error(`${id} failed to render`, err);
+      setChartStatus(id, "error", "chart failed to render");
+    }
+  }
 
   function renderAll() {
     if (!modelsDoc) return;
     const colors = colorTokens();
-    renderPowerLaw(colors);
-    renderCycleOverlay(colors);
-    renderMayerAnd200wma(colors);
-    renderMarketSentiment(colors);
+    safely("power-law-chart", () => renderPowerLaw(colors));
+    safely("cycle-overlay-chart", () => renderCycleOverlay(colors));
+    safely("mayer-200wma-chart", () => renderMayerAnd200wma(colors));
+    safely("market-sentiment-chart", () => renderMarketSentiment(colors));
+    safely("track-record-chart", () => renderTrackRecord(colors));
+    syncPowerLawControls();
+    // Hovering one time-axis chart moves the crosshair on the other
+    // (director ruling 11). Cycle overlay (days-since-halving) and the
+    // power-law chart (log/day axis) aren't calendar axes, so they stay out.
+    const linked = ["mayer-200wma-chart", "market-sentiment-chart"].map((id) => charts[id]).filter(Boolean);
+    if (linked.length === 2) {
+      linked.forEach((c) => (c.group = "ber-time"));
+      echarts.connect("ber-time");
+    }
   }
 
   function resizeAll() {
     Object.values(charts).forEach((c) => c && c.resize());
+    // Year-tick thinning depends on width, so the hero re-renders.
+    if (modelsDoc && charts["power-law-chart"]) renderPowerLaw(colorTokens());
   }
 
-  // Coalesces the resize storm mobile browsers fire when the URL bar
-  // collapses/expands on scroll -- without this, every one of those events
-  // was calling .resize() (a real layout recompute) on up to 4 chart
-  // instances back to back.
   function debounce(fn, ms) {
     let timer = null;
     return function debounced(...args) {
@@ -899,46 +1535,56 @@
     });
   }
 
+  const CHART_IDS = ["power-law-chart", "cycle-overlay-chart", "mayer-200wma-chart", "market-sentiment-chart", "track-record-chart"];
+
   let loadStarted = false;
   async function loadAndRender() {
     if (loadStarted) return;
     loadStarted = true;
+    CHART_IDS.forEach((id) => setChartStatus(id, "loading", "loading model…"));
     initPowerLawControls();
+    initSentimentControls();
 
-    const [echartsResult, modelsResult, priceResult, fngResult] = await Promise.allSettled([
+    const [echartsResult, modelsResult, priceResult, fngResult, backtestResult, ledgerResult] = await Promise.allSettled([
       loadEchartsScript(),
       fetchJSON("data/models.json"),
       fetchJSON("data/history/price_daily.json"),
       fetchJSON("data/history/fng_daily.json"),
+      fetchJSON("data/backtest.json"),
+      fetchJSON("data/forecasts.json"),
     ]);
 
     if (echartsResult.status === "rejected") {
-      console.warn("ECharts unavailable -- projections section stays empty", echartsResult.reason);
+      console.warn("ECharts unavailable", echartsResult.reason);
+      CHART_IDS.forEach((id) => setChartStatus(id, "error", "chart library failed to load -- the numbers above and the tables below still stand"));
       return;
     }
     if (modelsResult.status === "rejected") {
-      console.warn("models.json unavailable -- projections section stays empty", modelsResult.reason);
+      console.warn("models.json unavailable", modelsResult.reason);
+      CHART_IDS.forEach((id) => setChartStatus(id, "error", "model data failed to load"));
       return;
     }
     modelsDoc = modelsResult.value;
-    // Partial failure on either history file still renders every chart that
-    // doesn't depend on it, same "never blank the rest of the page over one
-    // failure" spirit as the live-snapshot failover chains.
     if (priceResult.status === "fulfilled") priceHistorySeries = priceResult.value.series || [];
-    else console.warn("price_daily.json unavailable -- power law chart's actual-price line stays empty", priceResult.reason);
+    else console.warn("price_daily.json unavailable", priceResult.reason);
     if (fngResult.status === "fulfilled") fngHistorySeries = fngResult.value.series || [];
-    else console.warn("fng_daily.json unavailable -- market sentiment chart stays empty", fngResult.reason);
+    else console.warn("fng_daily.json unavailable", fngResult.reason);
+    if (backtestResult.status === "fulfilled") backtestDoc = backtestResult.value;
+    if (ledgerResult.status === "fulfilled") ledgerDoc = ledgerResult.value;
 
     renderAll();
+    const pl = charts["power-law-chart"];
+    if (pl) {
+      pl.on("datazoom", onPowerLawDataZoom);
+      pl.on("legendselectchanged", () => {});
+    }
+    // Canvas text is drawn once; if the web font arrives after first paint,
+    // redraw so axis labels don't stay in a fallback face.
+    if (document.fonts && document.fonts.status !== "loaded") {
+      document.fonts.ready.then(() => renderAll());
+    }
   }
 
-  // Price Models is below the fold on every viewport, mobile especially --
-  // defer the ~340KB(gz) ECharts CDN script and this module's own data
-  // fetches until the user is actually approaching the section instead of
-  // paying for both on every page load regardless of whether anyone scrolls
-  // that far (see IMPROVEMENT_BACKLOG.md). rootMargin starts the load while
-  // the section is still a scroll away so charts are ready, not popping in
-  // mid-scroll.
   const lazySection = document.getElementById("power-law-card");
   if (lazySection && "IntersectionObserver" in window) {
     const observer = new IntersectionObserver(
@@ -956,4 +1602,7 @@
   }
 
   window.addEventListener("resize", debounce(resizeAll, 150));
+
+  // Test hook (Playwright E2E): read-only view of state, no behaviour.
+  BER.chartsDebug = { plState, charts: () => charts };
 })();
