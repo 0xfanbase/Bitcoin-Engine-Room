@@ -38,8 +38,46 @@
           "outcome": null
         }
       ]
+    },
+    {
+      "issued": "2026-10-01",
+      "price_at_issue": 83930.0,
+      "a": -16.208972,
+      "b": 5.601918,
+      "horizons": [
+        {
+          "horizon_days": 365,
+          "target_date": "2027-10-01",
+          "trend": 189006.0,
+          "inner_low": 97196.49,
+          "inner_high": 395949.3,
+          "floor": 76386.49,
+          "ceiling": 1000828.31,
+          "outcome": null
+        },
+        {
+          "horizon_days": 730,
+          "target_date": "2028-09-30",
+          "trend": 252851.19,
+          "inner_low": 130028.93,
+          "inner_high": 529698.82,
+          "floor": 102189.44,
+          "ceiling": 1338902.65,
+          "outcome": null
+        },
+        {
+          "horizon_days": 1461,
+          "target_date": "2030-10-01",
+          "trend": 434319.23,
+          "inner_low": 223349.02,
+          "inner_high": 909856.83,
+          "floor": 175529.48,
+          "ceiling": 2299815.83,
+          "outcome": null
+        }
+      ]
     }
   ],
   "started": "2026-09-30",
-  "updated_at": "2026-09-30"
+  "updated_at": "2026-10-01"
 }

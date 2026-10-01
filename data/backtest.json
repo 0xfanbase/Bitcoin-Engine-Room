@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-01T02:30:05Z",
-  "data_through": "2026-09-30",
+  "generated_at": "2026-10-01T13:46:42Z",
+  "data_through": "2026-10-01",
   "method": {
     "origins": "first of every month from 2013-01-01, refit on data strictly before each origin",
     "error_unit": "log10(actual / forecast); *_mae_factor = 10^mean|error| (x2.0 = typically off by a factor of 2 either way)",
@@ -10,41 +10,41 @@
   "horizons": [
     {
       "horizon_days": 365,
-      "n_origins": 153,
+      "n_origins": 154,
       "approx_independent_windows": 12.8,
-      "trend_mae_factor": 1.995,
-      "trend_bias_pct": -15.6,
-      "random_walk_mae_factor": 2.401,
-      "coverage_outer": 0.8431,
-      "coverage_inner": 0.6667,
-      "coverage_gaussian_2sigma": 0.9542,
-      "share_below_outer": 0.1438,
-      "share_above_outer": 0.0131
+      "trend_mae_factor": 1.994,
+      "trend_bias_pct": -15.9,
+      "random_walk_mae_factor": 2.393,
+      "coverage_outer": 0.8442,
+      "coverage_inner": 0.6688,
+      "coverage_gaussian_2sigma": 0.9545,
+      "share_below_outer": 0.1429,
+      "share_above_outer": 0.013
     },
     {
       "horizon_days": 730,
-      "n_origins": 141,
+      "n_origins": 142,
       "approx_independent_windows": 5.9,
-      "trend_mae_factor": 1.825,
-      "trend_bias_pct": -25.9,
-      "random_walk_mae_factor": 3.187,
-      "coverage_outer": 0.8652,
-      "coverage_inner": 0.7872,
-      "coverage_gaussian_2sigma": 0.9433,
-      "share_below_outer": 0.1348,
+      "trend_mae_factor": 1.824,
+      "trend_bias_pct": -26.0,
+      "random_walk_mae_factor": 3.167,
+      "coverage_outer": 0.8662,
+      "coverage_inner": 0.7887,
+      "coverage_gaussian_2sigma": 0.9437,
+      "share_below_outer": 0.1338,
       "share_above_outer": 0.0
     },
     {
       "horizon_days": 1461,
-      "n_origins": 117,
+      "n_origins": 118,
       "approx_independent_windows": 2.4,
-      "trend_mae_factor": 1.776,
-      "trend_bias_pct": -22.9,
-      "random_walk_mae_factor": 8.61,
-      "coverage_outer": 0.906,
-      "coverage_inner": 0.7778,
-      "coverage_gaussian_2sigma": 0.9744,
-      "share_below_outer": 0.094,
+      "trend_mae_factor": 1.779,
+      "trend_bias_pct": -23.2,
+      "random_walk_mae_factor": 8.559,
+      "coverage_outer": 0.9068,
+      "coverage_inner": 0.7712,
+      "coverage_gaussian_2sigma": 0.9746,
+      "share_below_outer": 0.0932,
       "share_above_outer": 0.0
     }
   ],
@@ -69,75 +69,75 @@
     },
     {
       "horizon_days": 365,
-      "n_origins": 153,
-      "trend_mae_factor": 1.995,
-      "trend_plus_ar1_mae_factor": 1.975,
-      "random_walk_mae_factor": 2.401,
-      "ar1_coverage_68": 0.6667,
-      "ar1_coverage_95": 0.9608
+      "n_origins": 154,
+      "trend_mae_factor": 1.994,
+      "trend_plus_ar1_mae_factor": 1.974,
+      "random_walk_mae_factor": 2.393,
+      "ar1_coverage_68": 0.6688,
+      "ar1_coverage_95": 0.961
     }
   ],
   "scenario": [
     {
       "horizon_days": 365,
-      "n_origins": 81,
-      "full_history_mae_factor": 1.574,
-      "full_history_bias_pct": -14.7,
-      "recent_window_mae_factor": 1.753,
-      "recent_window_bias_pct": -10.1
+      "n_origins": 82,
+      "full_history_mae_factor": 1.577,
+      "full_history_bias_pct": -15.1,
+      "recent_window_mae_factor": 1.749,
+      "recent_window_bias_pct": -10.4
     },
     {
       "horizon_days": 730,
-      "n_origins": 69,
-      "full_history_mae_factor": 1.571,
-      "full_history_bias_pct": -14.2,
-      "recent_window_mae_factor": 1.523,
-      "recent_window_bias_pct": -10.0
+      "n_origins": 70,
+      "full_history_mae_factor": 1.574,
+      "full_history_bias_pct": -14.7,
+      "recent_window_mae_factor": 1.52,
+      "recent_window_bias_pct": -10.2
     },
     {
       "horizon_days": 1461,
-      "n_origins": 45,
-      "full_history_mae_factor": 1.536,
-      "full_history_bias_pct": -33.5,
-      "recent_window_mae_factor": 1.965,
-      "recent_window_bias_pct": -34.2
+      "n_origins": 46,
+      "full_history_mae_factor": 1.548,
+      "full_history_bias_pct": -34.0,
+      "recent_window_mae_factor": 1.973,
+      "recent_window_bias_pct": -34.8
     }
   ],
   "signals": [
     {
       "signal": "power_law_z_realtime",
-      "n_months": 153,
+      "n_months": 154,
       "first_origin": "2013-01-01",
-      "spearman_vs_fwd_1y": -0.51,
-      "approx_independent_windows": 12.7
+      "spearman_vs_fwd_1y": -0.512,
+      "approx_independent_windows": 12.8
     },
     {
       "signal": "mayer_multiple",
-      "n_months": 153,
+      "n_months": 154,
       "first_origin": "2013-01-01",
-      "spearman_vs_fwd_1y": 0.166,
-      "approx_independent_windows": 12.7
+      "spearman_vs_fwd_1y": 0.167,
+      "approx_independent_windows": 12.8
     },
     {
       "signal": "wma200_distance",
-      "n_months": 135,
+      "n_months": 136,
       "first_origin": "2014-07-01",
-      "spearman_vs_fwd_1y": -0.491,
-      "approx_independent_windows": 11.2
+      "spearman_vs_fwd_1y": -0.494,
+      "approx_independent_windows": 11.3
     },
     {
       "signal": "price_vs_hashrate_fit",
-      "n_months": 153,
+      "n_months": 154,
       "first_origin": "2013-01-01",
-      "spearman_vs_fwd_1y": -0.3,
-      "approx_independent_windows": 12.7
+      "spearman_vs_fwd_1y": -0.305,
+      "approx_independent_windows": 12.8
     },
     {
       "signal": "fear_greed",
-      "n_months": 91,
+      "n_months": 92,
       "first_origin": "2018-03-01",
       "spearman_vs_fwd_1y": 0.064,
-      "approx_independent_windows": 7.5
+      "approx_independent_windows": 7.6
     }
   ],
   "z_buckets": [
@@ -168,10 +168,10 @@
     {
       "z_low": 0.0,
       "z_high": 0.5,
-      "n_months": 32,
+      "n_months": 33,
       "episodes": 10,
-      "median_fwd_1y_pct": 1.6,
-      "share_negative": 0.5
+      "median_fwd_1y_pct": -6.3,
+      "share_negative": 0.515
     },
     {
       "z_low": 0.5,
@@ -265,9 +265,9 @@
     },
     {
       "year": 2025,
-      "n": 9,
-      "mae_factor": 1.815,
-      "bias_pct": -44.9
+      "n": 10,
+      "mae_factor": 1.812,
+      "bias_pct": -44.8
     }
   ],
   "per_origin_1y": [
@@ -1493,6 +1493,14 @@
       "trend": 146033.02,
       "actual": 78155.0,
       "miss_log10": -0.2715,
+      "inside_outer": true
+    },
+    {
+      "origin": "2025-10-01",
+      "target": "2026-10-01",
+      "trend": 150051.9,
+      "actual": 83930.0,
+      "miss_log10": -0.2523,
       "inside_outer": true
     }
   ]
