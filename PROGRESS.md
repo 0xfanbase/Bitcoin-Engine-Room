@@ -13,6 +13,12 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 
 ## Log
 
+### 2026-10-01 — Model-honesty upgrade + UX overhaul (owner-approved Phases A–K)
+
+Owner asked for a backtest of the price models, a critical review of whether they actually predict anything, and a plan to improve both the models and the UI/UX (Power Law chart didn't visibly extend into the future and couldn't be zoomed); then approved building every phase. Director ruling for the visual work: `docs/UX_OVERHAUL_DIRECTOR_RULING.md` (Fable, per CLAUDE.md Section 6 process), including two documented implementer deviations.
+
+- **Phases B–D (model honesty, methodology change — see `MODEL_METHODOLOGY.md` "Model honesty")**: new `pipeline/forecast.py` (pure math shared by the fit and the backtest). `fit_models.py` now publishes empirical-quantile bands (2.5/97.5 outer = Idle/Redline, 16/84 inner) instead of symmetric ±2σ; a block-bootstrap trend-uncertainty fan (2030 trend 5–95%: ~$245k–$527k); a ≤1-year trend+AR(1) short-term path; a since-2017 recent-window scenario fit (b≈4.84 vs 5.60); and point-in-time monthly z-scores. All pinned in `model_constants.json` → `honesty`. A time-decaying band variant was prototyped and rejected (~77% realised coverage for nominal 95%). `models.json` is now schema-validated before every write with `allow_nan=False` (closes the 2026-07-25 backlog item for fit_models).
+
 ### 2026-07-26 — Power-law tooltip bug fix; cycle-tops readout shipped (Opus + Fable co-review)
 
 Owner reported that toggling/hovering a date past "today" on the Power Law Corridor chart showed only the Cruise (trend) price, not all three bands. Owner also asked to incorporate betirement.com's "Conservative Bitcoin Top Price Model" (a power-law curve fit to ~6 historical cycle-top prices) "so it's not always giving out an optimistic view," with Opus and Fable as co-directors/auditors on the whole change (Fable used once, for the one genuinely creative decision, per an explicit owner request to conserve Fable credits).

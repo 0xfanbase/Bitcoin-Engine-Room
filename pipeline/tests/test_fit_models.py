@@ -86,6 +86,48 @@ def test_power_law_projections_are_monotonic_floor_trend_ceiling():
     assert [p["date"] for p in result["projections"]] == ["2027-01-01", "2028-01-01", "2030-01-01", "2035-01-01"]
 
 
+def test_power_law_bands_are_empirical_quantiles_and_nest_correctly():
+    import random
+    random.seed(1)
+    series = _synthetic_power_law_series(-17.0, 5.8, 10, 2000)
+    for row in series:
+        row["value"] *= 10 ** random.gauss(0, 0.1)
+    result = fit_models.fit_power_law(series, TEST_CONSTANTS, previous_models=None)
+    bands = result["bands"]
+    assert bands["method"] == "empirical_residual_quantiles"
+    assert bands["in_sample_coverage"]["outer"] == pytest.approx(0.95, abs=0.01)
+    assert bands["in_sample_coverage"]["inner"] == pytest.approx(0.68, abs=0.01)
+    for p in result["projections"]:
+        assert p["floor"] < p["inner_low"] < p["trend"] < p["inner_high"] < p["ceiling"]
+        assert p["trend_low"] < p["trend"] < p["trend_high"]
+    fan = result["trend_uncertainty"]["fan"]
+    assert all(f["low"] <= f["mid"] <= f["high"] for f in fan)
+    assert fan[-1]["high"] - fan[-1]["low"] >= fan[0]["high"] - fan[0]["low"]  # fan widens with distance
+    path = result["short_term"]["path"]
+    assert len(path) == 12
+    assert all(p["outer_low"] < p["inner_low"] < p["center"] < p["inner_high"] < p["outer_high"] for p in path)
+
+
+def test_power_law_realtime_z_uses_only_prior_data():
+    """Point-in-time z: adding a huge late spike must not change any z-score
+    for an origin before the spike -- a hindsight fit would shift them all."""
+    import random
+    constants = {**TEST_CONSTANTS, "honesty": {"realtime_z_start_date": "2012-01-01"}}
+    random.seed(3)
+    series = _synthetic_power_law_series(-17.0, 5.8, 10, 2200)
+    for row in series:
+        row["value"] *= 10 ** random.gauss(0, 0.05)
+    clean = fit_models.fit_power_law(series, constants, previous_models=None)["realtime_z"]
+    spiked_series = [dict(r) for r in series]
+    spiked_series[-30]["value"] *= 50
+    spiked = fit_models.fit_power_law(spiked_series, constants, previous_models=None)["realtime_z"]
+    assert clean and clean[0]["date"] == "2012-01-01"
+    spike_date = spiked_series[-30]["date"]
+    before = [(c, s_) for c, s_ in zip(clean, spiked) if c["date"] <= spike_date]
+    assert len(before) >= 30  # sanity: most origins precede the spike
+    assert all(c == s_ for c, s_ in before)
+
+
 def test_power_law_carries_forward_previous_params_for_drift():
     a_true, b_true = -17.0, 5.8
     series = _synthetic_power_law_series(a_true, b_true, 10, 500)
