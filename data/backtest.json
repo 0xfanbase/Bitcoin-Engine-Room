@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-04T12:46:27Z",
-  "data_through": "2026-10-04",
+  "generated_at": "2026-10-05T15:10:35Z",
+  "data_through": "2026-10-05",
   "method": {
     "origins": "first of every month from 2013-01-01, refit on data strictly before each origin",
     "error_unit": "log10(actual / forecast); *_mae_factor = 10^mean|error| (x2.0 = typically off by a factor of 2 either way)",
