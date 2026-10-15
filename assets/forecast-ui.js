@@ -28,9 +28,15 @@
       const ledgerTag = h.in_live_ledger
         ? '<span class="fr-tag">ledger</span>'
         : '<span class="fr-tag fr-tag-scenario">scenario</span>';
-      const caveat = h.caveat
-        ? '<div class="fr-caveat">' + h.caveat + "</div>"
-        : "";
+      const src = h.band_source
+        ? String(h.band_source).replace(/_/g, ' ')
+        : '';
+      const caveatBits = [];
+      if (src) caveatBits.push(src);
+      if (h.caveat) caveatBits.push(h.caveat);
+      const caveat = caveatBits.length
+        ? '<div class="fr-caveat">' + caveatBits.join(' · ') + '</div>'
+        : '';
       el.innerHTML =
         '<div class="fr-h">' +
         h.label +

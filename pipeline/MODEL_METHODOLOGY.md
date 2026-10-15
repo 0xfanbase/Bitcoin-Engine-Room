@@ -44,3 +44,7 @@ A walk-forward backtest of this site's own power-law corridor (refit on the firs
 - **Recent-window scenario (`scenario`)**: an independent OLS fit over data since 2017 (b ≈ 4.8 vs 5.6 full-history). A counter-reading for "diminishing returns", shown beside the main fit rather than replacing it; its walk-forward record is in `data/backtest.json` → `scenario`.
 
 Evidence lives in `data/backtest.json` (recomputed nightly by `pipeline/backtest.py`) and the append-only live ledger `data/forecasts.json` (one frozen forecast per calendar month; only `outcome` is filled in later). `audit.py`'s `forecast_calibration` check warns if 1-year walk-forward band coverage falls below 80%, the backtest goes stale, or matured ledger forecasts miss the band more than 25% of the time.
+
+## Scenario forecast (Forecast section)
+
+See `pipeline/notes/FORECAST_CALIBRATION_V3.md` — AR(1) P50 + walk-forward conformal P10/P90 (≤4y) + Idle/Redline caps (10y/30y). Bands are not confidence intervals.

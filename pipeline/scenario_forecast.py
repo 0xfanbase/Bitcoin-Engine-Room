@@ -1,24 +1,18 @@
 """Public scenario-forecast artifact for the Forecast section.
 
-Built ONLY from Bitcoin-Engine-Room's own fitted power-law + residual
-quantiles + AR(1) short-term dynamics + walk-forward coverage. Does NOT
-ingest private btc-watcher JSON (holdings / out-of-allow-list sources).
+Built ONLY from Bitcoin-Engine-Room's own fitted power-law + AR(1) +
+walk-forward conformal residual offsets + Idle/Redline corridor.
+Does NOT ingest private btc-watcher JSON.
 
-v2 (2026-10-15 calibration):
-  - P50 uses AR(1) mean-reversion of today's residual toward Cruise
-    (same family as Models short_term path) — fixes 1y desync.
-  - P10/P90 half-widths grow with sqrt(horizon years) and are inflated
-    so walk-forward outer coverage at 1y meets a nominal 80% target when
-    the raw empirical band undershoots (coverage calibration).
-  - Instrument stack has NO decorative share weights.
-  - Each horizon is labeled in_live_ledger for honesty vs forecasts.json.
-
-Bands are empirical / calibrated envelopes, NOT confidence intervals.
+v3 (2026-10-15): replace √t width growth with per-horizon conformal
+bands for ≤4y and Idle/Redline caps for 10y/30y. See
+pipeline/notes/FORECAST_CALIBRATION_V3.md.
 """
 
 from __future__ import annotations
 
 import argparse
+import bisect
 import json
 import math
 from datetime import date, datetime, timedelta, timezone
@@ -26,7 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pipeline.forecast import ar1_path, ar1_residual, residual_quantiles
+from pipeline.forecast import ar1_residual, month_starts, ols_fit, residual_quantiles
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODELS_PATH = REPO_ROOT / "data" / "models.json"
@@ -36,7 +30,6 @@ LEDGER_PATH = REPO_ROOT / "data" / "forecasts.json"
 OUT_PATH = REPO_ROOT / "data" / "scenario_forecast.json"
 SCHEMA_PATH = REPO_ROOT / "pipeline" / "schemas" / "scenario_forecast.schema.json"
 
-# Must match pipeline.backtest.HORIZONS for in_live_ledger honesty.
 LEDGER_HORIZON_DAYS = {365, 730, 1461}
 
 HORIZONS = [
@@ -48,12 +41,16 @@ HORIZONS = [
     {"id": "30y", "label": "30 years", "days": 10957},
 ]
 
+# Knots used for conformal + fan interpolation (days).
+CONFORMAL_KNOTS = (30, 90, 180, 365, 730, 1461)
+ULTRA_LONG_DAYS = {3652, 10957}
+
 P_QUANTS = [0.10, 0.50, 0.90]
-AR1_SAMPLE_DAYS = 30  # match fit_models honesty short_term.sample_days
-# Nominal coverage for a P10–P90 envelope. Walk-forward outer (2.5–97.5)
-# coverage is used as a proxy signal to inflate when bands run narrow.
-TARGET_P10_P90_COVERAGE = 0.80
-COVERAGE_INFLATE_CAP = 1.75
+AR1_SAMPLE_DAYS = 30
+ORIGIN_START = date(2013, 1, 1)
+MIN_FIT_POINTS = 365
+CONFORMAL_LO = 0.10
+CONFORMAL_HI = 0.90
 
 
 def _load(path: Path) -> dict | None:
@@ -74,70 +71,157 @@ def _price_at(d: float, a: float, b: float, offset: float = 0.0) -> float:
 
 
 def _build_residuals(series: list[dict], genesis: date, a: float, b: float, fit_start: date) -> np.ndarray:
-    """Match fit_models residual universe: all positive-price rows ≥ fit_start.
-    (carried_forward rows are still prices; excluding them only on CF days
-    would desync scenario quantiles from published Idle/Redline offsets.)"""
     resid = []
     for row in series:
         d = date.fromisoformat(row["date"])
-        if d < fit_start:
+        if d < fit_start or row.get("carried_forward"):
             continue
         days = (d - genesis).days
         if days <= 1 or row.get("value") in (None, 0):
             continue
         y = math.log10(float(row["value"]))
-        yhat = a + b * math.log10(days)
-        resid.append(y - yhat)
+        resid.append(y - (a + b * math.log10(days)))
     return np.asarray(resid, dtype=float)
 
 
-def _coverage_inflate(backtest: dict) -> tuple[float, dict]:
-    """Inflate log half-widths when 1y walk-forward outer coverage < target.
-
-    Uses backtest outer-band coverage (Idle–Redline family) as a conservative
-    proxy: if even the wider outer band undershoots in walk-forward, grow
-    the published P10/P90 envelope. Never shrink below 1.0.
-    """
-    meta = {
-        "target_coverage": TARGET_P10_P90_COVERAGE,
-        "source_horizon_days": 365,
-        "raw_coverage_outer": None,
-        "inflate": 1.0,
-    }
-    hz = {h["horizon_days"]: h for h in backtest.get("horizons", [])}
-    h1 = hz.get(365) or {}
-    cov = h1.get("coverage_outer")
-    meta["raw_coverage_outer"] = cov
-    if cov is None or cov <= 0:
-        return 1.0, meta
-    if cov >= TARGET_P10_P90_COVERAGE:
-        return 1.0, meta
-    inflate = min(COVERAGE_INFLATE_CAP, TARGET_P10_P90_COVERAGE / cov)
-    meta["inflate"] = round(inflate, 4)
-    return inflate, meta
-
-
-def _width_scale(days: int) -> float:
-    """Horizon growth: 1.0 at 1y, sqrt scaling, floored so sub-year is not tiny."""
-    years = max(days, 1) / 365.25
-    return max(0.40, math.sqrt(years))
-
-
 def _residual_mean_ar1(r0: float, phi: float, innov_sigma: float, days: int) -> tuple[float, float]:
-    """AR(1) expected residual and sd at `days` ahead (sample step = 30d)."""
-    steps = max(1, int(round(days / AR1_SAMPLE_DAYS)))
-    path = ar1_path(r0, phi, innov_sigma, steps)
-    mean, sd = path[-1]
-    # Interpolate fractional step toward next if needed (mild)
-    exact = days / AR1_SAMPLE_DAYS
-    if steps >= 1 and abs(exact - steps) > 0.05 and phi > 0:
-        mean = r0 * (phi**exact)
-        if phi < 1.0:
-            var = innov_sigma**2 * (1 - phi ** (2 * exact)) / (1 - phi**2)
-        else:
-            var = innov_sigma**2 * exact
+    exact = max(days, 0) / AR1_SAMPLE_DAYS
+    if days <= 0:
+        return r0, 0.0
+    mean = r0 * (phi**exact) if phi > 0 else 0.0
+    if phi <= 0:
+        sd = innov_sigma * math.sqrt(exact)
+    elif phi < 1.0:
+        var = innov_sigma**2 * (1 - phi ** (2 * exact)) / (1 - phi**2)
         sd = math.sqrt(max(var, 0.0))
+    else:
+        sd = innov_sigma * math.sqrt(exact)
     return mean, sd
+
+
+class _PriceSeries:
+    """Minimal causal price view (same exclusions as backtest.Series)."""
+
+    def __init__(self, rows: list[dict], genesis: date, fit_start: date):
+        rows = [
+            r
+            for r in rows
+            if not r.get("carried_forward") and date.fromisoformat(r["date"]) >= fit_start
+        ]
+        self.dates = [date.fromisoformat(r["date"]) for r in rows]
+        self.d = np.array([(dt - genesis).days for dt in self.dates], dtype=float)
+        self.x = np.log10(self.d)
+        self.y = np.log10(np.array([r["value"] for r in rows], dtype=float))
+
+    def n_before(self, origin: date) -> int:
+        return bisect.bisect_left(self.dates, origin)
+
+    def index_on_or_after(self, target: date) -> int | None:
+        i = bisect.bisect_left(self.dates, target)
+        if i >= len(self.dates) or (self.dates[i] - target).days > 7:
+            return None
+        return i
+
+
+def compute_conformal_offsets(
+    s: _PriceSeries,
+    *,
+    sample_days: int = AR1_SAMPLE_DAYS,
+    knots: tuple[int, ...] = CONFORMAL_KNOTS,
+) -> dict[int, dict]:
+    """Walk-forward P10/P90 offsets of AR(1)-relative forecast errors.
+
+    For each monthly origin: refit power law on data before origin, take
+    AR(1) mean residual at horizon h, score
+    err = y_actual - (trend_h + ar1_mean_h). Offsets are quantiles of err.
+    """
+    origins = month_starts(ORIGIN_START, s.dates[-1])
+    fits: dict[date, dict] = {}
+    for o in origins:
+        n = s.n_before(o)
+        if n < MIN_FIT_POINTS:
+            continue
+        a, b, _sigma = ols_fit(s.x[:n], s.y[:n])
+        resid = s.y[:n] - (a + b * s.x[:n])
+        fits[o] = {"n": n, "a": a, "b": b, "resid": resid}
+
+    span_days = (s.dates[-1] - ORIGIN_START).days
+    out: dict[int, dict] = {}
+    for h in knots:
+        errs: list[float] = []
+        for o, f in fits.items():
+            i1 = s.index_on_or_after(o + timedelta(days=h))
+            if i1 is None:
+                continue
+            phi, _innov = ar1_residual(f["resid"], sample_days)
+            exact = h / sample_days
+            mean = float(f["resid"][-1]) * (phi**exact) if phi > 0 else 0.0
+            trend1 = f["a"] + f["b"] * s.x[i1]
+            errs.append(float(s.y[i1] - (trend1 + mean)))
+        if len(errs) < 20:
+            continue
+        arr = np.asarray(errs, dtype=float)
+        lo = float(np.quantile(arr, CONFORMAL_LO))
+        hi = float(np.quantile(arr, CONFORMAL_HI))
+        out[h] = {
+            "horizon_days": h,
+            "n_origins": len(errs),
+            "approx_independent_windows": round(max(span_days - h, 0) / h, 1),
+            "offset_lo": round(lo, 6),
+            "offset_hi": round(hi, 6),
+            "width": round(hi - lo, 6),
+            "err_p50": round(float(np.quantile(arr, 0.5)), 6),
+        }
+    return out
+
+
+def _interp_offsets(conformal: dict[int, dict], days: int) -> tuple[float, float, str]:
+    """Interpolate conformal offsets in log-day space; clamp outside knots."""
+    knots = sorted(conformal.keys())
+    if not knots:
+        return 0.0, 0.0, "none"
+    if days in conformal:
+        c = conformal[days]
+        return c["offset_lo"], c["offset_hi"], f"conformal@{days}d"
+    if days <= knots[0]:
+        c = conformal[knots[0]]
+        return c["offset_lo"], c["offset_hi"], f"conformal@{knots[0]}d"
+    if days >= knots[-1]:
+        c = conformal[knots[-1]]
+        return c["offset_lo"], c["offset_hi"], f"conformal@{knots[-1]}d"
+    for i in range(len(knots) - 1):
+        d0, d1 = knots[i], knots[i + 1]
+        if d0 <= days <= d1:
+            c0, c1 = conformal[d0], conformal[d1]
+            t = (math.log(days) - math.log(d0)) / (math.log(d1) - math.log(d0))
+            lo = c0["offset_lo"] + t * (c1["offset_lo"] - c0["offset_lo"])
+            hi = c0["offset_hi"] + t * (c1["offset_hi"] - c0["offset_hi"])
+            return lo, hi, f"conformal_interp_{d0}_{d1}"
+    c = conformal[knots[-1]]
+    return c["offset_lo"], c["offset_hi"], f"conformal@{knots[-1]}d"
+
+
+def _taper_to_corridor(
+    lo: float,
+    hi: float,
+    days: int,
+    outer_lo: float,
+    outer_hi: float,
+    *,
+    start_days: int = 1461,
+    end_days: int = 3652,
+) -> tuple[float, float, str]:
+    """Between 4y and 10y, blend conformal offsets toward Idle/Redline."""
+    if days <= start_days:
+        return lo, hi, "conformal"
+    if days >= end_days:
+        return outer_lo, outer_hi, "idle_redline"
+    t = (math.log(days) - math.log(start_days)) / (math.log(end_days) - math.log(start_days))
+    return (
+        lo + t * (outer_lo - lo),
+        hi + t * (outer_hi - hi),
+        "taper_conformal_to_corridor",
+    )
 
 
 def build(*, now: datetime | None = None) -> dict:
@@ -162,30 +246,45 @@ def build(*, now: datetime | None = None) -> dict:
 
     resid = _build_residuals(series, genesis, a, b, fit_start)
     q10, q50, q90 = residual_quantiles(resid, P_QUANTS)
-    base_lo = abs(q10 - q50)
-    base_hi = abs(q90 - q50)
-
-    trend_now = _price_at(last_days, a, b, 0.0)
-    residual_now = math.log10(spot / trend_now) if spot > 0 and trend_now > 0 else 0.0
-    # Prefer last residual from the same series the AR(1) is fit on
-    r0 = float(resid[-1]) if len(resid) else residual_now
+    r0 = float(resid[-1]) if len(resid) else 0.0
     phi, innov = ar1_residual(resid, AR1_SAMPLE_DAYS)
-    inflate, cov_meta = _coverage_inflate(backtest)
+
+    outer = pl["bands"]["outer_offsets_log10"]
+    outer_lo, outer_hi = float(outer[0]), float(outer[1])
+
+    price_s = _PriceSeries(series, genesis, fit_start)
+    conformal = compute_conformal_offsets(price_s)
 
     horizons_out = []
     for h in HORIZONS:
         target = as_of + timedelta(days=h["days"])
         d = last_days + h["days"]
-        mean_r, sd_ar1 = _residual_mean_ar1(r0, phi, innov, h["days"])
-        scale = _width_scale(h["days"]) * inflate
-        half_lo = max(base_lo * scale, 1.2816 * sd_ar1 * 0.5)  # floor with mild AR noise
-        half_hi = max(base_hi * scale, 1.2816 * sd_ar1 * 0.5)
-        p50 = _price_at(d, a, b, mean_r)
-        p10 = _price_at(d, a, b, mean_r - half_lo)
-        p90 = _price_at(d, a, b, mean_r + half_hi)
-        p10 = min(p10, p50)
-        p90 = max(p90, p50)
+        mean_r, _sd = _residual_mean_ar1(r0, phi, innov, h["days"])
         in_ledger = h["days"] in LEDGER_HORIZON_DAYS
+
+        if h["days"] in ULTRA_LONG_DAYS:
+            # Demote: Cruise ± Idle/Redline — no √t, no fake long-horizon conformal
+            mean_r = 0.0
+            lo, hi = outer_lo, outer_hi
+            band_source = "idle_redline_corridor"
+            caveat = (
+                "Scenario only — corridor is Models Idle/Redline (empirical residual envelope), "
+                "not a walk-forward-calibrated CI. Independent sample at this horizon is effectively zero."
+            )
+        else:
+            lo, hi, band_source = _interp_offsets(conformal, h["days"])
+            if h["days"] > 1461:
+                lo, hi, band_source = _taper_to_corridor(lo, hi, h["days"], outer_lo, outer_hi)
+            caveat = None if in_ledger else (
+                "Not frozen in the live monthly ledger (ledger tracks 1y / 2y / 4y)."
+            )
+
+        p50 = _price_at(d, a, b, mean_r)
+        p10 = _price_at(d, a, b, mean_r + lo)
+        p90 = _price_at(d, a, b, mean_r + hi)
+        p10, p90 = min(p10, p50), max(p90, p50)
+
+        meta_c = conformal.get(h["days"]) or {}
         horizons_out.append(
             {
                 "id": h["id"],
@@ -198,48 +297,49 @@ def build(*, now: datetime | None = None) -> dict:
                 "cruise": _r(_price_at(d, a, b, 0.0), 2),
                 "multiple_vs_spot_p50": _r(p50 / spot, 3) if spot else None,
                 "log_width": _r(math.log10(p90 / p10), 4) if p10 > 0 else None,
-                "width_scale": _r(scale, 4),
+                "offset_lo": _r(lo, 6),
+                "offset_hi": _r(hi, 6),
                 "residual_mean": _r(mean_r, 6),
+                "band_source": band_source,
+                "conformal_n_origins": meta_c.get("n_origins"),
+                "conformal_indep_windows": meta_c.get("approx_independent_windows"),
                 "in_live_ledger": in_ledger,
-                "caveat": None
-                if in_ledger
-                else (
-                    "Scenario only — not frozen in the live monthly ledger "
-                    "(ledger tracks 1y / 2y / 4y). Independent sample at this horizon is tiny."
-                    if h["days"] >= 3652
-                    else "Not frozen in the live monthly ledger (ledger tracks 1y / 2y / 4y)."
-                ),
+                "caveat": caveat,
             }
         )
 
-    # Fan: monthly to 10y + yearly markers; same AR1 + scaled width math
+    # Fan: monthly to 10y + sparse long markers
     fan = []
-    for months in list(range(0, 121)) + [15 * 12, 20 * 12, 25 * 12, 30 * 12]:
-        if months > 120 and months % 12:
-            continue
-        days = int(round(months * 365.25 / 12)) if months else 0
-        if months in (15 * 12, 20 * 12, 25 * 12, 30 * 12):
+    month_list = list(range(0, 121)) + [15 * 12, 20 * 12, 25 * 12, 30 * 12]
+    for months in month_list:
+        days = 0 if months == 0 else int(round(months * 365.25 / 12))
+        if months >= 15 * 12:
             days = int(round((months // 12) * 365.25))
-        d = last_days + max(days, 0)
+        d = last_days + days
         if days == 0:
-            mean_r, sd_ar1 = r0, 0.0
-            scale = 0.40 * inflate
+            mean_r = r0
+            lo, hi, src = _interp_offsets(conformal, 30)
+            # at as-of, collapse toward a tight envelope around spot residual
+            lo, hi = lo * 0.25, hi * 0.25
+            src = "asof_tight"
+        elif days in ULTRA_LONG_DAYS or days > 3652:
+            mean_r = 0.0
+            lo, hi, src = outer_lo, outer_hi, "idle_redline_corridor"
         else:
-            mean_r, sd_ar1 = _residual_mean_ar1(r0, phi, innov, days)
-            scale = _width_scale(days) * inflate
-        half_lo = max(base_lo * scale, 1.2816 * sd_ar1 * 0.5)
-        half_hi = max(base_hi * scale, 1.2816 * sd_ar1 * 0.5)
+            mean_r, _ = _residual_mean_ar1(r0, phi, innov, days)
+            lo, hi, src = _interp_offsets(conformal, days)
+            if days > 1461:
+                lo, hi, src = _taper_to_corridor(lo, hi, days, outer_lo, outer_hi)
         fan.append(
             {
                 "date": (as_of + timedelta(days=days)).isoformat(),
-                "p10": _r(_price_at(d, a, b, mean_r - half_lo), 2),
+                "p10": _r(_price_at(d, a, b, mean_r + lo), 2),
                 "p50": _r(_price_at(d, a, b, mean_r), 2),
-                "p90": _r(_price_at(d, a, b, mean_r + half_hi), 2),
+                "p90": _r(_price_at(d, a, b, mean_r + hi), 2),
                 "cruise": _r(_price_at(d, a, b, 0.0), 2),
             }
         )
-    # de-dupe fan dates (monthly loop + yearly markers)
-    seen = set()
+    seen: set[str] = set()
     fan_u = []
     for pt in fan:
         if pt["date"] in seen:
@@ -249,7 +349,7 @@ def build(*, now: datetime | None = None) -> dict:
     fan = fan_u
 
     cutoff = as_of - timedelta(days=8 * 365)
-    weekly = {}
+    weekly: dict[str, dict] = {}
     for row in series:
         if row.get("carried_forward") or not row.get("value"):
             continue
@@ -263,7 +363,6 @@ def build(*, now: datetime | None = None) -> dict:
 
     hz = {h["horizon_days"]: h for h in backtest.get("horizons", [])}
     h1 = hz.get(365) or {}
-    # Instrument stack — roles + honesty only (no fake share weights)
     ensemble = [
         {
             "id": "power_law_ar1",
@@ -275,19 +374,19 @@ def build(*, now: datetime | None = None) -> dict:
             ),
         },
         {
-            "id": "scaled_residual_bands",
-            "name": "Scaled residual envelope",
-            "role": "P10/P90 (√horizon × coverage inflate)",
+            "id": "conformal_bands",
+            "name": "Walk-forward conformal envelope",
+            "role": "P10/P90 for ≤4y (AR1-relative error quantiles)",
             "trust_note": (
-                f"1y outer coverage {h1.get('coverage_outer', '—')}; "
-                f"inflate ×{cov_meta['inflate']} — not a CI"
+                f"1y indep windows ~{(conformal.get(365) or {}).get('approx_independent_windows', '—')}; "
+                "asymmetric; not a CI"
             ),
         },
         {
-            "id": "cycle_overlay",
-            "name": "Halving-cycle overlay",
-            "role": "phase context on Models only",
-            "trust_note": "Not blended into Forecast cards (tiny cycle sample)",
+            "id": "idle_redline_cap",
+            "name": "Idle / Redline corridor",
+            "role": "P10/P90 for 10y & 30y only",
+            "trust_note": "Same empirical residual envelope as Models — scenario ribbon, not calibrated long-CI",
         },
         {
             "id": "live_ledger",
@@ -319,12 +418,12 @@ def build(*, now: datetime | None = None) -> dict:
         half_life = round(AR1_SAMPLE_DAYS * math.log(0.5) / math.log(phi), 1)
 
     doc = {
-        "schema_version": 2,
+        "schema_version": 3,
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "as_of": as_of.isoformat(),
         "spot": _r(spot, 2),
         "method": {
-            "family": "power_law_ar1_scaled_quantiles",
+            "family": "power_law_ar1_conformal",
             "a": a,
             "b": b,
             "genesis_date": genesis.isoformat(),
@@ -339,16 +438,29 @@ def build(*, now: datetime | None = None) -> dict:
                 "r0": _r(r0, 6),
             },
             "width": {
-                "rule": "half_width = empirical_|q-q50| * max(0.40, sqrt(years)) * coverage_inflate",
-                "coverage_calibration": cov_meta,
+                "rule": (
+                    "≤4y: walk-forward conformal P10/P90 of AR1-relative log errors; "
+                    "10y/30y: Idle/Redline corridor around Cruise; fan tapers 4y→10y"
+                ),
+                "conformal": {
+                    str(k): v for k, v in sorted(conformal.items())
+                },
+                "ultra_long": {
+                    "source": "models.power_law.bands.outer_offsets_log10",
+                    "offset_lo": outer_lo,
+                    "offset_hi": outer_hi,
+                },
+                "replaced": "sqrt_years_scale_from_v2",
             },
             "ledger_horizons_days": sorted(LEDGER_HORIZON_DAYS),
             "disclaimer": (
-                "P50 mean-reverts today's residual toward Cruise via AR(1) (same family as Models "
-                "short-term path). P10/P90 grow with √horizon and may widen when walk-forward "
-                "coverage undershoots an 80% target. Scenario fans, not confidence intervals — "
-                "see Track Record / backtest.json. Live ledger only freezes 1y/2y/4y."
+                "P50 mean-reverts toward Cruise via AR(1) (same family as Models short-term). "
+                "P10/P90 for ≤4y are walk-forward conformal envelopes of AR1 forecast errors — "
+                "empirical coverage targets, NOT confidence intervals (independent windows are small). "
+                "10y/30y use the Models Idle/Redline corridor as a scenario ribbon only. "
+                "Live ledger freezes 1y/2y/4y."
             ),
+            "note_path": "pipeline/notes/FORECAST_CALIBRATION_V3.md",
         },
         "horizons": horizons_out,
         "history": history,
@@ -398,17 +510,19 @@ def main() -> None:
                     "as_of": doc["as_of"],
                     "method_family": doc["method"]["family"],
                     "ar1": doc["method"]["ar1"],
-                    "coverage": doc["method"]["width"]["coverage_calibration"],
+                    "conformal_knots": doc["method"]["width"]["conformal"],
                     "horizons": [
                         {
                             "id": h["id"],
+                            "p10": h["p10"],
                             "p50": h["p50"],
+                            "p90": h["p90"],
                             "log_width": h["log_width"],
+                            "band_source": h["band_source"],
                             "in_live_ledger": h["in_live_ledger"],
                         }
                         for h in doc["horizons"]
                     ],
-                    "bytes": len(json.dumps(doc)),
                 },
                 indent=2,
             )
