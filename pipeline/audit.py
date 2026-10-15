@@ -31,6 +31,7 @@ SANITY_RULES_PATH = REPO_ROOT / "pipeline" / "sanity_rules.json"
 KNOWN_GAPS_PATH = REPO_ROOT / "pipeline" / "known_gaps.json"
 BACKTEST_PATH = REPO_ROOT / "data" / "backtest.json"
 LEDGER_PATH = REPO_ROOT / "data" / "forecasts.json"
+SCENARIO_FORECAST_PATH = REPO_ROOT / "data" / "scenario_forecast.json"
 HISTORY_CROSSCHECK_PATH = REPO_ROOT / "data" / "history_crosscheck.json"
 AUDIT_SCHEMA_PATH = REPO_ROOT / "pipeline" / "schemas" / "audit.schema.json"
 AUDIT_DIR = REPO_ROOT / "data" / "audit"
@@ -322,7 +323,7 @@ def check_site_integrity() -> list[dict]:
         total_bytes += MODELS_PATH.stat().st_size
     if HEALTH_PATH.exists():
         total_bytes += HEALTH_PATH.stat().st_size
-    for extra in (BACKTEST_PATH, LEDGER_PATH, HISTORY_CROSSCHECK_PATH):
+    for extra in (BACKTEST_PATH, LEDGER_PATH, HISTORY_CROSSCHECK_PATH, SCENARIO_FORECAST_PATH):
         if extra.exists():
             total_bytes += extra.stat().st_size
     if total_bytes > JSON_PAYLOAD_BUDGET_BYTES:

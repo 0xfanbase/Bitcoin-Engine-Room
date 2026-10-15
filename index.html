@@ -35,9 +35,22 @@
 
 <canvas id="digital-rain-canvas" aria-hidden="true"></canvas>
 
+
+<nav class="site-nav" id="site-nav" aria-label="Sections">
+  <div class="site-nav-inner">
+    <a class="site-nav-brand" href="#live">BTC Engine Room</a>
+    <div class="site-nav-links" role="list">
+      <a role="listitem" href="#live" data-nav="live">Live</a>
+      <a role="listitem" href="#models" data-nav="models">Models</a>
+      <a role="listitem" href="#forecast" data-nav="forecast">Forecast</a>
+      <a role="listitem" href="#health" data-nav="health">Health</a>
+    </div>
+  </div>
+</nav>
+
 <main class="page" id="top">
 
-  <section class="masthead">
+  <section class="masthead" id="live">
     <!-- .masthead-inner is the actual opaque scrim, narrower than the
          full-bleed 100vw outer section and feathered at its own left/right
          edges -- everywhere outside it (and the feather itself) is fully
@@ -124,7 +137,7 @@
     </div>
   </section>
 
-  <h2 class="plate">Gauges</h2>
+  <h2 class="plate" id="gauges-plate">Gauges</h2>
   <details class="info-disclosure">
     <summary>What do the status colors mean?</summary>
     <div class="info-panel">
@@ -204,7 +217,7 @@
 
   </div>
 
-  <h2 class="plate">Price Models</h2>
+  <h2 class="plate" id="models">Price Models</h2>
 
   <div class="chart-card chart-card--hero" id="power-law-card">
     <div class="chart-plate">
@@ -396,7 +409,44 @@
     </details>
   </div>
 
-  <h2 class="plate">Engine Health</h2>
+  
+  <h2 class="plate" id="forecast">Forecast</h2>
+  <p class="section-lede">Scenario fans from today&rsquo;s price, using the same power-law fit as Models — not a crystal ball. Bands are empirical residual spreads, <strong>not</strong> confidence intervals. Personal holdings are never shown here.</p>
+  <div class="forecast-banner" id="forecast-disclaimer">Loading scenario forecast&hellip;</div>
+  <div class="forecast-ranges" id="forecast-ranges" aria-live="polite"></div>
+  <div class="chart-card chart-card--hero" id="forecast-fan-card">
+    <div class="chart-plate">
+      <h3>History + forward cone</h3>
+      <div class="chart-plate-stats numeral" id="forecast-fan-stats">&mdash;</div>
+    </div>
+    <p class="chart-headline numeral" id="forecast-fan-headline">Anchored P50 with P10–P90 envelope</p>
+    <div class="info-panel" id="info-forecast-fan" hidden>
+      <p>Green line: weekly spot history. Bright path: anchored median (today&rsquo;s discount or premium to Cruise held). Envelope: historical 10th/90th residual spreads. Dim dashed: unanchored Cruise for reference.</p>
+      <p class="info-source">Source: <code>data/scenario_forecast.json</code>, rebuilt nightly from this site&rsquo;s own <code>models.json</code> fit — never from a private holdings dashboard.</p>
+    </div>
+    <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-forecast-fan" aria-label="Info">i</button>
+    <div id="forecast-fan-chart" class="chart-canvas chart-canvas--hero" tabindex="0" role="img" aria-label="Scenario forecast fan chart"></div>
+    <p class="chart-caption">Educational scenario fan. See Track Record for how far past corridor forecasts have missed.</p>
+  </div>
+  <div class="chart-card" id="forecast-ensemble-card">
+    <div class="chart-plate"><h3>Instrument stack</h3></div>
+    <p class="chart-plain-summary">How the public site weights its own instruments — honesty metrics, not a black-box ensemble from a private engine.</p>
+    <table class="cycle-tops-table" id="forecast-ensemble-table" aria-label="Forecast instrument stack">
+      <thead><tr><th>Instrument</th><th>Role</th><th>Share</th><th>Trust note</th></tr></thead>
+      <tbody id="forecast-ensemble-tbody"><tr><td colspan="4">loading&hellip;</td></tr></tbody>
+    </table>
+  </div>
+  <div class="chart-card" id="forecast-learning-card">
+    <div class="chart-plate"><h3>Learning ledger</h3></div>
+    <p class="chart-plain-summary" id="forecast-learning-summary">Matured live-ledger calls and walk-forward miss-by-year — same honesty surface as Track Record.</p>
+    <div id="forecast-learning-chart" class="chart-canvas chart-canvas--short" role="img" aria-label="One-year forecast miss by year"></div>
+    <table class="cycle-tops-table" aria-label="Matured forecast calls">
+      <thead><tr><th>Issued</th><th>Horizon</th><th>Trend</th><th>Outcome</th></tr></thead>
+      <tbody id="forecast-matured-tbody"><tr><td colspan="4">No matured ledger rows yet — entries appear after their horizon elapses.</td></tr></tbody>
+    </table>
+  </div>
+
+  <h2 class="plate" id="health">Engine Health</h2>
   <details class="info-disclosure">
     <summary>What does a source row mean?</summary>
     <div class="info-panel">
@@ -445,6 +495,7 @@
 <script src="assets/live.js" defer></script>
 <script src="assets/health.js" defer></script>
 <script src="assets/charts.js" defer></script>
+<script src="assets/forecast-ui.js" defer></script>
 <script src="assets/rain.js" defer></script>
 <script src="assets/info.js" defer></script>
 </body>

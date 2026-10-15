@@ -473,6 +473,13 @@ def main() -> None:
             f"| outer coverage {h['coverage_outer']} inner {h['coverage_inner']} (n={h['n_origins']})"
         )
     print(f"ledger entries: {len(out['ledger']['entries'])}")
+    # Public Forecast section artifact (2026-10-15). Runs inside this step so
+    # daily.yml need not change (OAuth apps often lack the workflow scope).
+    if not args.dry_run:
+        from pipeline.scenario_forecast import build, write
+
+        write(build())
+        print("wrote data/scenario_forecast.json")
 
 
 if __name__ == "__main__":
