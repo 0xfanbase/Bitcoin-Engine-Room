@@ -1291,16 +1291,24 @@ a {
   .page::after { display: none; }
 }
 
+/* Forecast surfaces — match .chart-card / .plate (readability law ≥0.92).
+   Earlier fold-in referenced undefined --surface/--muted, so horizon cards
+   rendered fully transparent over Digital Rain. */
 .section-lede {
   max-width: 52rem;
   margin: 0 0 14px;
   color: var(--ink-dim);
   font-size: 13px;
   line-height: 1.5;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 10px 14px;
 }
 .forecast-banner {
-  border: 1px solid var(--hairline);
-  background: rgba(51, 255, 102, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: var(--panel);
   color: var(--ink-dim);
   padding: 10px 14px;
   font-size: 12px;
@@ -1319,15 +1327,16 @@ a {
   .forecast-ranges { grid-template-columns: 1fr; }
 }
 .forecast-range {
-  background: var(--surface);
-  border: 1px solid var(--hairline);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
   padding: 12px 14px;
 }
 .forecast-range .fr-h {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-dim);
 }
 .forecast-range .fr-mid {
   margin-top: 8px;
@@ -1359,10 +1368,11 @@ a {
   opacity: 0.65;
   margin-top: 0.35rem;
   line-height: 1.35;
+  color: var(--ink-dim);
 }
 
 .forecast-range .fr-x {
   margin-top: 6px;
   font-size: 10px;
-  color: var(--muted);
+  color: var(--ink-dim);
 }
