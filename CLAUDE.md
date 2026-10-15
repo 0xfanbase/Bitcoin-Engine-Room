@@ -129,3 +129,5 @@ Produced by an independent director-level review before Phase 1 began (full writ
 ## 9. Environment notes
 
 Sandboxed dev environments may sit behind a TLS-intercepting proxy. If API calls fail certificate verification, set `REQUESTS_CA_BUNDLE` to that environment's CA bundle path — never disable TLS verification to work around it.
+
+**Dated note (2026-10-15):** owner asked to fold public-safe Forecast UX from private `btc-watcher` into this site (sticky section nav Live|Models|Forecast|Health; `data/scenario_forecast.json` from BER's own fit). Personal holdings / PII must never ship. The sticky bar is a section jump control — not a revival of the retired site-header rain rocker.

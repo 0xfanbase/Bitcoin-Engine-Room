@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/0xfanbase/Bitcoin-Engine-Room/pipeline/schemas/scenario_forecast.schema.json",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "as_of", "spot", "method", "horizons", "fan", "ensemble", "learning", "history"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated_at": { "type": "string" },
+    "as_of": { "type": "string" },
+    "spot": { "type": "number" },
+    "method": { "type": "object" },
+    "horizons": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "days", "target_date", "p10", "p50", "p90"]
+      }
+    },
+    "history": { "type": "array" },
+    "fan": { "type": "array", "minItems": 10 },
+    "ensemble": { "type": "array", "minItems": 1 },
+    "learning": { "type": "object" }
+  },
+  "additionalProperties": true
+}
