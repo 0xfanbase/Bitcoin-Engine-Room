@@ -1308,7 +1308,7 @@ a {
 }
 .forecast-ranges {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -1339,6 +1339,28 @@ a {
   font-size: 11px;
   color: var(--ink-dim);
 }
+.forecast-range .fr-tag {
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-left: 0.35rem;
+  border: 1px solid rgba(51, 255, 102, 0.35);
+  padding: 0.05rem 0.35rem;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.forecast-range .fr-tag-scenario {
+  opacity: 0.55;
+  border-color: rgba(51, 255, 102, 0.2);
+}
+.forecast-range .fr-caveat {
+  font-size: 0.72rem;
+  opacity: 0.65;
+  margin-top: 0.35rem;
+  line-height: 1.35;
+}
+
 .forecast-range .fr-x {
   margin-top: 6px;
   font-size: 10px;

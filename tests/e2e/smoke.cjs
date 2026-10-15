@@ -129,6 +129,41 @@ async function run(viewportName) {
   check(/Cruise \$/.test(await page.textContent("#lookup-date-out")), `[${viewportName}] date lookup`);
   check(/Cruise/.test(await page.textContent("#lookup-price-out")), `[${viewportName}] price lookup`);
 
+  // Sticky nav + Forecast section (PR forecast-p1-calibration)
+  check(await page.locator("#site-nav").count() === 1, `[${viewportName}] sticky site-nav present`);
+  check(await page.locator("#forecast").count() === 1, `[${viewportName}] #forecast section present`);
+  check(await page.locator('a[data-nav="forecast"]').count() === 1, `[${viewportName}] Forecast nav link`);
+  const scen = await page.evaluate(async () => {
+    const r = await fetch("data/scenario_forecast.json");
+    if (!r.ok) return { ok: false, status: r.status };
+    const j = await r.json();
+    return {
+      ok: true,
+      schema: j.schema_version,
+      hasShare: Array.isArray(j.ensemble) && j.ensemble.some((e) => e.share != null),
+      hids: (j.horizons || []).map((h) => h.id),
+      family: j.method && j.method.family,
+      forbidden: !!(j.holdings || j.wallet),
+    };
+  });
+  check(scen.ok, `[${viewportName}] scenario_forecast.json fetchable`);
+  if (scen.ok) {
+    check(scen.schema >= 2, `[${viewportName}] scenario schema_version>=2 (got ${scen.schema})`);
+    check(!scen.hasShare, `[${viewportName}] ensemble has no decorative share weights`);
+    check(!scen.forbidden, `[${viewportName}] no holdings/wallet fields`);
+    check(scen.hids.includes("1y") && scen.hids.includes("2y"), `[${viewportName}] horizons include 1y+2y`);
+    check(/ar1/i.test(scen.family || ""), `[${viewportName}] method family mentions ar1 (${scen.family})`);
+  }
+  await page.goto(BASE + "/#forecast", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(500);
+  const scrolled = await page.evaluate(() => {
+    const el = document.getElementById("forecast");
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return r.top < window.innerHeight * 0.55;
+  });
+  check(scrolled, `[${viewportName}] #forecast hash deep-link scrolls into view`);
+
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(overflow <= 0, `[${viewportName}] no horizontal page overflow (${overflow}px)`);
   check(errors.length === 0, `[${viewportName}] no uncaught page errors ${errors.length ? JSON.stringify(errors) : ""}`);
