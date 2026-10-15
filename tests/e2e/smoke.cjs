@@ -148,11 +148,11 @@ async function run(viewportName) {
   });
   check(scen.ok, `[${viewportName}] scenario_forecast.json fetchable`);
   if (scen.ok) {
-    check(scen.schema >= 2, `[${viewportName}] scenario schema_version>=2 (got ${scen.schema})`);
+    check(scen.schema >= 3, `[${viewportName}] scenario schema_version>=3 (got ${scen.schema})`);
     check(!scen.hasShare, `[${viewportName}] ensemble has no decorative share weights`);
     check(!scen.forbidden, `[${viewportName}] no holdings/wallet fields`);
     check(scen.hids.includes("1y") && scen.hids.includes("2y"), `[${viewportName}] horizons include 1y+2y`);
-    check(/ar1/i.test(scen.family || ""), `[${viewportName}] method family mentions ar1 (${scen.family})`);
+    check(/ar1|conformal/i.test(scen.family || ""), `[${viewportName}] method family mentions ar1 (${scen.family})`);
   }
   await page.goto(BASE + "/#forecast", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);

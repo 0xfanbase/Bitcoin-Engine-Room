@@ -4,7 +4,7 @@
   "type": "object",
   "required": ["schema_version", "generated_at", "as_of", "spot", "method", "horizons", "fan", "ensemble", "learning", "history"],
   "properties": {
-    "schema_version": { "type": "integer", "minimum": 2 },
+    "schema_version": { "type": "integer", "minimum": 3 },
     "generated_at": { "type": "string" },
     "as_of": { "type": "string" },
     "spot": { "type": "number" },
@@ -14,7 +14,7 @@
       "minItems": 5,
       "items": {
         "type": "object",
-        "required": ["id", "label", "days", "target_date", "p10", "p50", "p90", "in_live_ledger"]
+        "required": ["id", "label", "days", "target_date", "p10", "p50", "p90", "in_live_ledger", "band_source"]
       }
     },
     "history": { "type": "array" },
