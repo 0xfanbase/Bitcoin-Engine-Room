@@ -24,10 +24,18 @@
     root.textContent = "";
     for (const h of doc.horizons || []) {
       const el = document.createElement("div");
-      el.className = "forecast-range";
+      el.className = "forecast-range" + (h.in_live_ledger ? " fr-ledger" : " fr-scenario");
+      const ledgerTag = h.in_live_ledger
+        ? '<span class="fr-tag">ledger</span>'
+        : '<span class="fr-tag fr-tag-scenario">scenario</span>';
+      const caveat = h.caveat
+        ? '<div class="fr-caveat">' + h.caveat + "</div>"
+        : "";
       el.innerHTML =
         '<div class="fr-h">' +
         h.label +
+        " " +
+        ledgerTag +
         '</div><div class="fr-mid numeral">' +
         fmtUSD(h.p50) +
         '</div><div class="fr-band numeral">P10 ' +
@@ -37,7 +45,8 @@
         '</div><div class="fr-x">' +
         (h.target_date || "") +
         (h.multiple_vs_spot_p50 != null ? " · ×" + h.multiple_vs_spot_p50 + " spot" : "") +
-        "</div>";
+        "</div>" +
+        caveat;
       root.appendChild(el);
     }
   }
@@ -53,8 +62,6 @@
         (row.name || row.id) +
         "</td><td>" +
         (row.role || "") +
-        '</td><td class="numeral">' +
-        (row.share != null ? Math.round(row.share * 100) + "%" : "—") +
         "</td><td>" +
         (row.trust_note || "") +
         "</td>";
@@ -68,20 +75,27 @@
     if (!tb) return;
     const matured = (doc.learning && doc.learning.matured) || [];
     const miss = (doc.learning && doc.learning.miss_by_year) || [];
+    const ledgerNote = (doc.learning && doc.learning.ledger_note) || "";
     if (sum) {
       sum.textContent = matured.length
-        ? matured.length + " matured ledger call(s). Walk-forward miss-by-year chart below mirrors Track Record."
-        : "Live ledger has no matured horizons yet — miss-by-year still comes from the walk-forward backtest.";
+        ? matured.length +
+          " matured ledger call(s). Walk-forward miss-by-year chart below mirrors Track Record. " +
+          ledgerNote
+        : "Live ledger has no matured horizons yet — miss-by-year still comes from the walk-forward backtest. " +
+          ledgerNote;
     }
     tb.textContent = "";
     if (!matured.length) {
       const tr = document.createElement("tr");
-      tr.innerHTML = '<td colspan="4">No matured ledger rows yet — entries appear after their horizon elapses.</td>';
+      tr.innerHTML =
+        '<td colspan="4">No matured ledger rows yet — entries appear after their horizon elapses. Ledger freezes 1y / 2y / 4y only.</td>';
       tb.appendChild(tr);
       return;
     }
     for (const m of matured.slice(-12)) {
       const tr = document.createElement("tr");
+      const actual =
+        m.outcome && typeof m.outcome === "object" ? m.outcome.actual : m.outcome;
       tr.innerHTML =
         '<td class="numeral">' +
         (m.issued || "") +
@@ -90,11 +104,10 @@
         "d</td><td class=\"numeral\">" +
         fmtUSD(m.trend) +
         '</td><td class="numeral">' +
-        fmtUSD(m.outcome) +
+        fmtUSD(actual) +
         "</td>";
       tb.appendChild(tr);
     }
-    // stash miss series for chart when echarts ready
     BER._forecastMissByYear = miss;
   }
 
@@ -103,13 +116,6 @@
     if (!el || !echarts || !doc) return;
     const hist = doc.history || [];
     const fan = doc.fan || [];
-    const histDates = hist.map((p) => p.date);
-    const histPrices = hist.map((p) => p.price);
-    const fanDates = fan.map((p) => p.date);
-    const p10 = fan.map((p) => p.p10);
-    const p50 = fan.map((p) => p.p50);
-    const p90 = fan.map((p) => p.p90);
-    const cruise = fan.map((p) => p.cruise);
     const chart = echarts.init(el, null, { renderer: "canvas" });
     chart.setOption({
       backgroundColor: "transparent",
@@ -118,7 +124,11 @@
         trigger: "axis",
         valueFormatter: (v) => fmtUSD(v),
       },
-      xAxis: { type: "time", axisLabel: { color: "#6f9f80" }, axisLine: { lineStyle: { color: "rgba(51,255,102,0.25)" } } },
+      xAxis: {
+        type: "time",
+        axisLabel: { color: "#6f9f80" },
+        axisLine: { lineStyle: { color: "rgba(51,255,102,0.25)" } },
+      },
       yAxis: {
         type: "log",
         axisLabel: { color: "#6f9f80", formatter: (v) => fmtUSD(v) },
@@ -138,8 +148,8 @@
           type: "line",
           showSymbol: false,
           data: fan.map((p) => [p.date, p.p90]),
-          lineStyle: { width: 1, color: "rgba(51,255,102,0.35)" },
-          areaStyle: { color: "rgba(51,255,102,0.08)" },
+          lineStyle: { width: 1, color: "rgba(51,255,102,0.45)" },
+          // No areaStyle — on a log axis a fill to the axis overstates mass.
           z: 1,
         },
         {
@@ -147,11 +157,11 @@
           type: "line",
           showSymbol: false,
           data: fan.map((p) => [p.date, p.p10]),
-          lineStyle: { width: 1, color: "rgba(51,255,102,0.35)" },
+          lineStyle: { width: 1, color: "rgba(51,255,102,0.45)" },
           z: 2,
         },
         {
-          name: "P50 anchored",
+          name: "P50 (AR1→Cruise)",
           type: "line",
           showSymbol: false,
           data: fan.map((p) => [p.date, p.p50]),
@@ -170,9 +180,9 @@
     });
     el.dataset.status = "ready";
     const stats = document.getElementById("forecast-fan-stats");
-    if (stats && doc.horizons && doc.horizons[1]) {
-      const y = doc.horizons[1];
-      stats.textContent = "1y P50 " + fmtUSD(y.p50) + " · as of " + doc.as_of;
+    if (stats && doc.horizons) {
+      const y = doc.horizons.find((h) => h.id === "1y") || doc.horizons[1];
+      if (y) stats.textContent = "1y P50 " + fmtUSD(y.p50) + " · as of " + doc.as_of;
     }
     BER._forecastFanChart = chart;
     window.addEventListener("resize", () => chart.resize(), { passive: true });
@@ -217,7 +227,6 @@
       const res = await fetch("data/scenario_forecast.json");
       if (!res.ok) throw new Error("HTTP " + res.status);
       const doc = await res.json();
-      // Client-side scrub belt-and-suspenders
       if (doc.holdings || doc.wallet) throw new Error("refusing private fields");
       BER.scenarioForecast = doc;
       paintRanges(doc);
@@ -232,7 +241,6 @@
         return false;
       };
       if (!tryChart()) {
-        // charts.js loads echarts lazily; retry a few times after Models IO
         let n = 0;
         const t = setInterval(() => {
           n++;
@@ -242,7 +250,9 @@
     } catch (e) {
       console.warn("scenario_forecast unavailable", e);
       const disc = document.getElementById("forecast-disclaimer");
-      if (disc) disc.textContent = "Scenario forecast unavailable — check data/scenario_forecast.json after the daily pipeline.";
+      if (disc)
+        disc.textContent =
+          "Scenario forecast unavailable — check data/scenario_forecast.json after the daily pipeline.";
     }
   }
 
@@ -266,10 +276,19 @@
       const el = document.getElementById(id);
       if (el) io.observe(el);
     });
-    // Hash on load
-    if (location.hash && map[location.hash.slice(1)]) {
-      map[location.hash.slice(1)].classList.add("is-active");
-    } else if (map.live) map.live.classList.add("is-active");
+    const hashId = location.hash ? location.hash.slice(1) : "";
+    if (hashId && map[hashId]) {
+      map[hashId].classList.add("is-active");
+      const target = document.getElementById(hashId);
+      if (target) {
+        // Defer past sticky-nav layout so deep-links land on the section.
+        requestAnimationFrame(() => {
+          target.scrollIntoView({ behavior: "auto", block: "start" });
+        });
+      }
+    } else if (map.live) {
+      map.live.classList.add("is-active");
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
