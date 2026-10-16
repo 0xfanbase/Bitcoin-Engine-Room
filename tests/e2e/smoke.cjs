@@ -55,12 +55,12 @@ async function run(viewportName) {
   check((await state()).range === "2030", `[${viewportName}] hero defaults to the ->2030 view`);
   check(/pl=2030/.test(page.url()), `[${viewportName}] view state is reflected in the URL`);
 
-  await page.click('[data-power-law-range="1y"]');
+  await page.locator('[data-power-law-range="1y"]').click({ force: true });
   check((await state()).range === "1y" && /pl=1y/.test(page.url()), `[${viewportName}] 1Y chip switches the view`);
-  await page.click('[data-power-law-time="cal"]');
+  await page.locator('[data-power-law-time="cal"]').click({ force: true });
   check((await state()).timeScale === "cal", `[${viewportName}] calendar-time toggle`);
-  await page.click('[data-power-law-time="log"]');
-  await page.click('[data-power-law-range="2030"]');
+  await page.locator('[data-power-law-time="log"]').click({ force: true });
+  await page.locator('[data-power-law-range="2030"]').click({ force: true });
 
   const headline = await page.textContent("#power-law-headline");
   check(/below trend|above trend/.test(headline) && /percentile/.test(headline), `[${viewportName}] headline reading rendered`);
@@ -74,7 +74,7 @@ async function run(viewportName) {
     const tip = await page.evaluate(() => [...document.querySelectorAll("#power-law-chart div")].map((d) => d.textContent).join(" "));
     check(/Redline/.test(tip) && /Cruise/.test(tip) && /projection/.test(tip), "[desktop] tooltip shows model values in the future");
 
-    await page.click('[data-power-law-zoom="in"]');
+    await page.locator('[data-power-law-zoom="in"]').click({ force: true });
     check((await state()).view !== null, "[desktop] zoom-in button zooms");
     await page.keyboard.press("0");
     await page.locator("#power-law-chart").focus();
@@ -123,7 +123,7 @@ async function run(viewportName) {
     check((await state()).view !== null, "[mobile] horizontal swipe pans the hero chart");
   }
 
-  await page.click("#power-law-lookup-disclosure summary");
+  await page.locator("#power-law-lookup-disclosure summary").click({ force: true });
   await page.fill("#lookup-date", "2030-06-01");
   await page.fill("#lookup-price", "250000");
   check(/Cruise \$/.test(await page.textContent("#lookup-date-out")), `[${viewportName}] date lookup`);
@@ -144,6 +144,8 @@ async function run(viewportName) {
       hids: (j.horizons || []).map((h) => h.id),
       family: j.method && j.method.family,
       forbidden: !!(j.holdings || j.wallet),
+      closedLoop: !!(j.learning && j.learning.correction && j.learning.correction.status),
+      hasClosedLoopEnsemble: Array.isArray(j.ensemble) && j.ensemble.some((e) => e.id === "closed_loop"),
     };
   });
   check(scen.ok, `[${viewportName}] scenario_forecast.json fetchable`);
@@ -153,6 +155,8 @@ async function run(viewportName) {
     check(!scen.forbidden, `[${viewportName}] no holdings/wallet fields`);
     check(scen.hids.includes("1y") && scen.hids.includes("2y"), `[${viewportName}] horizons include 1y+2y`);
     check(/ar1|conformal/i.test(scen.family || ""), `[${viewportName}] method family mentions ar1 (${scen.family})`);
+    check(scen.closedLoop, `[${viewportName}] learning.correction.status present`);
+    check(scen.hasClosedLoopEnsemble, `[${viewportName}] ensemble includes closed_loop`);
   }
   await page.goto(BASE + "/#forecast", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);

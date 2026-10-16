@@ -60,11 +60,14 @@ def test_ledger_appends_once_per_month_and_never_rewrites_forecasts():
     assert len(ledger["entries"]) == 1
     assert json.dumps(ledger["entries"][0]["horizons"][0]["trend"]) == frozen
 
-    # 1y target (2015-06-30) has arrived; 2y/4y have not.
-    outcomes = [hz["outcome"] for hz in ledger["entries"][0]["horizons"]]
-    assert outcomes[0] is not None and outcomes[0]["inside_outer"] is True
-    assert outcomes[0]["miss_factor"] == pytest.approx(1.0, abs=1e-3)
-    assert outcomes[1] is None and outcomes[2] is None
+    # Short + 1y targets have arrived; 2y/4y have not (series ends 2016-01-01).
+    by_h = {hz["horizon_days"]: hz for hz in ledger["entries"][0]["horizons"]}
+    assert set(by_h) >= {30, 90, 365, 730, 1461}
+    assert by_h[365]["outcome"] is not None and by_h[365]["outcome"]["inside_outer"] is True
+    assert by_h[365]["outcome"]["miss_factor"] == pytest.approx(1.0, abs=1e-3)
+    assert by_h[30]["outcome"] is not None
+    assert by_h[90]["outcome"] is not None
+    assert by_h[730]["outcome"] is None and by_h[1461]["outcome"] is None
 
 
 def test_ledger_target_inside_a_data_gap_is_scored_on_the_next_real_row():
@@ -80,7 +83,9 @@ def test_ledger_target_inside_a_data_gap_is_scored_on_the_next_real_row():
             "bands": {"outer_offsets_log10": [-0.4, 0.7], "inner_offsets_log10": [-0.3, 0.3]},
         }
     }
-    outcome = backtest.update_ledger(None, models, s)["entries"][0]["horizons"][0]["outcome"]
+    entry = backtest.update_ledger(None, models, s)["entries"][0]
+    by_h = {hz["horizon_days"]: hz for hz in entry["horizons"]}
+    outcome = by_h[365]["outcome"]
     assert outcome is not None and outcome["actual_date"] == "2015-07-15"
 
 

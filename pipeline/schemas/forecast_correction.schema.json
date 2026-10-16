@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/0xfanbase/Bitcoin-Engine-Room/pipeline/schemas/forecast_correction.schema.json",
+  "title": "Closed-loop forecast correction from matured live ledger",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "status",
+    "horizons",
+    "pooled",
+    "n_matured_total",
+    "note_path",
+    "disclaimer"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated_at": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive_waiting_for_matured", "inactive_below_min_n"]
+    },
+    "kappa": { "type": "number" },
+    "min_n_horizon": { "type": "integer" },
+    "min_n_pooled": { "type": "integer" },
+    "max_bias_abs": { "type": "number" },
+    "max_widen": { "type": "number" },
+    "outer_miss_target": { "type": "number" },
+    "pooled": {
+      "type": "object",
+      "required": ["n", "bias_log10", "widen_log10"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0 },
+        "bias_log10": { "type": ["number", "null"] },
+        "widen_log10": { "type": ["number", "null"] }
+      }
+    },
+    "horizons": { "type": "object" },
+    "n_matured_total": { "type": "integer", "minimum": 0 },
+    "matured": { "type": "array" },
+    "ledger_started": { "type": ["string", "null"] },
+    "ledger_updated_at": { "type": ["string", "null"] },
+    "ledger_entries": { "type": "integer" },
+    "note_path": { "type": "string" },
+    "disclaimer": { "type": "string" }
+  },
+  "additionalProperties": true
+}

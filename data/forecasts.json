@@ -8,6 +8,26 @@
       "b": 5.602096,
       "horizons": [
         {
+          "horizon_days": 30,
+          "target_date": "2026-10-30",
+          "trend": 142600.17,
+          "inner_low": 73325.16,
+          "inner_high": 298757.65,
+          "floor": 57634.83,
+          "ceiling": 755224.45,
+          "outcome": null
+        },
+        {
+          "horizon_days": 90,
+          "target_date": "2026-12-29",
+          "trend": 150122.0,
+          "inner_low": 77192.9,
+          "inner_high": 314516.43,
+          "floor": 60674.94,
+          "ceiling": 795060.8,
+          "outcome": null
+        },
+        {
           "horizon_days": 365,
           "target_date": "2027-09-30",
           "trend": 188895.59,
@@ -45,6 +65,26 @@
       "a": -16.208972,
       "b": 5.601918,
       "horizons": [
+        {
+          "horizon_days": 30,
+          "target_date": "2026-10-31",
+          "trend": 142690.8,
+          "inner_low": 73378.86,
+          "inner_high": 298923.44,
+          "floor": 57668.27,
+          "ceiling": 755579.17,
+          "outcome": null
+        },
+        {
+          "horizon_days": 90,
+          "target_date": "2026-12-30",
+          "trend": 150215.99,
+          "inner_low": 77248.69,
+          "inner_high": 314687.98,
+          "floor": 60709.57,
+          "ceiling": 795426.67,
+          "outcome": null
+        },
         {
           "horizon_days": 365,
           "target_date": "2027-10-01",

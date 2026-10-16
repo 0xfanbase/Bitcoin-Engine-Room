@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-16T15:03:43Z",
+  "note_path": "pipeline/notes/FORECAST_CLOSED_LOOP_V1.md",
+  "ledger_started": "2026-09-30",
+  "ledger_updated_at": "2026-10-16",
+  "ledger_entries": 2,
+  "status": "inactive_waiting_for_matured",
+  "kappa": 12.0,
+  "min_n_horizon": 3,
+  "min_n_pooled": 4,
+  "max_bias_abs": 0.1,
+  "max_widen": 0.08,
+  "outer_miss_target": 0.2,
+  "pooled": {
+    "n": 0,
+    "bias_log10": 0.0,
+    "widen_log10": 0.0
+  },
+  "horizons": {
+    "30": {
+      "horizon_days": 30,
+      "n": 0,
+      "bias_log10": 0.0,
+      "widen_log10": 0.0,
+      "raw_mean_log_err": null,
+      "outer_miss_rate": null,
+      "source": "identity",
+      "active": false
+    },
+    "90": {
+      "horizon_days": 90,
+      "n": 0,
+      "bias_log10": 0.0,
+      "widen_log10": 0.0,
+      "raw_mean_log_err": null,
+      "outer_miss_rate": null,
+      "source": "identity",
+      "active": false
+    },
+    "180": {
+      "horizon_days": 180,
+      "n": 0,
+      "bias_log10": 0.0,
+      "widen_log10": 0.0,
+      "raw_mean_log_err": null,
+      "outer_miss_rate": null,
+      "source": "identity",
+      "active": false
+    },
+    "365": {
+      "horizon_days": 365,
+      "n": 0,
+      "bias_log10": 0.0,
+      "widen_log10": 0.0,
+      "raw_mean_log_err": null,
+      "outer_miss_rate": null,
+      "source": "identity",
+      "active": false
+    },
+    "730": {
+      "horizon_days": 730,
+      "n": 0,
+      "bias_log10": 0.0,
+      "widen_log10": 0.0,
+      "raw_mean_log_err": null,
+      "outer_miss_rate": null,
+      "source": "identity",
+      "active": false
+    },
+    "1461": {
+      "horizon_days": 1461,
+      "n": 0,
+      "bias_log10": 0.0,
+      "widen_log10": 0.0,
+      "raw_mean_log_err": null,
+      "outer_miss_rate": null,
+      "source": "identity",
+      "active": false
+    }
+  },
+  "n_matured_total": 0,
+  "matured": [],
+  "disclaimer": "Shrunk ledger bias / optional band widen from matured published forecasts only. Not a confidence-interval recalibration. Identity when the matured sample is below min_n."
+}

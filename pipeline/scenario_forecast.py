@@ -1,12 +1,17 @@
 """Public scenario-forecast artifact for the Forecast section.
 
 Built ONLY from Bitcoin-Engine-Room's own fitted power-law + AR(1) +
-walk-forward conformal residual offsets + Idle/Redline corridor.
+walk-forward conformal residual offsets + Idle/Redline corridor +
+optional closed-loop ledger correction.
 Does NOT ingest private btc-watcher JSON.
 
 v3 (2026-10-15): replace √t width growth with per-horizon conformal
 bands for ≤4y and Idle/Redline caps for 10y/30y. See
 pipeline/notes/FORECAST_CALIBRATION_V3.md.
+
+v3.1 (2026-10-16): apply shrunk/capped bias + optional band widen from
+matured live-ledger published→outcome misses. See
+pipeline/notes/FORECAST_CLOSED_LOOP_V1.md.
 """
 
 from __future__ import annotations
@@ -28,9 +33,10 @@ PRICE_PATH = REPO_ROOT / "data" / "history" / "price_daily.json"
 BACKTEST_PATH = REPO_ROOT / "data" / "backtest.json"
 LEDGER_PATH = REPO_ROOT / "data" / "forecasts.json"
 OUT_PATH = REPO_ROOT / "data" / "scenario_forecast.json"
+CORRECTION_PATH = REPO_ROOT / "data" / "forecast_correction.json"
 SCHEMA_PATH = REPO_ROOT / "pipeline" / "schemas" / "scenario_forecast.schema.json"
 
-LEDGER_HORIZON_DAYS = {365, 730, 1461}
+LEDGER_HORIZON_DAYS = {30, 90, 365, 730, 1461}
 
 HORIZONS = [
     {"id": "1m", "label": "1 month", "days": 30},
@@ -224,12 +230,18 @@ def _taper_to_corridor(
     )
 
 
-def build(*, now: datetime | None = None) -> dict:
+def build(*, now: datetime | None = None, correction: dict | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     models = _load(MODELS_PATH)
     price_doc = _load(PRICE_PATH)
     backtest = _load(BACKTEST_PATH) or {}
     ledger = _load(LEDGER_PATH) or {}
+    if correction is None:
+        correction = _load(CORRECTION_PATH)
+    if correction is None:
+        from pipeline import closed_loop
+
+        correction = closed_loop.build_correction(ledger, now=now)
     if not models or not price_doc:
         raise SystemExit("models.json and price_daily.json are required")
 
@@ -255,15 +267,19 @@ def build(*, now: datetime | None = None) -> dict:
     price_s = _PriceSeries(series, genesis, fit_start)
     conformal = compute_conformal_offsets(price_s)
 
+    from pipeline.closed_loop import bias_widen_for_days
+
     horizons_out = []
     for h in HORIZONS:
         target = as_of + timedelta(days=h["days"])
         d = last_days + h["days"]
         mean_r, _sd = _residual_mean_ar1(r0, phi, innov, h["days"])
         in_ledger = h["days"] in LEDGER_HORIZON_DAYS
+        bias_c, widen_c, corr_src = 0.0, 0.0, "identity"
 
         if h["days"] in ULTRA_LONG_DAYS:
             # Demote: Cruise ± Idle/Redline — no √t, no fake long-horizon conformal
+            # Closed-loop does not touch ultra-long corridor (no ledger sample).
             mean_r = 0.0
             lo, hi = outer_lo, outer_hi
             band_source = "idle_redline_corridor"
@@ -275,8 +291,14 @@ def build(*, now: datetime | None = None) -> dict:
             lo, hi, band_source = _interp_offsets(conformal, h["days"])
             if h["days"] > 1461:
                 lo, hi, band_source = _taper_to_corridor(lo, hi, h["days"], outer_lo, outer_hi)
+            bias_c, widen_c, corr_src = bias_widen_for_days(correction, h["days"])
+            mean_r = mean_r + bias_c
+            lo = lo - widen_c
+            hi = hi + widen_c
+            if abs(bias_c) > 1e-12 or widen_c > 1e-12:
+                band_source = f"{band_source}+closed_loop"
             caveat = None if in_ledger else (
-                "Not frozen in the live monthly ledger (ledger tracks 1y / 2y / 4y)."
+                "Not frozen in the live monthly ledger (ledger tracks 30d / 90d / 1y / 2y / 4y)."
             )
 
         p50 = _price_at(d, a, b, mean_r)
@@ -300,6 +322,9 @@ def build(*, now: datetime | None = None) -> dict:
                 "offset_lo": _r(lo, 6),
                 "offset_hi": _r(hi, 6),
                 "residual_mean": _r(mean_r, 6),
+                "closed_loop_bias": _r(bias_c, 6),
+                "closed_loop_widen": _r(widen_c, 6),
+                "closed_loop_source": corr_src,
                 "band_source": band_source,
                 "conformal_n_origins": meta_c.get("n_origins"),
                 "conformal_indep_windows": meta_c.get("approx_independent_windows"),
@@ -330,6 +355,10 @@ def build(*, now: datetime | None = None) -> dict:
             lo, hi, src = _interp_offsets(conformal, days)
             if days > 1461:
                 lo, hi, src = _taper_to_corridor(lo, hi, days, outer_lo, outer_hi)
+            bias_c, widen_c, _ = bias_widen_for_days(correction, days)
+            mean_r = mean_r + bias_c
+            lo = lo - widen_c
+            hi = hi + widen_c
         fan.append(
             {
                 "date": (as_of + timedelta(days=days)).isoformat(),
@@ -391,8 +420,18 @@ def build(*, now: datetime | None = None) -> dict:
         {
             "id": "live_ledger",
             "name": "Monthly live ledger",
-            "role": "scores 1y / 2y / 4y only",
+            "role": "scores 30d / 90d / 1y / 2y / 4y",
             "trust_note": "Cards outside those horizons are labeled scenario-only",
+        },
+        {
+            "id": "closed_loop",
+            "name": "Ledger closed-loop nudge",
+            "role": "shrunk bias + optional band widen from matured published misses",
+            "trust_note": (
+                f"status={correction.get('status')}; "
+                f"matured={correction.get('n_matured_total', 0)}; "
+                "caps ±0.10 log10; not a CI recalibration"
+            ),
         },
     ]
 
@@ -453,12 +492,21 @@ def build(*, now: datetime | None = None) -> dict:
                 "replaced": "sqrt_years_scale_from_v2",
             },
             "ledger_horizons_days": sorted(LEDGER_HORIZON_DAYS),
+            "closed_loop": {
+                "status": correction.get("status"),
+                "n_matured_total": correction.get("n_matured_total"),
+                "pooled": correction.get("pooled"),
+                "note_path": "pipeline/notes/FORECAST_CLOSED_LOOP_V1.md",
+            },
             "disclaimer": (
                 "P50 mean-reverts toward Cruise via AR(1) (same family as Models short-term). "
                 "P10/P90 for ≤4y are walk-forward conformal envelopes of AR1 forecast errors — "
                 "empirical coverage targets, NOT confidence intervals (independent windows are small). "
+                "When enough ledger calls have matured, a shrunk/capped closed-loop bias "
+                "(and optional band widen) nudges ≤4y forecasts from published→outcome misses; "
+                "this is still not a CI. "
                 "10y/30y use the Models Idle/Redline corridor as a scenario ribbon only. "
-                "Live ledger freezes 1y/2y/4y."
+                "Live ledger freezes 30d/90d/1y/2y/4y."
             ),
             "note_path": "pipeline/notes/FORECAST_CALIBRATION_V3.md",
         },
@@ -472,7 +520,17 @@ def build(*, now: datetime | None = None) -> dict:
             "backtest_horizons": backtest.get("horizons") or [],
             "ledger_started": ledger.get("started"),
             "ledger_updated_at": ledger.get("updated_at"),
-            "ledger_note": "Live ledger scores 1y/2y/4y only; other cards are scenario-labeled.",
+            "ledger_note": (
+                "Live ledger scores 30d/90d/1y/2y/4y; other cards are scenario-labeled. "
+                "Closed-loop applies shrunk ledger bias when matured sample clears min_n."
+            ),
+            "correction": {
+                "status": correction.get("status"),
+                "n_matured_total": correction.get("n_matured_total"),
+                "pooled": correction.get("pooled"),
+                "horizons": correction.get("horizons"),
+                "note_path": "pipeline/notes/FORECAST_CLOSED_LOOP_V1.md",
+            },
         },
     }
     forbidden = ("holdings", "wallet", "balance", "email", "gmail", "btc_stack", "icansquat")
