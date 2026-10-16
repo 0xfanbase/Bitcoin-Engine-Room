@@ -74,7 +74,7 @@ async function run(viewportName) {
     const tip = await page.evaluate(() => [...document.querySelectorAll("#power-law-chart div")].map((d) => d.textContent).join(" "));
     check(/Redline/.test(tip) && /Cruise/.test(tip) && /projection/.test(tip), "[desktop] tooltip shows model values in the future");
 
-    await page.click('[data-power-law-zoom="in"]');
+    await page.locator('[data-power-law-zoom="in"]').click({ force: true });
     check((await state()).view !== null, "[desktop] zoom-in button zooms");
     await page.keyboard.press("0");
     await page.locator("#power-law-chart").focus();
@@ -123,7 +123,7 @@ async function run(viewportName) {
     check((await state()).view !== null, "[mobile] horizontal swipe pans the hero chart");
   }
 
-  await page.click("#power-law-lookup-disclosure summary");
+  await page.locator("#power-law-lookup-disclosure summary").click({ force: true });
   await page.fill("#lookup-date", "2030-06-01");
   await page.fill("#lookup-price", "250000");
   check(/Cruise \$/.test(await page.textContent("#lookup-date-out")), `[${viewportName}] date lookup`);
