@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Bitcoin Engine Room</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://mempool.space wss://mempool.space https://api.coingecko.com https://api.coinbase.com; worker-src 'none'" />
 <meta name="description" content="A free, self-auditing Bitcoin fundamentals dashboard. Every gauge shows its data source, freshness, and validation status." />
 
 <!-- Site icon: the Bitcoin sign (U+20BF) in white on --bg, baked to static
@@ -17,16 +18,10 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- Non-blocking font load (standard loadCSS pattern): the page's own
-     style.css stays render-blocking (needed for layout correctness), but
-     the Google Fonts stylesheet shouldn't hold up first paint --
-     display=swap on the font URL already avoids invisible text either way.
-     Archivo Black dropped: the single-identity redesign (2026-07-09) moved
-     the masthead H1 and section plates to IBM Plex Mono -- see CLAUDE.md
-     Section 6 rule 5. -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-<noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
+<!-- Google Fonts: plain stylesheet (no inline onload) so CSP script-src
+     can omit 'unsafe-inline'. display=swap on the font URL avoids FOIT.
+     Archivo Black dropped 2026-07-09 — masthead uses IBM Plex Mono. -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>

@@ -12,6 +12,16 @@
     return "$" + Number(v).toFixed(0);
   }
 
+  // Defense-in-depth: never concatenate pipeline JSON into HTML.
+  // Poisoned scenario_forecast.json (compromised Actions push / bad PR)
+  // must not become executable markup — textContent / createElement only.
+  function mk(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null && text !== "") node.textContent = String(text);
+    return node;
+  }
+
   function paintRanges(doc) {
     const root = document.getElementById("forecast-ranges");
     const disc = document.getElementById("forecast-disclaimer");
@@ -23,37 +33,34 @@
     }
     root.textContent = "";
     for (const h of doc.horizons || []) {
-      const el = document.createElement("div");
-      el.className = "forecast-range" + (h.in_live_ledger ? " fr-ledger" : " fr-scenario");
-      const ledgerTag = h.in_live_ledger
-        ? '<span class="fr-tag">ledger</span>'
-        : '<span class="fr-tag fr-tag-scenario">scenario</span>';
-      const src = h.band_source
-        ? String(h.band_source).replace(/_/g, ' ')
-        : '';
+      const card = mk(
+        "div",
+        "forecast-range" + (h.in_live_ledger ? " fr-ledger" : " fr-scenario")
+      );
+      const head = mk("div", "fr-h");
+      head.appendChild(document.createTextNode((h.label || "") + " "));
+      head.appendChild(
+        mk(
+          "span",
+          h.in_live_ledger ? "fr-tag" : "fr-tag fr-tag-scenario",
+          h.in_live_ledger ? "ledger" : "scenario"
+        )
+      );
+      card.appendChild(head);
+      card.appendChild(mk("div", "fr-mid numeral", fmtUSD(h.p50)));
+      card.appendChild(
+        mk("div", "fr-band numeral", "P10 " + fmtUSD(h.p10) + " · P90 " + fmtUSD(h.p90))
+      );
+      const xBits = [];
+      if (h.target_date) xBits.push(String(h.target_date));
+      if (h.multiple_vs_spot_p50 != null) xBits.push("×" + h.multiple_vs_spot_p50 + " spot");
+      card.appendChild(mk("div", "fr-x", xBits.join(" · ")));
+      const src = h.band_source ? String(h.band_source).replace(/_/g, " ") : "";
       const caveatBits = [];
       if (src) caveatBits.push(src);
-      if (h.caveat) caveatBits.push(h.caveat);
-      const caveat = caveatBits.length
-        ? '<div class="fr-caveat">' + caveatBits.join(' · ') + '</div>'
-        : '';
-      el.innerHTML =
-        '<div class="fr-h">' +
-        h.label +
-        " " +
-        ledgerTag +
-        '</div><div class="fr-mid numeral">' +
-        fmtUSD(h.p50) +
-        '</div><div class="fr-band numeral">P10 ' +
-        fmtUSD(h.p10) +
-        " · P90 " +
-        fmtUSD(h.p90) +
-        '</div><div class="fr-x">' +
-        (h.target_date || "") +
-        (h.multiple_vs_spot_p50 != null ? " · ×" + h.multiple_vs_spot_p50 + " spot" : "") +
-        "</div>" +
-        caveat;
-      root.appendChild(el);
+      if (h.caveat) caveatBits.push(String(h.caveat));
+      if (caveatBits.length) card.appendChild(mk("div", "fr-caveat", caveatBits.join(" · ")));
+      root.appendChild(card);
     }
   }
 
@@ -63,14 +70,9 @@
     tb.textContent = "";
     for (const row of doc.ensemble || []) {
       const tr = document.createElement("tr");
-      tr.innerHTML =
-        "<td>" +
-        (row.name || row.id) +
-        "</td><td>" +
-        (row.role || "") +
-        "</td><td>" +
-        (row.trust_note || "") +
-        "</td>";
+      tr.appendChild(mk("td", null, row.name || row.id || ""));
+      tr.appendChild(mk("td", null, row.role || ""));
+      tr.appendChild(mk("td", null, row.trust_note || ""));
       tb.appendChild(tr);
     }
   }
@@ -99,25 +101,25 @@
     tb.textContent = "";
     if (!matured.length) {
       const tr = document.createElement("tr");
-      tr.innerHTML =
-        '<td colspan="4">No matured ledger rows yet — entries appear after their horizon elapses. Ledger freezes 30d / 90d / 1y / 2y / 4y.</td>';
+      const td = mk(
+        "td",
+        null,
+        "No matured ledger rows yet — entries appear after their horizon elapses. Ledger freezes 30d / 90d / 1y / 2y / 4y."
+      );
+      td.colSpan = 4;
+      tr.appendChild(td);
       tb.appendChild(tr);
+      BER._forecastMissByYear = miss;
       return;
     }
     for (const m of matured.slice(-12)) {
       const tr = document.createElement("tr");
       const actual =
         m.outcome && typeof m.outcome === "object" ? m.outcome.actual : m.outcome;
-      tr.innerHTML =
-        '<td class="numeral">' +
-        (m.issued || "") +
-        '</td><td class="numeral">' +
-        (m.horizon_days || "") +
-        "d</td><td class=\"numeral\">" +
-        fmtUSD(m.trend) +
-        '</td><td class="numeral">' +
-        fmtUSD(actual) +
-        "</td>";
+      tr.appendChild(mk("td", "numeral", m.issued || ""));
+      tr.appendChild(mk("td", "numeral", (m.horizon_days || "") + "d"));
+      tr.appendChild(mk("td", "numeral", fmtUSD(m.trend)));
+      tr.appendChild(mk("td", "numeral", fmtUSD(actual)));
       tb.appendChild(tr);
     }
     BER._forecastMissByYear = miss;
