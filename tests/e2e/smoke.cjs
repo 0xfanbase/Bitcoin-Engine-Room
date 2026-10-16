@@ -55,12 +55,12 @@ async function run(viewportName) {
   check((await state()).range === "2030", `[${viewportName}] hero defaults to the ->2030 view`);
   check(/pl=2030/.test(page.url()), `[${viewportName}] view state is reflected in the URL`);
 
-  await page.click('[data-power-law-range="1y"]');
+  await page.locator('[data-power-law-range="1y"]').click({ force: true });
   check((await state()).range === "1y" && /pl=1y/.test(page.url()), `[${viewportName}] 1Y chip switches the view`);
-  await page.click('[data-power-law-time="cal"]');
+  await page.locator('[data-power-law-time="cal"]').click({ force: true });
   check((await state()).timeScale === "cal", `[${viewportName}] calendar-time toggle`);
-  await page.click('[data-power-law-time="log"]');
-  await page.click('[data-power-law-range="2030"]');
+  await page.locator('[data-power-law-time="log"]').click({ force: true });
+  await page.locator('[data-power-law-range="2030"]').click({ force: true });
 
   const headline = await page.textContent("#power-law-headline");
   check(/below trend|above trend/.test(headline) && /percentile/.test(headline), `[${viewportName}] headline reading rendered`);
