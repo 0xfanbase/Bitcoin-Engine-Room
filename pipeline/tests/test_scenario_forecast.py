@@ -16,8 +16,14 @@ def test_build_conformal_family_and_ar1():
     assert "conformal" in doc["method"]["width"]
     by_id = {h["id"]: h for h in doc["horizons"]}
     # ledger labels
+    assert by_id["1m"]["in_live_ledger"]
     assert by_id["1y"]["in_live_ledger"] and by_id["2y"]["in_live_ledger"] and by_id["4y"]["in_live_ledger"]
     assert not by_id["10y"]["in_live_ledger"] and not by_id["30y"]["in_live_ledger"]
+    assert doc["learning"]["correction"]["status"] in (
+        "active",
+        "inactive_waiting_for_matured",
+        "inactive_below_min_n",
+    )
     # ≤4y use conformal; ultra-long use corridor
     assert "conformal" in by_id["1y"]["band_source"]
     assert by_id["10y"]["band_source"] == "idle_redline_corridor"

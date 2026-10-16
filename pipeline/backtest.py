@@ -9,9 +9,15 @@ Two different kinds of evidence, kept deliberately separate:
    (the method existed then; nobody was publishing it), recomputed nightly.
 
 2. data/forecasts.json -- a LIVE LEDGER. Once per calendar month the site's
-   real, current forecast is frozen and appended; nothing in it is ever
-   rewritten except an entry's `outcome` filling in once its target date
-   arrives. This is the record that cannot be fit after the fact.
+   real, current forecast is frozen and appended (1y/2y/4y plus 30d/90d for
+   closed-loop feedback); nothing in it is ever rewritten except an entry's
+   `outcome` filling in once its target date arrives, and missing short
+   horizons may be appended onto older entries using that entry's frozen
+   params. This is the record that cannot be fit after the fact.
+
+3. data/forecast_correction.json -- closed-loop nudge derived from matured
+   ledger rows (shrunk/capped bias + optional band widen). See
+   pipeline/notes/FORECAST_CLOSED_LOOP_V1.md.
 
 Run after fit_models: `python -m pipeline.backtest`.
 """
@@ -41,6 +47,10 @@ LEDGER_PATH = REPO_ROOT / "data" / "forecasts.json"
 SCHEMAS_DIR = REPO_ROOT / "pipeline" / "schemas"
 
 HORIZONS = [365, 730, 1461]
+# Short horizons freezed on the live ledger so published→outcome pairs mature
+# in weeks/months and can feed closed_loop (long 1y first matures ~2027-09).
+LEDGER_SHORT_HORIZONS = [30, 90]
+LEDGER_HORIZONS = sorted(set(HORIZONS + LEDGER_SHORT_HORIZONS))
 SHORT_HORIZONS = [90, 180, 365]
 ORIGIN_START = date(2013, 1, 1)
 MIN_FIT_POINTS = 365
@@ -387,10 +397,27 @@ def run_backtest(*, now: datetime | None = None, dry_run: bool = False) -> dict:
 # --------------------------------------------------------------------------
 
 
+def _horizon_row(a: float, b: float, genesis: date, issued_d: date, h: int, inner: list, outer: list) -> dict:
+    target = issued_d + timedelta(days=h)
+    t = a + b * math.log10(max((target - genesis).days, 2))
+    return {
+        "horizon_days": h,
+        "target_date": target.isoformat(),
+        "trend": round(10**t, 2),
+        "inner_low": round(10 ** (t + inner[0]), 2),
+        "inner_high": round(10 ** (t + inner[1]), 2),
+        "floor": round(10 ** (t + outer[0]), 2),
+        "ceiling": round(10 ** (t + outer[1]), 2),
+        "outcome": None,
+    }
+
+
 def update_ledger(ledger: dict | None, models: dict | None, s: Series) -> dict:
     """Append this month's frozen forecast (once per calendar month, keyed on
     the fit's own data date) and score any entry whose target has arrived.
-    Existing entries' forecast numbers are never modified."""
+    Existing entries' forecast numbers are never modified. Missing short
+    ledger horizons (30d/90d) may be appended onto older entries using that
+    entry's frozen a/b (reconstructable published forecast)."""
     ledger = ledger or {"schema_version": 1, "entries": []}
     entries = ledger["entries"]
 
@@ -398,38 +425,52 @@ def update_ledger(ledger: dict | None, models: dict | None, s: Series) -> dict:
         pl = models["power_law"]
         issued = pl["current"]["date"]
         month = issued[:7]
-        if not any(e["issued"][:7] == month for e in entries):
+        outer = pl["bands"].get("outer_offsets_log10")
+        inner = pl["bands"].get("inner_offsets_log10")
+        if outer and inner and not any(e["issued"][:7] == month for e in entries):
             a, b = pl["params"]["a"], pl["params"]["b"]
-            outer = pl["bands"].get("outer_offsets_log10")
-            inner = pl["bands"].get("inner_offsets_log10")
-            if outer and inner:
-                genesis = date.fromisoformat(pl["params"]["genesis_date"])
-                issued_d = date.fromisoformat(issued)
-                horizons = []
-                for h in HORIZONS:
-                    target = issued_d + timedelta(days=h)
-                    t = a + b * math.log10((target - genesis).days)
-                    horizons.append(
-                        {
-                            "horizon_days": h,
-                            "target_date": target.isoformat(),
-                            "trend": round(10**t, 2),
-                            "inner_low": round(10 ** (t + inner[0]), 2),
-                            "inner_high": round(10 ** (t + inner[1]), 2),
-                            "floor": round(10 ** (t + outer[0]), 2),
-                            "ceiling": round(10 ** (t + outer[1]), 2),
-                            "outcome": None,
-                        }
-                    )
-                entries.append(
-                    {
-                        "issued": issued,
-                        "price_at_issue": pl["current"]["price"],
-                        "a": a,
-                        "b": b,
-                        "horizons": horizons,
-                    }
-                )
+            genesis = date.fromisoformat(pl["params"]["genesis_date"])
+            issued_d = date.fromisoformat(issued)
+            horizons = [
+                _horizon_row(a, b, genesis, issued_d, h, inner, outer)
+                for h in LEDGER_HORIZONS
+            ]
+            entries.append(
+                {
+                    "issued": issued,
+                    "price_at_issue": pl["current"]["price"],
+                    "a": a,
+                    "b": b,
+                    "horizons": horizons,
+                }
+            )
+
+    # Backfill short horizons onto older entries without touching existing rows.
+    for e in entries:
+        have = {hz["horizon_days"] for hz in e["horizons"]}
+        missing = [h for h in LEDGER_SHORT_HORIZONS if h not in have]
+        if not missing:
+            continue
+        genesis = date(2009, 1, 3)
+        if models and models.get("power_law"):
+            genesis = date.fromisoformat(models["power_law"]["params"]["genesis_date"])
+        issued_d = date.fromisoformat(e["issued"])
+        # Reconstruct inner/outer from any existing row's ratios vs trend.
+        sample = e["horizons"][0]
+        t0 = math.log10(sample["trend"])
+        inner = [
+            math.log10(sample["inner_low"]) - t0,
+            math.log10(sample["inner_high"]) - t0,
+        ]
+        outer = [
+            math.log10(sample["floor"]) - t0,
+            math.log10(sample["ceiling"]) - t0,
+        ]
+        for h in missing:
+            e["horizons"].append(
+                _horizon_row(e["a"], e["b"], genesis, issued_d, h, inner, outer)
+            )
+        e["horizons"].sort(key=lambda hz: hz["horizon_days"])
 
     for e in entries:
         for hz in e["horizons"]:
@@ -460,6 +501,7 @@ def update_ledger(ledger: dict | None, models: dict | None, s: Series) -> dict:
     return ledger
 
 
+
 def main() -> None:
     import argparse
 
@@ -476,9 +518,13 @@ def main() -> None:
     # Public Forecast section artifact (2026-10-15). Runs inside this step so
     # daily.yml need not change (OAuth apps often lack the workflow scope).
     if not args.dry_run:
+        from pipeline import closed_loop
         from pipeline.scenario_forecast import build, write
 
-        write(build())
+        corr = closed_loop.build_correction(out["ledger"])
+        closed_loop.write(corr)
+        print(f"wrote data/forecast_correction.json status={corr['status']}")
+        write(build(correction=corr))
         print("wrote data/scenario_forecast.json")
 
 

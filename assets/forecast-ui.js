@@ -83,18 +83,24 @@
     const miss = (doc.learning && doc.learning.miss_by_year) || [];
     const ledgerNote = (doc.learning && doc.learning.ledger_note) || "";
     if (sum) {
+      const corr = (doc.learning && doc.learning.correction) || {};
+      const corrBit = corr.status
+        ? " Closed-loop: " + corr.status + " (matured n=" + (corr.n_matured_total || 0) + ")."
+        : "";
       sum.textContent = matured.length
         ? matured.length +
           " matured ledger call(s). Walk-forward miss-by-year chart below mirrors Track Record. " +
-          ledgerNote
+          ledgerNote +
+          corrBit
         : "Live ledger has no matured horizons yet — miss-by-year still comes from the walk-forward backtest. " +
-          ledgerNote;
+          ledgerNote +
+          corrBit;
     }
     tb.textContent = "";
     if (!matured.length) {
       const tr = document.createElement("tr");
       tr.innerHTML =
-        '<td colspan="4">No matured ledger rows yet — entries appear after their horizon elapses. Ledger freezes 1y / 2y / 4y only.</td>';
+        '<td colspan="4">No matured ledger rows yet — entries appear after their horizon elapses. Ledger freezes 30d / 90d / 1y / 2y / 4y.</td>';
       tb.appendChild(tr);
       return;
     }

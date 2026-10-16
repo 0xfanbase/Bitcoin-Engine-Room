@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "generated_at": "2026-10-16T11:48:05Z",
+  "generated_at": "2026-10-16T15:03:43Z",
   "as_of": "2026-10-16",
   "spot": 82618.0,
   "method": {
@@ -88,11 +88,23 @@
       "replaced": "sqrt_years_scale_from_v2"
     },
     "ledger_horizons_days": [
+      30,
+      90,
       365,
       730,
       1461
     ],
-    "disclaimer": "P50 mean-reverts toward Cruise via AR(1) (same family as Models short-term). P10/P90 for \u22644y are walk-forward conformal envelopes of AR1 forecast errors \u2014 empirical coverage targets, NOT confidence intervals (independent windows are small). 10y/30y use the Models Idle/Redline corridor as a scenario ribbon only. Live ledger freezes 1y/2y/4y.",
+    "closed_loop": {
+      "status": "inactive_waiting_for_matured",
+      "n_matured_total": 0,
+      "pooled": {
+        "n": 0,
+        "bias_log10": 0.0,
+        "widen_log10": 0.0
+      },
+      "note_path": "pipeline/notes/FORECAST_CLOSED_LOOP_V1.md"
+    },
+    "disclaimer": "P50 mean-reverts toward Cruise via AR(1) (same family as Models short-term). P10/P90 for \u22644y are walk-forward conformal envelopes of AR1 forecast errors \u2014 empirical coverage targets, NOT confidence intervals (independent windows are small). When enough ledger calls have matured, a shrunk/capped closed-loop bias (and optional band widen) nudges \u22644y forecasts from published\u2192outcome misses; this is still not a CI. 10y/30y use the Models Idle/Redline corridor as a scenario ribbon only. Live ledger freezes 30d/90d/1y/2y/4y.",
     "note_path": "pipeline/notes/FORECAST_CALIBRATION_V3.md"
   },
   "horizons": [
@@ -110,11 +122,14 @@
       "offset_lo": -0.115852,
       "offset_hi": 0.13401,
       "residual_mean": -0.204172,
+      "closed_loop_bias": 0.0,
+      "closed_loop_widen": 0.0,
+      "closed_loop_source": "identity",
       "band_source": "conformal@30d",
       "conformal_n_origins": 165,
       "conformal_indep_windows": 166.9,
-      "in_live_ledger": false,
-      "caveat": "Not frozen in the live monthly ledger (ledger tracks 1y / 2y / 4y)."
+      "in_live_ledger": true,
+      "caveat": null
     },
     {
       "id": "1y",
@@ -130,6 +145,9 @@
       "offset_lo": -0.527524,
       "offset_hi": 0.419084,
       "residual_mean": -0.05334,
+      "closed_loop_bias": 0.0,
+      "closed_loop_widen": 0.0,
+      "closed_loop_source": "identity",
       "band_source": "conformal@365d",
       "conformal_n_origins": 154,
       "conformal_indep_windows": 12.8,
@@ -150,6 +168,9 @@
       "offset_lo": -0.596519,
       "offset_hi": 0.250589,
       "residual_mean": -0.012357,
+      "closed_loop_bias": 0.0,
+      "closed_loop_widen": 0.0,
+      "closed_loop_source": "identity",
       "band_source": "conformal@730d",
       "conformal_n_origins": 142,
       "conformal_indep_windows": 5.9,
@@ -170,6 +191,9 @@
       "offset_lo": -0.447861,
       "offset_hi": 0.30111,
       "residual_mean": -0.00066,
+      "closed_loop_bias": 0.0,
+      "closed_loop_widen": 0.0,
+      "closed_loop_source": "identity",
       "band_source": "conformal@1461d",
       "conformal_n_origins": 118,
       "conformal_indep_windows": 2.4,
@@ -190,6 +214,9 @@
       "offset_lo": -0.39376,
       "offset_hi": 0.722814,
       "residual_mean": 0.0,
+      "closed_loop_bias": 0.0,
+      "closed_loop_widen": 0.0,
+      "closed_loop_source": "identity",
       "band_source": "idle_redline_corridor",
       "conformal_n_origins": null,
       "conformal_indep_windows": null,
@@ -210,6 +237,9 @@
       "offset_lo": -0.39376,
       "offset_hi": 0.722814,
       "residual_mean": 0.0,
+      "closed_loop_bias": 0.0,
+      "closed_loop_widen": 0.0,
+      "closed_loop_source": "identity",
       "band_source": "idle_redline_corridor",
       "conformal_n_origins": null,
       "conformal_indep_windows": null,
@@ -2790,8 +2820,14 @@
     {
       "id": "live_ledger",
       "name": "Monthly live ledger",
-      "role": "scores 1y / 2y / 4y only",
+      "role": "scores 30d / 90d / 1y / 2y / 4y",
       "trust_note": "Cards outside those horizons are labeled scenario-only"
+    },
+    {
+      "id": "closed_loop",
+      "name": "Ledger closed-loop nudge",
+      "role": "shrunk bias + optional band widen from matured published misses",
+      "trust_note": "status=inactive_waiting_for_matured; matured=0; caps \u00b10.10 log10; not a CI recalibration"
     }
   ],
   "learning": {
@@ -2919,6 +2955,78 @@
     ],
     "ledger_started": "2026-09-30",
     "ledger_updated_at": "2026-10-16",
-    "ledger_note": "Live ledger scores 1y/2y/4y only; other cards are scenario-labeled."
+    "ledger_note": "Live ledger scores 30d/90d/1y/2y/4y; other cards are scenario-labeled. Closed-loop applies shrunk ledger bias when matured sample clears min_n.",
+    "correction": {
+      "status": "inactive_waiting_for_matured",
+      "n_matured_total": 0,
+      "pooled": {
+        "n": 0,
+        "bias_log10": 0.0,
+        "widen_log10": 0.0
+      },
+      "horizons": {
+        "30": {
+          "horizon_days": 30,
+          "n": 0,
+          "bias_log10": 0.0,
+          "widen_log10": 0.0,
+          "raw_mean_log_err": null,
+          "outer_miss_rate": null,
+          "source": "identity",
+          "active": false
+        },
+        "90": {
+          "horizon_days": 90,
+          "n": 0,
+          "bias_log10": 0.0,
+          "widen_log10": 0.0,
+          "raw_mean_log_err": null,
+          "outer_miss_rate": null,
+          "source": "identity",
+          "active": false
+        },
+        "180": {
+          "horizon_days": 180,
+          "n": 0,
+          "bias_log10": 0.0,
+          "widen_log10": 0.0,
+          "raw_mean_log_err": null,
+          "outer_miss_rate": null,
+          "source": "identity",
+          "active": false
+        },
+        "365": {
+          "horizon_days": 365,
+          "n": 0,
+          "bias_log10": 0.0,
+          "widen_log10": 0.0,
+          "raw_mean_log_err": null,
+          "outer_miss_rate": null,
+          "source": "identity",
+          "active": false
+        },
+        "730": {
+          "horizon_days": 730,
+          "n": 0,
+          "bias_log10": 0.0,
+          "widen_log10": 0.0,
+          "raw_mean_log_err": null,
+          "outer_miss_rate": null,
+          "source": "identity",
+          "active": false
+        },
+        "1461": {
+          "horizon_days": 1461,
+          "n": 0,
+          "bias_log10": 0.0,
+          "widen_log10": 0.0,
+          "raw_mean_log_err": null,
+          "outer_miss_rate": null,
+          "source": "identity",
+          "active": false
+        }
+      },
+      "note_path": "pipeline/notes/FORECAST_CLOSED_LOOP_V1.md"
+    }
   }
 }

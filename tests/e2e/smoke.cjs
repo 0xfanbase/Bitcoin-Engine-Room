@@ -144,6 +144,8 @@ async function run(viewportName) {
       hids: (j.horizons || []).map((h) => h.id),
       family: j.method && j.method.family,
       forbidden: !!(j.holdings || j.wallet),
+      closedLoop: !!(j.learning && j.learning.correction && j.learning.correction.status),
+      hasClosedLoopEnsemble: Array.isArray(j.ensemble) && j.ensemble.some((e) => e.id === "closed_loop"),
     };
   });
   check(scen.ok, `[${viewportName}] scenario_forecast.json fetchable`);
@@ -153,6 +155,8 @@ async function run(viewportName) {
     check(!scen.forbidden, `[${viewportName}] no holdings/wallet fields`);
     check(scen.hids.includes("1y") && scen.hids.includes("2y"), `[${viewportName}] horizons include 1y+2y`);
     check(/ar1|conformal/i.test(scen.family || ""), `[${viewportName}] method family mentions ar1 (${scen.family})`);
+    check(scen.closedLoop, `[${viewportName}] learning.correction.status present`);
+    check(scen.hasClosedLoopEnsemble, `[${viewportName}] ensemble includes closed_loop`);
   }
   await page.goto(BASE + "/#forecast", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
