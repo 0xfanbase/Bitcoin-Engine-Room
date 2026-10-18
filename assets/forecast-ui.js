@@ -272,36 +272,130 @@
 
   function initNav() {
     const links = [...document.querySelectorAll(".site-nav-links a")];
-    if (!links.length) return;
-    const map = Object.fromEntries(links.map((a) => [a.getAttribute("data-nav"), a]));
+    const linksRoot = document.querySelector(".site-nav-links");
+    const pill = document.querySelector(".site-nav-pill");
+    const nav = document.getElementById("site-nav");
+    if (!links.length || !linksRoot) return;
+    const map = Object.fromEntries(
+      links.map((a) => [a.getAttribute("data-nav"), a])
+    );
     const ids = ["live", "models", "forecast", "health"];
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          links.forEach((a) => a.classList.remove("is-active"));
-          const a = map[e.target.id];
-          if (a) a.classList.add("is-active");
+    let activeId = null;
+    let lockUntil = 0;
+
+    function movePill(link, instant) {
+      if (!pill || !link) return;
+      const rootRect = linksRoot.getBoundingClientRect();
+      const r = link.getBoundingClientRect();
+      const x = r.left - rootRect.left + linksRoot.scrollLeft;
+      const w = r.width;
+      if (instant) {
+        pill.style.transition = "none";
+      }
+      pill.style.width = Math.max(0, w) + "px";
+      pill.style.transform = "translate3d(" + x + "px,0,0)";
+      pill.classList.add("is-ready");
+      if (instant) {
+        void pill.offsetWidth;
+        pill.style.transition = "";
+      }
+    }
+
+    function setActive(id, opts) {
+      opts = opts || {};
+      if (!id || !map[id]) return;
+      const changed = id !== activeId;
+      activeId = id;
+      if (changed) {
+        links.forEach((a) =>
+          a.classList.toggle("is-active", a.getAttribute("data-nav") === id)
+        );
+      }
+      movePill(map[id], !!opts.instant);
+      if (opts.fromTap) lockUntil = performance.now() + 700;
+    }
+
+    function navOffset() {
+      // Sticky bar height already includes env(safe-area-inset-top) padding.
+      return (nav ? nav.getBoundingClientRect().height : 64) + 8;
+    }
+
+    function scrollToId(id, behavior) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - navOffset();
+      window.scrollTo({ top: Math.max(0, top), behavior: behavior || "auto" });
+    }
+
+    function pickSection() {
+      if (performance.now() < lockUntil) return;
+      // Near document end → last section (Health can't always reach the probe).
+      const atEnd =
+        window.scrollY + window.innerHeight >=
+        document.documentElement.scrollHeight - 4;
+      if (atEnd) {
+        setActive(ids[ids.length - 1], {});
+        return;
+      }
+      // Probe just below the sticky nav so the section under the bar wins.
+      const probe = navOffset() + 12;
+      let best = ids[0];
+      for (let i = 0; i < ids.length; i++) {
+        const el = document.getElementById(ids[i]);
+        if (!el) continue;
+        if (el.getBoundingClientRect().top <= probe) best = ids[i];
+      }
+      setActive(best, {});
+    }
+
+    links.forEach((a) => {
+      a.addEventListener("click", (e) => {
+        const id = a.getAttribute("data-nav");
+        if (!id || !map[id]) return;
+        e.preventDefault();
+        setActive(id, { fromTap: true });
+        const reduce =
+          window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        scrollToId(id, reduce ? "auto" : "smooth");
+        if (history.replaceState) {
+          history.replaceState(null, "", "#" + id);
+        } else {
+          location.hash = id;
+        }
+      });
+    });
+
+    let ticking = false;
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          pickSection();
+          ticking = false;
         });
       },
-      { rootMargin: "-25% 0px -55% 0px", threshold: 0.01 }
+      { passive: true }
     );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) io.observe(el);
+    window.addEventListener("resize", () => {
+      if (activeId && map[activeId]) movePill(map[activeId], true);
+      pickSection();
     });
+
     const hashId = location.hash ? location.hash.slice(1) : "";
     if (hashId && map[hashId]) {
-      map[hashId].classList.add("is-active");
-      const target = document.getElementById(hashId);
-      if (target) {
-        // Defer past sticky-nav layout so deep-links land on the section.
+      setActive(hashId, { instant: true });
+      requestAnimationFrame(() => {
+        scrollToId(hashId, "auto");
         requestAnimationFrame(() => {
-          target.scrollIntoView({ behavior: "auto", block: "start" });
+          setActive(hashId, { instant: true });
+          pickSection();
         });
-      }
-    } else if (map.live) {
-      map.live.classList.add("is-active");
+      });
+    } else {
+      setActive("live", { instant: true });
     }
   }
 
