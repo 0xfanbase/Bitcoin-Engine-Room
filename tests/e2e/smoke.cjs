@@ -216,6 +216,37 @@ async function run(viewportName) {
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(overflow <= 0, `[${viewportName}] no horizontal page overflow (${overflow}px)`);
+
+  // Instrument stack: Role/Trust note must wrap inside the card (nowrap used
+  // to push prose past the panel edge on phones while page overflow stayed 0
+  // because html { overflow-x: hidden } clips scrollWidth).
+  await page.locator("#forecast-ensemble-card").scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => {
+    const tb = document.getElementById("forecast-ensemble-tbody");
+    return tb && tb.querySelectorAll("tr").length >= 3 && !/loading/i.test(tb.textContent || "");
+  }, null, { timeout: 15000 }).catch(() => null);
+  const stackFit = await page.evaluate(() => {
+    const card = document.getElementById("forecast-ensemble-card");
+    const table = document.getElementById("forecast-ensemble-table");
+    if (!card || !table) return { ok: false, reason: "missing nodes" };
+    const cr = card.getBoundingClientRect();
+    const cells = [...table.querySelectorAll("tbody td")];
+    if (!cells.length) return { ok: false, reason: "no cells" };
+    let maxBleed = 0;
+    for (const td of cells) {
+      const r = td.getBoundingClientRect();
+      maxBleed = Math.max(maxBleed, r.right - cr.right, cr.left - r.left);
+    }
+    const cs = getComputedStyle(table.querySelector("td:nth-child(2)") || table);
+    return {
+      ok: maxBleed <= 1.5,
+      maxBleed,
+      whiteSpace: cs.whiteSpace,
+      rows: cells.length,
+    };
+  });
+  check(stackFit.ok, `[${viewportName}] Instrument stack cells inside card (bleed ${stackFit.maxBleed}px, white-space=${stackFit.whiteSpace})`);
+
   check(errors.length === 0, `[${viewportName}] no uncaught page errors ${errors.length ? JSON.stringify(errors) : ""}`);
   await browser.close();
 }

@@ -1159,6 +1159,47 @@ a {
   white-space: normal;
 }
 
+/* Instrument stack (Forecast): Role + Trust note are prose, not short
+   numerals. Base .cycle-tops-table sets white-space:nowrap on every cell,
+   so long Role strings (e.g. closed-loop nudge) force the table wider than
+   the card on phones — text bleeds past the panel edge while html's
+   overflow-x:hidden clips the page scroll. Fixed layout + wrap keeps
+   every column inside the card; overflow-wrap:anywhere breaks long tokens
+   (φ=…, log10, ×1.994) without horizontal bleed. */
+#forecast-ensemble-table {
+  table-layout: fixed;
+  width: 100%;
+}
+#forecast-ensemble-table th,
+#forecast-ensemble-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  vertical-align: top;
+  hyphens: auto;
+}
+#forecast-ensemble-table th:nth-child(1),
+#forecast-ensemble-table td:nth-child(1) {
+  width: 26%;
+}
+#forecast-ensemble-table th:nth-child(2),
+#forecast-ensemble-table td:nth-child(2) {
+  width: 34%;
+}
+#forecast-ensemble-table th:nth-child(3),
+#forecast-ensemble-table td:nth-child(3) {
+  width: 40%;
+}
+@media (max-width: 480px) {
+  #forecast-ensemble-table {
+    font-size: 0.74rem;
+  }
+  #forecast-ensemble-table th,
+  #forecast-ensemble-table td {
+    padding: 0.35rem 0.4rem 0.35rem 0;
+  }
+}
+
 /* ---------- Footer / attribution ----------
    Panel-backed per the readability law -- previously sat on bare
    background with no protection from the rain behind it. */
