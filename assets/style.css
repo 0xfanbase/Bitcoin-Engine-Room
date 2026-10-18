@@ -107,7 +107,9 @@ a {
 .page {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0 1rem 3rem;
+  /* Extra bottom pad so the last section (#health) can scroll up under the
+     sticky nav probe — otherwise scrollspy never reaches Health. */
+  padding: 0 1rem calc(70vh + env(safe-area-inset-bottom, 0px));
 }
 
 /* Panel-backed per the readability law (director ruling): no DOM text ever
@@ -1213,29 +1215,36 @@ a {
 }
 
 
-/* ---- Sticky section nav (2026-10-15 combine) ----
+/* ---- Sticky section nav (2026-10-15 combine; mobile safe-area 2026-10-18) ----
    Owner asked for Live | Models | Forecast | Health after folding public-safe
    Forecast from private btc-watcher. This is a section jump bar — not the
-   retired site-header (brand/rain rocker/status lamp stay gone). */
+   retired site-header (brand/rain rocker/status lamp stay gone).
+   Mobile: env(safe-area-inset-top) clears Dynamic Island; opaque panel stops
+   rain/cards punching through; .site-nav-pill slides under the active tab. */
 .site-nav {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: rgba(2, 8, 4, 0.92);
+  /* Fully opaque scrim — readability law: nav labels must not fight the rain */
+  background: var(--bg);
   border-bottom: 1px solid var(--hairline);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 @media (prefers-reduced-motion: reduce) {
-  .site-nav { backdrop-filter: none; background: var(--bg); }
+  .site-nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg); }
 }
 .site-nav-inner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 8px 16px;
+  padding: 10px 16px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 18px;
+  gap: 8px 18px;
 }
 .site-nav-brand {
   color: var(--ink-dim);
@@ -1243,15 +1252,40 @@ a {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  line-height: 1.2;
 }
 .site-nav-brand:hover { color: var(--accent); }
 .site-nav-links {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 4px;
   margin-left: auto;
 }
+/* Sliding green indicator — transform/width only (compositor-friendly) */
+.site-nav-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 140ms ease;
+  will-change: transform, width;
+}
+.site-nav-pill.is-ready { opacity: 1; }
 .site-nav-links a {
+  position: relative;
+  z-index: 1;
   color: var(--ink-dim);
   text-decoration: none;
   font-size: 12px;
@@ -1262,13 +1296,51 @@ a {
   align-items: center;
   border: 1px solid transparent;
   border-radius: 999px;
+  background: transparent;
+  transition: color 140ms ease, border-color 140ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .site-nav-links a:hover { color: var(--ink); border-color: var(--hairline); }
 .site-nav-links a.is-active {
   color: var(--bg);
-  background: var(--accent);
-  border-color: var(--accent);
   font-weight: 600;
+  border-color: transparent;
+  background: transparent; /* pill underneath provides the green */
+}
+.site-nav-links a.is-active:hover {
+  color: var(--bg);
+  border-color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-nav-pill { transition: none; }
+  .site-nav-links a { transition: none; }
+}
+/* Narrow phones: brand above pills so they don't collide under the Island */
+@media (max-width: 480px) {
+  .site-nav-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 12px 10px;
+  }
+  .site-nav-links {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .site-nav-links a {
+    padding: 8px 10px;
+    font-size: 11px;
+    min-height: 40px;
+  }
+}
+/* Keep hash / nav jumps clear of the sticky bar (+ Island inset) */
+#live,
+#models,
+#forecast,
+#health {
+  scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 88px);
 }
 
 /* Light scanline veil — tasteful; off under reduced motion */

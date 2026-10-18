@@ -45,6 +45,17 @@ async function run(viewportName) {
   });
 
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(200);
+  const bootNav = await page.evaluate(() => {
+    const live = document.querySelector('a[data-nav="live"]');
+    const pill = document.querySelector(".site-nav-pill");
+    return {
+      liveActive: !!(live && live.classList.contains("is-active")),
+      pillReady: !!(pill && pill.classList.contains("is-ready")),
+    };
+  });
+  check(bootNav.liveActive, `[${viewportName}] Live is active on fresh load`);
+  check(bootNav.pillReady, `[${viewportName}] nav pill ready on fresh load`);
   await page.locator("#power-law-card").scrollIntoViewIfNeeded();
   const ready = await page
     .waitForFunction(() => ["power-law-chart", "cycle-overlay-chart", "mayer-200wma-chart", "market-sentiment-chart", "track-record-chart"].every((id) => document.getElementById(id).dataset.status === "ready"), null, { timeout: 30000 })
@@ -131,8 +142,43 @@ async function run(viewportName) {
 
   // Sticky nav + Forecast section (PR forecast-p1-calibration)
   check(await page.locator("#site-nav").count() === 1, `[${viewportName}] sticky site-nav present`);
+  check(await page.locator(".site-nav-pill").count() === 1, `[${viewportName}] sliding nav pill present`);
   check(await page.locator("#forecast").count() === 1, `[${viewportName}] #forecast section present`);
   check(await page.locator('a[data-nav="forecast"]').count() === 1, `[${viewportName}] Forecast nav link`);
+  const navCss = await page.evaluate(() => {
+    const nav = document.getElementById("site-nav");
+    const cs = getComputedStyle(nav);
+    const pill = document.querySelector(".site-nav-pill");
+    const active = document.querySelector(".site-nav-links a.is-active");
+    return {
+      position: cs.position,
+      padTop: cs.paddingTop,
+      bg: cs.backgroundColor,
+      pillReady: pill && pill.classList.contains("is-ready"),
+      pillWidth: pill ? parseFloat(getComputedStyle(pill).width) : 0,
+      activeId: active ? active.getAttribute("data-nav") : null,
+      viewportFit: (document.querySelector('meta[name="viewport"]') || {}).content || "",
+    };
+  });
+  check(navCss.position === "sticky", `[${viewportName}] site-nav is sticky`);
+  check(/viewport-fit=cover/.test(navCss.viewportFit), `[${viewportName}] viewport-fit=cover for safe-area`);
+  check(navCss.pillReady && navCss.pillWidth > 20, `[${viewportName}] nav pill measured on active tab (${navCss.pillWidth})`);
+  // By this point smoke has scrolled into #power-law-card (Models).
+  check(navCss.activeId === "models" || navCss.activeId === "live", `[${viewportName}] scrollspy active tab is Models or Live (got ${navCss.activeId})`);
+  // Tap Forecast — pill should follow; only Forecast gets is-active (Live muted)
+  await page.locator('a[data-nav="forecast"]').click();
+  await page.waitForTimeout(350);
+  const afterTap = await page.evaluate(() => {
+    const act = [...document.querySelectorAll(".site-nav-links a.is-active")].map((a) => a.getAttribute("data-nav"));
+    const pill = document.querySelector(".site-nav-pill");
+    const forecast = document.querySelector('a[data-nav="forecast"]');
+    const fr = forecast.getBoundingClientRect();
+    const pr = pill.getBoundingClientRect();
+    const overlap = Math.min(fr.right, pr.right) - Math.max(fr.left, pr.left);
+    return { act, overlap, pillW: pr.width, linkW: fr.width };
+  });
+  check(afterTap.act.length === 1 && afterTap.act[0] === "forecast", `[${viewportName}] tap Forecast → sole active tab`);
+  check(afterTap.overlap > afterTap.linkW * 0.6, `[${viewportName}] sliding pill overlaps Forecast tab`);
   const scen = await page.evaluate(async () => {
     const r = await fetch("data/scenario_forecast.json");
     if (!r.ok) return { ok: false, status: r.status };
