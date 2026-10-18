@@ -22,6 +22,22 @@ const check = (cond, msg) => {
   console.log(`${cond ? "ok  " : "FAIL"} ${msg}`);
 };
 
+/** Sticky site-nav sits over Models chips after scrollIntoView. force:true still
+ *  misses on mobile touch contexts in CI — scroll the target clear of the nav,
+ *  then fire a real DOM click (same handler path as a user tap). */
+async function tapClearOfNav(page, selector) {
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    const nav = document.getElementById("site-nav");
+    if (!el) throw new Error("missing " + sel);
+    const navH = nav ? nav.getBoundingClientRect().height : 0;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo(0, Math.max(0, top - navH - 12));
+    el.click();
+  }, selector);
+  await page.waitForTimeout(80);
+}
+
 async function run(viewportName) {
   const mobile = viewportName === "mobile";
   const browser = await chromium.launch({ args: ["--proxy-bypass-list=<-loopback>"] });
@@ -66,12 +82,12 @@ async function run(viewportName) {
   check((await state()).range === "2030", `[${viewportName}] hero defaults to the ->2030 view`);
   check(/pl=2030/.test(page.url()), `[${viewportName}] view state is reflected in the URL`);
 
-  await page.locator('[data-power-law-range="1y"]').click({ force: true });
+  await tapClearOfNav(page, '[data-power-law-range="1y"]');
   check((await state()).range === "1y" && /pl=1y/.test(page.url()), `[${viewportName}] 1Y chip switches the view`);
-  await page.locator('[data-power-law-time="cal"]').click({ force: true });
+  await tapClearOfNav(page, '[data-power-law-time="cal"]');
   check((await state()).timeScale === "cal", `[${viewportName}] calendar-time toggle`);
-  await page.locator('[data-power-law-time="log"]').click({ force: true });
-  await page.locator('[data-power-law-range="2030"]').click({ force: true });
+  await tapClearOfNav(page, '[data-power-law-time="log"]');
+  await tapClearOfNav(page, '[data-power-law-range="2030"]');
 
   const headline = await page.textContent("#power-law-headline");
   check(/below trend|above trend/.test(headline) && /percentile/.test(headline), `[${viewportName}] headline reading rendered`);
@@ -124,13 +140,43 @@ async function run(viewportName) {
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
       await page.waitForTimeout(400);
     };
-    await page.locator("#power-law-chart").scrollIntoViewIfNeeded();
+    // Keep chart top edge below sticky nav so CDP touches hit the canvas,
+    // not the nav scrim (taller after safe-area padding).
+    await page.evaluate(() => {
+      const chart = document.getElementById("power-law-chart");
+      const nav = document.getElementById("site-nav");
+      const navH = nav ? nav.getBoundingClientRect().height : 0;
+      const top = chart.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, Math.max(0, top - navH - 16));
+    });
+    await page.waitForTimeout(100);
     const b = await page.locator("#power-law-chart").boundingBox();
     const sy0 = await page.evaluate(() => window.scrollY);
     await swipe(b.x + b.width / 2, b.y + b.height * 0.7, 0, -200);
     check((await page.evaluate(() => window.scrollY)) > sy0 + 50, "[mobile] vertical swipe on the hero chart scrolls the page");
+    // Vertical pan-y scrolls the chart under the sticky nav; re-clear before
+    // the horizontal dataZoom gesture or CDP touches hit the nav scrim.
+    await page.evaluate(() => {
+      const chart = document.getElementById("power-law-chart");
+      const nav = document.getElementById("site-nav");
+      const navH = nav ? nav.getBoundingClientRect().height : 0;
+      const top = chart.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, Math.max(0, top - navH - 16));
+    });
+    await page.waitForTimeout(100);
     const b2 = await page.locator("#power-law-chart").boundingBox();
-    await swipe(b2.x + b2.width * 0.7, b2.y + b2.height / 2, -150, 0);
+    await swipe(b2.x + b2.width * 0.8, b2.y + b2.height / 2, -180, 0);
+    if ((await state()).view === null) {
+      await page.evaluate(() => {
+        const chart = document.getElementById("power-law-chart");
+        const nav = document.getElementById("site-nav");
+        const navH = nav ? nav.getBoundingClientRect().height : 0;
+        const top = chart.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo(0, Math.max(0, top - navH - 16));
+      });
+      const b3 = await page.locator("#power-law-chart").boundingBox();
+      await swipe(b3.x + b3.width * 0.85, b3.y + b3.height * 0.55, -220, 0);
+    }
     check((await state()).view !== null, "[mobile] horizontal swipe pans the hero chart");
   }
 
