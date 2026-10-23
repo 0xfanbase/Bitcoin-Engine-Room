@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-22T12:16:17Z",
+  "generated_at": "2026-10-23T11:57:56Z",
   "note_path": "pipeline/notes/FORECAST_CLOSED_LOOP_V1.md",
   "ledger_started": "2026-09-30",
-  "ledger_updated_at": "2026-10-22",
+  "ledger_updated_at": "2026-10-23",
   "ledger_entries": 2,
   "status": "inactive_waiting_for_matured",
   "kappa": 12.0,
