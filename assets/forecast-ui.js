@@ -461,8 +461,9 @@
         let n = 0;
         const t = setInterval(() => {
           n++;
-          if (tryChart() || n > 40) clearInterval(t);
+          if (tryChart() || n > 80) clearInterval(t);
         }, 250);
+        window.addEventListener("ber:echarts", () => tryChart(), { once: true });
       }
     } catch (e) {
       console.warn("scenario_forecast unavailable", e);
