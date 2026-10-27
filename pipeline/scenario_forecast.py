@@ -12,6 +12,12 @@ pipeline/notes/FORECAST_CALIBRATION_V3.md.
 v3.1 (2026-10-16): apply shrunk/capped bias + optional band widen from
 matured live-ledger published→outcome misses. See
 pipeline/notes/FORECAST_CLOSED_LOOP_V1.md.
+
+v3.2 (2026-10-27): display names. p10/p90 numeric keys stay (Pages-cache
+aliases). band_labels say P10/P90 only where conformal coverage is real
+(≤4y). idle_redline_corridor and ≥10y (20y/30y fan points included) display
+as Idle / Cruise / Redline. The 4y→10y taper is Idle/Redline edges, not a
+percentile. Closed-loop copy stays inactive until matured n > 0.
 """
 
 from __future__ import annotations
@@ -50,6 +56,12 @@ HORIZONS = [
 # Knots used for conformal + fan interpolation (days).
 CONFORMAL_KNOTS = (30, 90, 180, 365, 730, 1461)
 ULTRA_LONG_DAYS = {3652, 10957}
+# P10/P90 are display names only through this horizon. Past it the ribbon
+# is the Models Idle–Redline corridor (or the taper toward it), not a percentile.
+CONFORMAL_LABEL_MAX_DAYS = 1461
+# Independent-window count below this (or null on the corridor) is unearned.
+UNEARNED_INDEP_BELOW = 5.0
+RIBBON_DISCLAIMER = "Beyond 4y this is a power-law residual ribbon, not a probability."
 
 P_QUANTS = [0.10, 0.50, 0.90]
 AR1_SAMPLE_DAYS = 30
@@ -74,6 +86,95 @@ def _r(v: float | None, n: int = 2) -> float | None:
 
 def _price_at(d: float, a: float, b: float, offset: float = 0.0) -> float:
     return 10 ** (a + b * math.log10(max(d, 2.0)) + offset)
+
+
+def _display_for(band_source: str, days: int) -> dict:
+    """UI/API names for one horizon or fan point.
+
+    Numeric p10/p90 keys are unchanged. These labels are what a reader should
+    call the edges. Real P10/P90 only where conformal coverage is real.
+    """
+    src = (band_source or "").split("+", 1)[0]
+    if src.startswith("taper"):
+        return {"low": "Idle", "mid": "P50", "high": "Redline", "kind": "taper"}
+    corridor = src in ("idle_redline_corridor", "idle_redline") or days >= 3652
+    if corridor or (days > CONFORMAL_LABEL_MAX_DAYS and "idle" in src):
+        return {"low": "Idle", "mid": "Cruise", "high": "Redline", "kind": "corridor"}
+    if days > CONFORMAL_LABEL_MAX_DAYS:
+        return {"low": "Idle", "mid": "P50", "high": "Redline", "kind": "taper"}
+    return {"low": "P10", "mid": "P50", "high": "P90", "kind": "conformal"}
+
+
+def _coverage_earned(labels: dict, indep) -> bool:
+    if labels.get("kind") != "conformal" or indep is None:
+        return False
+    try:
+        return float(indep) >= UNEARNED_INDEP_BELOW
+    except (TypeError, ValueError):
+        return False
+
+
+def _cagr(spot: float, future: float, days: int) -> float | None:
+    """Compound rate if spot traveled to `future` over `days`. Not a return forecast."""
+    if not spot or future is None or future <= 0 or days <= 0:
+        return None
+    years = days / 365.25
+    return _r((float(future) / float(spot)) ** (1.0 / years) - 1.0, 4)
+
+
+def _attach_display(
+    row: dict,
+    *,
+    band_source: str,
+    days: int,
+    indep,
+    spot: float | None = None,
+    include_cagr: bool = False,
+    score_coverage: bool = True,
+) -> dict:
+    labels = _display_for(band_source, days)
+    row["band_labels"] = labels
+    if score_coverage:
+        row["coverage_earned"] = _coverage_earned(labels, indep)
+    if labels["low"] == "Idle":
+        # Backward-compat: p10/p90 remain. idle/redline are the display aliases.
+        row["idle"] = row["p10"]
+        row["redline"] = row["p90"]
+    if include_cagr and labels["kind"] == "corridor":
+        row["cagr_to_idle"] = _cagr(spot or 0.0, row["p10"], days)
+        row["cagr_to_cruise"] = _cagr(spot or 0.0, row["p50"], days)
+    return row
+
+
+def _closed_loop_active(correction: dict) -> bool:
+    n = int(correction.get("n_matured_total") or 0)
+    return correction.get("status") == "active" and n > 0
+
+
+def _closed_loop_sentences(correction: dict) -> dict:
+    """Copy that does not imply a live recalibration while the loop is off."""
+    n = int(correction.get("n_matured_total") or 0)
+    if not _closed_loop_active(correction):
+        short = f"Closed-loop inactive ({n} matured) — no live recalibration."
+        trust = f"{n} matured ledger calls. Forecasts are not adjusted from live outcomes."
+        role = "Inactive — no live recalibration"
+        disclaimer_bit = (
+            "Closed-loop is inactive ("
+            + str(n)
+            + " matured ledger calls) — there is no live recalibration. "
+        )
+    else:
+        short = (
+            f"Closed-loop active (matured n={n}): a shrunk, capped nudge from "
+            "published→outcome misses may shift ≤4y paths. Not a confidence interval."
+        )
+        trust = f"Capped nudge from {n} matured calls. Not a confidence interval."
+        role = "Shrunk nudge from matured ledger misses"
+        disclaimer_bit = (
+            "A shrunk, capped closed-loop nudge from matured ledger misses may shift ≤4y forecasts. "
+            "This is still not a confidence interval. "
+        )
+    return {"short": short, "trust": trust, "role": role, "disclaimer_bit": disclaimer_bit}
 
 
 def _build_residuals(series: list[dict], genesis: date, a: float, b: float, fit_start: date) -> np.ndarray:
@@ -285,7 +386,7 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
             band_source = "idle_redline_corridor"
             caveat = (
                 "Scenario only — corridor is Models Idle/Redline (empirical residual envelope), "
-                "not a walk-forward-calibrated CI. Independent sample at this horizon is effectively zero."
+                "not a calibrated percentile. Independent sample at this horizon is effectively zero."
             )
         else:
             lo, hi, band_source = _interp_offsets(conformal, h["days"])
@@ -307,31 +408,39 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
         p10, p90 = min(p10, p50), max(p90, p50)
 
         meta_c = conformal.get(h["days"]) or {}
-        horizons_out.append(
-            {
-                "id": h["id"],
-                "label": h["label"],
-                "days": h["days"],
-                "target_date": target.isoformat(),
-                "p10": _r(p10, 2),
-                "p50": _r(p50, 2),
-                "p90": _r(p90, 2),
-                "cruise": _r(_price_at(d, a, b, 0.0), 2),
-                "multiple_vs_spot_p50": _r(p50 / spot, 3) if spot else None,
-                "log_width": _r(math.log10(p90 / p10), 4) if p10 > 0 else None,
-                "offset_lo": _r(lo, 6),
-                "offset_hi": _r(hi, 6),
-                "residual_mean": _r(mean_r, 6),
-                "closed_loop_bias": _r(bias_c, 6),
-                "closed_loop_widen": _r(widen_c, 6),
-                "closed_loop_source": corr_src,
-                "band_source": band_source,
-                "conformal_n_origins": meta_c.get("n_origins"),
-                "conformal_indep_windows": meta_c.get("approx_independent_windows"),
-                "in_live_ledger": in_ledger,
-                "caveat": caveat,
-            }
+        indep = meta_c.get("approx_independent_windows")
+        row = {
+            "id": h["id"],
+            "label": h["label"],
+            "days": h["days"],
+            "target_date": target.isoformat(),
+            "p10": _r(p10, 2),
+            "p50": _r(p50, 2),
+            "p90": _r(p90, 2),
+            "cruise": _r(_price_at(d, a, b, 0.0), 2),
+            "multiple_vs_spot_p50": _r(p50 / spot, 3) if spot else None,
+            "log_width": _r(math.log10(p90 / p10), 4) if p10 > 0 else None,
+            "offset_lo": _r(lo, 6),
+            "offset_hi": _r(hi, 6),
+            "residual_mean": _r(mean_r, 6),
+            "closed_loop_bias": _r(bias_c, 6),
+            "closed_loop_widen": _r(widen_c, 6),
+            "closed_loop_source": corr_src,
+            "band_source": band_source,
+            "conformal_n_origins": meta_c.get("n_origins"),
+            "conformal_indep_windows": indep,
+            "in_live_ledger": in_ledger,
+            "caveat": caveat,
+        }
+        _attach_display(
+            row,
+            band_source=band_source,
+            days=h["days"],
+            indep=indep,
+            spot=spot,
+            include_cagr=True,
         )
+        horizons_out.append(row)
 
     # Fan: monthly to 10y + sparse long markers
     fan = []
@@ -359,15 +468,17 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
             mean_r = mean_r + bias_c
             lo = lo - widen_c
             hi = hi + widen_c
-        fan.append(
-            {
-                "date": (as_of + timedelta(days=days)).isoformat(),
-                "p10": _r(_price_at(d, a, b, mean_r + lo), 2),
-                "p50": _r(_price_at(d, a, b, mean_r), 2),
-                "p90": _r(_price_at(d, a, b, mean_r + hi), 2),
-                "cruise": _r(_price_at(d, a, b, 0.0), 2),
-            }
-        )
+        fan_pt = {
+            "date": (as_of + timedelta(days=days)).isoformat(),
+            "days": days,
+            "p10": _r(_price_at(d, a, b, mean_r + lo), 2),
+            "p50": _r(_price_at(d, a, b, mean_r), 2),
+            "p90": _r(_price_at(d, a, b, mean_r + hi), 2),
+            "cruise": _r(_price_at(d, a, b, 0.0), 2),
+            "band_source": src,
+        }
+        _attach_display(fan_pt, band_source=src, days=days, indep=None, score_coverage=False)
+        fan.append(fan_pt)
     seen: set[str] = set()
     fan_u = []
     for pt in fan:
@@ -392,6 +503,7 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
 
     hz = {h["horizon_days"]: h for h in backtest.get("horizons", [])}
     h1 = hz.get(365) or {}
+    loop_copy = _closed_loop_sentences(correction)
     ensemble = [
         {
             "id": "power_law_ar1",
@@ -414,8 +526,8 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
         {
             "id": "idle_redline_cap",
             "name": "Idle / Redline corridor",
-            "role": "P10/P90 for 10y & 30y only",
-            "trust_note": "Same empirical residual envelope as Models — scenario ribbon, not calibrated long-CI",
+            "role": "Idle / Redline for 10y, 20y, and 30y",
+            "trust_note": "Same empirical residual envelope as Models — a scenario ribbon, not a calibrated percentile",
         },
         {
             "id": "live_ledger",
@@ -426,12 +538,8 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
         {
             "id": "closed_loop",
             "name": "Ledger closed-loop nudge",
-            "role": "shrunk bias + optional band widen from matured published misses",
-            "trust_note": (
-                f"status={correction.get('status')}; "
-                f"matured={correction.get('n_matured_total', 0)}; "
-                "caps ±0.10 log10; not a CI recalibration"
-            ),
+            "role": loop_copy["role"],
+            "trust_note": loop_copy["trust"],
         },
     ]
 
@@ -500,13 +608,14 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
             },
             "disclaimer": (
                 "P50 mean-reverts toward Cruise via AR(1) (same family as Models short-term). "
-                "P10/P90 for ≤4y are walk-forward conformal envelopes of AR1 forecast errors — "
+                "P10/P90 labels apply only through 4y, where walk-forward conformal coverage is real — "
                 "empirical coverage targets, NOT confidence intervals (independent windows are small). "
-                "When enough ledger calls have matured, a shrunk/capped closed-loop bias "
-                "(and optional band widen) nudges ≤4y forecasts from published→outcome misses; "
-                "this is still not a CI. "
-                "10y/30y use the Models Idle/Redline corridor as a scenario ribbon only. "
-                "Live ledger freezes 30d/90d/1y/2y/4y."
+                + RIBBON_DISCLAIMER
+                + " "
+                + loop_copy["disclaimer_bit"]
+                + "10y/30y (and the fan from 20y through 30y) use the Models Idle/Redline corridor "
+                "around Cruise as a scenario ribbon only. "
+                "Live ledger freezes 30d/90d/1y/2y/4y. Educational scenario, not financial advice."
             ),
             "note_path": "pipeline/notes/FORECAST_CALIBRATION_V3.md",
         },
@@ -522,7 +631,7 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
             "ledger_updated_at": ledger.get("updated_at"),
             "ledger_note": (
                 "Live ledger scores 30d/90d/1y/2y/4y; other cards are scenario-labeled. "
-                "Closed-loop applies shrunk ledger bias when matured sample clears min_n."
+                + loop_copy["short"]
             ),
             "correction": {
                 "status": correction.get("status"),

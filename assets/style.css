@@ -1476,6 +1476,41 @@ a {
   opacity: 0.55;
   border-color: rgba(51, 255, 102, 0.2);
 }
+.forecast-range .fr-tag-unearned {
+  opacity: 1;
+  border-color: rgba(159, 255, 176, 0.55);
+  margin-left: 0.35rem;
+}
+.forecast-range .fr-indep {
+  margin-left: 0.45rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 10px;
+  color: var(--ink);
+}
+.forecast-ribbon-note,
+.forecast-scar,
+.chart-chip-legend {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.forecast-ribbon-note,
+.chart-chip-legend {
+  font-family: var(--font-label);
+}
+#forecast-cagr-table {
+  margin-top: 12px;
+  width: 100%;
+}
+#forecast-cagr-table caption {
+  caption-side: bottom;
+  text-align: left;
+  color: var(--ink-dim);
+  font-size: 11px;
+  padding-top: 6px;
+}
 .forecast-range .fr-caveat {
   font-size: 0.72rem;
   opacity: 0.65;

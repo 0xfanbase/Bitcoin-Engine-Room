@@ -16,9 +16,9 @@
 1. **P50** — power-law Cruise + AR(1) mean residual (unchanged family).
 2. **P10/P90 for 1m / 1y / 2y / 4y** — **per-horizon conformal** offsets: walk-forward quantiles of  
    `log10(actual) − (trend_h + AR1_mean_h)` at that horizon (monthly origins since 2013, refit causal). Asymmetric.
-3. **P10/P90 for 10y / 30y** — **Idle/Redline corridor** from `models.json` (empirical 2.5/97.5 residual offsets) around Cruise. No √t. Tagged scenario-only; independent sample ≈ 0.
+3. **Idle/Cruise/Redline for 10y / 20y / 30y** — **Idle/Redline corridor** from `models.json` (empirical 2.5/97.5 residual offsets) around Cruise. No √t. Tagged scenario-only; independent sample ≈ 0. Numeric `p10`/`p90` keys remain as backward-compat aliases; the display names are not P10/P90.
 4. **Fan** — interpolate conformal knots through 4y, then taper offsets toward Idle/Redline by 10y.
-5. **Honesty** — bands ≠ CIs; publish conformal n + approx independent windows; ledger labels unchanged.
+5. **Honesty** — bands ≠ CIs and are not probabilities past 4y; publish conformal n + approx independent windows; P10/P90 labels only where conformal coverage is real (≤4y). Closed-loop copy stays inactive until matured calls exist (no live recalibration implied at n=0).
 
 ## Why not port watcher conformal wholesale
 

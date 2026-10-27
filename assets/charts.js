@@ -1659,6 +1659,9 @@
       CHART_IDS.forEach((id) => setChartStatus(id, "error", "chart library failed to load -- the numbers above and the tables below still stand"));
       return;
     }
+    // Forecast's fan chart is a second consumer. A #forecast deep link never
+    // intersects the Models card, so forecast-ui.js waits on this event.
+    window.dispatchEvent(new Event("ber:echarts"));
     if (modelsResult.status === "rejected") {
       console.warn("models.json unavailable", modelsResult.reason);
       CHART_IDS.forEach((id) => setChartStatus(id, "error", "model data failed to load"));
@@ -1685,8 +1688,12 @@
     }
   }
 
-  const lazySection = document.getElementById("power-law-card");
-  if (lazySection && "IntersectionObserver" in window) {
+  // Models card is the usual trigger. The Forecast fan is too: opening
+  // #forecast directly must still load ECharts or the cone never draws.
+  const lazyTriggers = ["power-law-card", "forecast-fan-chart"]
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  if (lazyTriggers.length && "IntersectionObserver" in window) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
@@ -1696,7 +1703,7 @@
       },
       { rootMargin: "600px 0px" }
     );
-    observer.observe(lazySection);
+    lazyTriggers.forEach((el) => observer.observe(el));
   } else {
     document.addEventListener("ber:booted", loadAndRender);
   }

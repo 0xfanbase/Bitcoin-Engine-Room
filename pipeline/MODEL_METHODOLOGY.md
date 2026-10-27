@@ -47,4 +47,4 @@ Evidence lives in `data/backtest.json` (recomputed nightly by `pipeline/backtest
 
 ## Scenario forecast (Forecast section)
 
-See `pipeline/notes/FORECAST_CALIBRATION_V3.md` — AR(1) P50 + walk-forward conformal P10/P90 (≤4y) + Idle/Redline caps (10y/30y). Bands are not confidence intervals.
+See `pipeline/notes/FORECAST_CALIBRATION_V3.md` — AR(1) P50 + walk-forward conformal P10/P90 (≤4y) + Idle/Redline caps (10y/30y). Past 4y the Forecast card labels that ribbon Idle / Cruise / Redline, not P10/P90. Bands are not confidence intervals.

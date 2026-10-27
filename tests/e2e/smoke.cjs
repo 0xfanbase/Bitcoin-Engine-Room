@@ -229,6 +229,11 @@ async function run(viewportName) {
     const r = await fetch("data/scenario_forecast.json");
     if (!r.ok) return { ok: false, status: r.status };
     const j = await r.json();
+    const byId = Object.fromEntries((j.horizons || []).map((h) => [h.id, h]));
+    const y10 = byId["10y"] || {};
+    const y30 = byId["30y"] || {};
+    const y1 = byId["1y"] || {};
+    const longFan = (j.fan || []).filter((p) => (p.days || 0) >= 3652);
     return {
       ok: true,
       schema: j.schema_version,
@@ -238,6 +243,16 @@ async function run(viewportName) {
       forbidden: !!(j.holdings || j.wallet),
       closedLoop: !!(j.learning && j.learning.correction && j.learning.correction.status),
       hasClosedLoopEnsemble: Array.isArray(j.ensemble) && j.ensemble.some((e) => e.id === "closed_loop"),
+      y1Low: y1.band_labels && y1.band_labels.low,
+      y10Low: y10.band_labels && y10.band_labels.low,
+      y10Mid: y10.band_labels && y10.band_labels.mid,
+      y10High: y10.band_labels && y10.band_labels.high,
+      y10Alias: y10.idle === y10.p10 && y10.redline === y10.p90 && y10.p10 != null,
+      y30Low: y30.band_labels && y30.band_labels.low,
+      y30Unearned: y30.coverage_earned === false && y30.conformal_indep_windows == null,
+      longFanIdle: longFan.length > 0 && longFan.every((p) => p.band_labels && p.band_labels.low === "Idle"),
+      ribbon: !!(j.method && String(j.method.disclaimer || "").includes("Beyond 4y this is a power-law residual ribbon, not a probability.")),
+      noRecal: /no live recalibration/i.test((j.learning && j.learning.ledger_note) || ""),
     };
   });
   check(scen.ok, `[${viewportName}] scenario_forecast.json fetchable`);
@@ -249,6 +264,13 @@ async function run(viewportName) {
     check(/ar1|conformal/i.test(scen.family || ""), `[${viewportName}] method family mentions ar1 (${scen.family})`);
     check(scen.closedLoop, `[${viewportName}] learning.correction.status present`);
     check(scen.hasClosedLoopEnsemble, `[${viewportName}] ensemble includes closed_loop`);
+    check(scen.y1Low === "P10", `[${viewportName}] 1y API label stays P10 (got ${scen.y1Low})`);
+    check(scen.y10Low === "Idle" && scen.y10Mid === "Cruise" && scen.y10High === "Redline", `[${viewportName}] 10y API labels Idle/Cruise/Redline (got ${scen.y10Low}/${scen.y10Mid}/${scen.y10High})`);
+    check(scen.y10Alias, `[${viewportName}] 10y keeps p10/p90 and idle/redline aliases`);
+    check(scen.y30Low === "Idle" && scen.y30Unearned, `[${viewportName}] 30y is Idle and unearned`);
+    check(scen.longFanIdle, `[${viewportName}] fan points at ≥10y (20y/30y) labeled Idle not P10`);
+    check(scen.ribbon, `[${viewportName}] method disclaimer includes the ribbon sentence`);
+    check(scen.noRecal, `[${viewportName}] ledger note does not imply live recalibration`);
   }
   await page.goto(BASE + "/#forecast", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
@@ -259,6 +281,68 @@ async function run(viewportName) {
     return r.top < window.innerHeight * 0.55;
   });
   check(scrolled, `[${viewportName}] #forecast hash deep-link scrolls into view`);
+
+  const fanReady = await page
+    .waitForFunction(
+      () => {
+        const ranges = document.querySelectorAll(".forecast-range").length >= 6;
+        const fan = document.getElementById("forecast-fan-chart");
+        return ranges && fan && fan.dataset.status === "ready";
+      },
+      null,
+      { timeout: 20000 }
+    )
+    .then(() => true, () => false);
+  check(fanReady, `[${viewportName}] forecast ranges and fan chart ready`);
+  const honesty = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll(".forecast-range")].map((el) => el.textContent || "");
+    const pick = (needle) => cards.find((t) => t.includes(needle)) || "";
+    const text = (id) => (document.getElementById(id) || {}).textContent || "";
+    let series = [];
+    let p10Last = null;
+    let idleLast = null;
+    const chart = window.BER && window.BER._forecastFanChart;
+    if (chart && chart.getOption) {
+      const opt = chart.getOption();
+      series = (opt.series || []).map((s) => s.name);
+      const byName = Object.fromEntries((opt.series || []).map((s) => [s.name, s.data || []]));
+      const lastX = (rows) => (rows.length ? rows[rows.length - 1][0] : null);
+      p10Last = lastX(byName.P10 || []);
+      idleLast = lastX(byName.Idle || []);
+    }
+    return {
+      y1: pick("1 year"),
+      y4: pick("4 years"),
+      y10: pick("10 years"),
+      y30: pick("30 years"),
+      disc: text("forecast-ribbon-disclaimer").trim(),
+      scar: text("forecast-walkforward-miss"),
+      sum: text("forecast-learning-summary"),
+      legend: text("power-law-view-legend"),
+      t2030: (document.querySelector('[data-power-law-range="2030"]') || {}).title || "",
+      tlog: (document.querySelector('[data-power-law-time="log"]') || {}).title || "",
+      series,
+      p10Last,
+      idleLast,
+      cagr: text("forecast-cagr-tbody"),
+      stack: text("forecast-ensemble-tbody"),
+    };
+  });
+  const noP10 = (s) => !/\bP10\b/.test(s) && !/\bP90\b/.test(s);
+  check(/P10/.test(honesty.y1) && /P90/.test(honesty.y1) && !/Idle/.test(honesty.y1), `[${viewportName}] 1y card keeps P10/P90`);
+  check(/P10/.test(honesty.y4) && /unearned/.test(honesty.y4) && /indep/.test(honesty.y4), `[${viewportName}] 4y card is P10 and unearned`);
+  check(/Idle/.test(honesty.y10) && /Redline/.test(honesty.y10) && /Cruise/.test(honesty.y10) && noP10(honesty.y10) && /unearned/.test(honesty.y10), `[${viewportName}] 10y card is Idle/Cruise/Redline, not P10`);
+  check(/Idle/.test(honesty.y30) && noP10(honesty.y30) && /unearned/.test(honesty.y30) && /indep/.test(honesty.y30), `[${viewportName}] 30y card is Idle and unearned`);
+  check(honesty.disc === "Beyond 4y this is a power-law residual ribbon, not a probability.", `[${viewportName}] ribbon disclaimer under the fan`);
+  check(/1y walk-forward miss/.test(honesty.scar) && /×1\.99|about ×2/.test(honesty.scar), `[${viewportName}] 1y walk-forward miss on the Forecast panel (${honesty.scar})`);
+  check(/no live recalibration/i.test(honesty.sum), `[${viewportName}] closed-loop shown inactive`);
+  check(!/live recalibration is on|now recalibrat/i.test(honesty.sum + honesty.stack), `[${viewportName}] copy does not claim a live recalibration`);
+  check(/Models chart zoom only/.test(honesty.legend) && /pl=2030/.test(honesty.legend) && /plt=log/.test(honesty.legend) && /not the Forecast horizon/i.test(honesty.legend), `[${viewportName}] Models chip legend is chart zoom, not Forecast horizon`);
+  check(/pl=2030/.test(honesty.t2030) && /Not a Forecast horizon/.test(honesty.t2030), `[${viewportName}] →2030 chip tooltip`);
+  check(/plt=log/.test(honesty.tlog) && /Not a Forecast horizon/.test(honesty.tlog), `[${viewportName}] LOG T chip tooltip`);
+  check(honesty.series.includes("P10") && honesty.series.includes("Idle") && honesty.series.includes("Redline"), `[${viewportName}] fan legend has P10 and Idle/Redline (${honesty.series.join(",")})`);
+  check(honesty.p10Last != null && honesty.idleLast != null && String(honesty.idleLast) > String(honesty.p10Last), `[${viewportName}] Idle series continues past the P10 series`);
+  check(/10 years/.test(honesty.cagr) && /30 years/.test(honesty.cagr) && /%/.test(honesty.cagr) && noP10(honesty.cagr), `[${viewportName}] CAGR table is spot→Idle/Cruise`);
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(overflow <= 0, `[${viewportName}] no horizontal page overflow (${overflow}px)`);

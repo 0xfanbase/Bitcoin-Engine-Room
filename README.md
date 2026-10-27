@@ -2,7 +2,7 @@
 
 **The only Bitcoin dashboard that audits itself in public** — free, real-time where it can be, with every number traceable to the source that produced it.
 
-Block height, hash rate, difficulty, mempool, fees, and circulating supply, live. Long-horizon price models (power law corridor, 4-year halving cycle overlay, Mayer Multiple, 200-week moving average) refit daily from openly published methodology — not black-box constants. A **Forecast** section publishes anchored P10/P50/P90 scenario fans from the same nightly power-law fit (not confidence intervals; no personal holdings). And an **Engine Health** panel that shows, for every single number on the page, which source produced it, how fresh it is, and whether the site's own daily self-audit passed.
+Block height, hash rate, difficulty, mempool, fees, and circulating supply, live. Long-horizon price models (power law corridor, 4-year halving cycle overlay, Mayer Multiple, 200-week moving average) refit daily from openly published methodology — not black-box constants. A **Forecast** section publishes scenario fans from the same nightly power-law fit: P10/P50/P90 only through 4 years, then an Idle–Redline residual ribbon (not a probability, not confidence intervals; no personal holdings). And an **Engine Health** panel that shows, for every single number on the page, which source produced it, how fresh it is, and whether the site's own daily self-audit passed.
 
 Static site on GitHub Pages, daily self-healing/self-auditing pipeline on GitHub Actions, zero backend, zero database, zero running cost.
 
