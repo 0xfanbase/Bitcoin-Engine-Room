@@ -14,7 +14,25 @@
       "minItems": 5,
       "items": {
         "type": "object",
-        "required": ["id", "label", "days", "target_date", "p10", "p50", "p90", "in_live_ledger", "band_source"]
+        "required": ["id", "label", "days", "target_date", "p10", "p50", "p90", "in_live_ledger", "band_source", "band_labels", "coverage_earned"],
+        "properties": {
+          "band_labels": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["low", "mid", "high", "kind"],
+            "properties": {
+              "low": { "enum": ["P10", "Idle"] },
+              "mid": { "enum": ["P50", "Cruise"] },
+              "high": { "enum": ["P90", "Redline"] },
+              "kind": { "enum": ["conformal", "corridor"] }
+            }
+          },
+          "coverage_earned": { "type": "boolean" },
+          "conformal_indep_windows": { "type": ["number", "null"] },
+          "p10": { "type": "number" },
+          "p50": { "type": "number" },
+          "p90": { "type": "number" }
+        }
       }
     },
     "history": { "type": "array" },

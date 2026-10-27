@@ -60,6 +60,50 @@ def test_write_validates_schema(tmp_path, monkeypatch):
     assert json.loads(out.read_text())["schema_version"] >= 3
 
 
+def test_idle_not_labeled_p10_past_conformal():
+    """Corridor / ≥10y display Idle/Cruise/Redline. p10/p90 keys stay as aliases."""
+    doc = sf.build()
+    by_id = {h["id"]: h for h in doc["horizons"]}
+    for hid in ("1m", "1y", "2y", "4y"):
+        labels = by_id[hid]["band_labels"]
+        assert labels["low"] == "P10" and labels["high"] == "P90" and labels["kind"] == "conformal"
+        assert "idle" not in by_id[hid] and "redline" not in by_id[hid]
+        blob = labels["low"] + labels["mid"] + labels["high"]
+        assert "Idle" not in blob and "Redline" not in blob
+    assert by_id["1y"]["coverage_earned"] is True
+    assert by_id["2y"]["coverage_earned"] is True
+    assert by_id["4y"]["coverage_earned"] is False
+    assert by_id["4y"]["conformal_indep_windows"] < sf.UNEARNED_INDEP_BELOW
+    for hid in ("10y", "30y"):
+        h = by_id[hid]
+        assert h["band_source"] == "idle_redline_corridor"
+        assert h["band_labels"] == {"low": "Idle", "mid": "Cruise", "high": "Redline", "kind": "corridor"}
+        assert h["idle"] == h["p10"] and h["redline"] == h["p90"]
+        assert h["conformal_indep_windows"] is None
+        assert h["coverage_earned"] is False
+        assert "P10" not in json.dumps(h["band_labels"])
+        assert h["cagr_to_idle"] is not None and h["cagr_to_cruise"] is not None
+    assert "cagr_to_idle" not in by_id["1y"]
+    long_fan = [p for p in doc["fan"] if (p.get("days") or 0) >= 3652]
+    assert long_fan, "20y/30y fan points missing"
+    assert all(p["band_labels"]["low"] == "Idle" for p in long_fan)
+    assert all(p["band_labels"]["kind"] == "corridor" for p in long_fan)
+    assert all("P10" not in p["band_labels"]["low"] for p in long_fan)
+    assert all(p.get("idle") == p["p10"] and p.get("redline") == p["p90"] for p in long_fan)
+    past = [p for p in doc["fan"] if (p.get("days") or 0) > sf.CONFORMAL_LABEL_MAX_DAYS]
+    assert past and all(p["band_labels"]["low"] != "P10" for p in past)
+    near = [p for p in doc["fan"] if (p.get("days") or 0) <= sf.CONFORMAL_LABEL_MAX_DAYS]
+    assert near and all(p["band_labels"]["low"] == "P10" for p in near)
+    assert sf.RIBBON_DISCLAIMER in doc["method"]["disclaimer"]
+    assert "no live recalibration" in doc["learning"]["ledger_note"].lower()
+    assert "applies shrunk" not in doc["learning"]["ledger_note"].lower()
+    cap = next(e for e in doc["ensemble"] if e["id"] == "idle_redline_cap")
+    assert "Idle" in cap["role"] and "P10" not in cap["role"]
+    loop = next(e for e in doc["ensemble"] if e["id"] == "closed_loop")
+    assert "no live recalibration" in loop["role"].lower()
+    assert doc["learning"]["correction"]["n_matured_total"] == 0
+
+
 def test_conformal_offsets_computed():
     price = sf._load(sf.PRICE_PATH)
     models = sf._load(sf.MODELS_PATH)

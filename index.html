@@ -229,18 +229,19 @@
       <p>Idle and Redline bound the range price has actually spent ~95% of its history in, measured as the spread of past prices around the line (the inner band holds ~68%). They are descriptive, not confidence intervals, and not a prediction of where price goes next. The dashed "trend range" to the right of today is how uncertain the line itself is; the finely dotted line is the same model fit only to data since 2017, which is flatter. The short dotted "12-mo path" assumes today's gap to the trend keeps shrinking at its historical pace (half-life ~170 days) &mdash; it stops after a year because it showed no skill beyond that.</p>
       <p class="info-source">Source: model published by Giovanni Santostasi; refit nightly against this site's own price history. Uncertainty, backtest and method: <a href="https://github.com/0xfanbase/Bitcoin-Engine-Room/blob/main/pipeline/MODEL_METHODOLOGY.md" target="_blank" rel="noopener">MODEL_METHODOLOGY.md</a></p>
     </div>
-    <div class="chart-controls" role="group" aria-label="Power law chart view">
-      <div class="chip-group" role="group" aria-label="Time range">
-        <button class="chip-btn" type="button" data-power-law-range="1y" aria-pressed="false" title="One year back to one year ahead">1Y</button>
-        <button class="chip-btn is-active" type="button" data-power-law-range="2030" aria-pressed="true">&rarr;2030</button>
-        <button class="chip-btn" type="button" data-power-law-range="2035" aria-pressed="false">&rarr;2035</button>
-        <button class="chip-btn" type="button" data-power-law-range="all" aria-pressed="false">ALL</button>
+    <div class="chart-controls" role="group" aria-label="Power law chart view" aria-describedby="power-law-view-legend">
+      <div class="chip-group" role="group" aria-label="Models chart time range, not the Forecast horizon">
+        <button class="chip-btn" type="button" data-power-law-range="1y" aria-pressed="false" title="Models chart zoom: one year back to one year ahead (?pl=1y). Not a Forecast horizon.">1Y</button>
+        <button class="chip-btn is-active" type="button" data-power-law-range="2030" aria-pressed="true" title="Models chart zoom through 2030 (?pl=2030). Not a Forecast horizon.">&rarr;2030</button>
+        <button class="chip-btn" type="button" data-power-law-range="2035" aria-pressed="false" title="Models chart zoom through 2035 (?pl=2035). Not a Forecast horizon.">&rarr;2035</button>
+        <button class="chip-btn" type="button" data-power-law-range="all" aria-pressed="false" title="Models chart zoom: full history (?pl=all). Not a Forecast horizon.">ALL</button>
       </div>
-      <div class="chip-group" role="group" aria-label="Time axis">
-        <button class="chip-btn is-active" type="button" data-power-law-time="log" aria-pressed="true" title="Log time: the model's native scale, where the power law is a straight line">LOG T</button>
-        <button class="chip-btn" type="button" data-power-law-time="cal" aria-pressed="false" title="Calendar time: every year gets equal width">CAL T</button>
+      <div class="chip-group" role="group" aria-label="Models chart time axis, not the Forecast horizon">
+        <button class="chip-btn is-active" type="button" data-power-law-time="log" aria-pressed="true" title="Models chart log time (?plt=log). Not a Forecast horizon. Native scale where the power law is a straight line.">LOG T</button>
+        <button class="chip-btn" type="button" data-power-law-time="cal" aria-pressed="false" title="Models chart calendar time (?plt=cal). Not a Forecast horizon. Every year gets equal width.">CAL T</button>
       </div>
     </div>
+    <p class="chart-chip-legend" id="power-law-view-legend">Models chart zoom only. <span class="numeral">?pl=2030&amp;plt=log</span> sets this chart’s window and time axis — not the Forecast horizon.</p>
     <div class="chart-frame">
       <div id="power-law-chart" class="chart-canvas chart-canvas--hero" tabindex="0" role="img" aria-label="Power law corridor chart"></div>
       <div class="chart-zoom" role="group" aria-label="Zoom">
@@ -407,7 +408,7 @@
 
   
   <h2 class="plate" id="forecast">Forecast</h2>
-  <p class="section-lede">Scenario fans from today&rsquo;s price, using the same power-law fit as Models — not a crystal ball. Bands are empirical residual spreads, <strong>not</strong> confidence intervals. Personal holdings are never shown here.</p>
+  <p class="section-lede">Scenario fans from today&rsquo;s price, using the same power-law fit as Models — not a crystal ball. Through 4 years, P10–P90 are walk-forward conformal spreads. Beyond that, Idle–Redline is a power-law residual ribbon, not a probability and <strong>not</strong> a confidence interval. Personal holdings are never shown here.</p>
   <div class="forecast-banner" id="forecast-disclaimer">Loading scenario forecast&hellip;</div>
   <div class="forecast-ranges" id="forecast-ranges" aria-live="polite"></div>
   <div class="chart-card chart-card--hero" id="forecast-fan-card">
@@ -415,18 +416,27 @@
       <h3>History + forward cone</h3>
       <div class="chart-plate-stats numeral" id="forecast-fan-stats">&mdash;</div>
     </div>
-    <p class="chart-headline numeral" id="forecast-fan-headline">Anchored P50 with P10–P90 envelope</p>
+    <p class="chart-headline numeral" id="forecast-fan-headline">P50 with P10–P90 through 4y; Idle–Redline corridor beyond</p>
     <div class="info-panel" id="info-forecast-fan" hidden>
-      <p>Green line: weekly spot history. Bright path: anchored median (today&rsquo;s discount or premium to Cruise held). Envelope: historical 10th/90th residual spreads. Dim dashed: unanchored Cruise for reference.</p>
+      <p>Green line: weekly spot history. Bright path: P50, mean-reverting toward Cruise. Through 4 years the solid envelope is a walk-forward conformal P10–P90. Past that, the dashed edges are the Models Idle–Redline residual corridor around Cruise — a scenario ribbon, not a tenth percentile. Dim dashed Cruise is the unanchored power-law line.</p>
       <p class="info-source">Source: <code>data/scenario_forecast.json</code>, rebuilt nightly from this site&rsquo;s own <code>models.json</code> fit — never from a private holdings dashboard.</p>
     </div>
     <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-forecast-fan" aria-label="Info">i</button>
-    <div id="forecast-fan-chart" class="chart-canvas chart-canvas--hero" tabindex="0" role="img" aria-label="Scenario forecast fan chart"></div>
+    <div id="forecast-fan-chart" class="chart-canvas chart-canvas--hero" tabindex="0" role="img" aria-label="Scenario forecast fan. P10–P90 through 4 years; Idle and Redline beyond."></div>
+    <p class="forecast-scar" id="forecast-walkforward-miss">1y walk-forward miss loading&hellip;</p>
+    <p class="forecast-ribbon-note" id="forecast-ribbon-disclaimer">Beyond 4y this is a power-law residual ribbon, not a probability.</p>
+    <div class="table-scroll">
+      <table class="cycle-tops-table" id="forecast-cagr-table" aria-label="Compound rate if spot reached Idle or Cruise">
+        <caption>If today&rsquo;s price reached the ribbon — compound rate per year, not a forecast of returns.</caption>
+        <thead><tr><th scope="col">Horizon</th><th scope="col">Spot &rarr; Idle</th><th scope="col">Spot &rarr; Cruise</th></tr></thead>
+        <tbody id="forecast-cagr-tbody"><tr><td colspan="3">loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
     <p class="chart-caption">Educational scenario fan. See Track Record for how far past corridor forecasts have missed.</p>
   </div>
   <div class="chart-card" id="forecast-ensemble-card">
     <div class="chart-plate"><h3>Instrument stack</h3></div>
-    <p class="chart-plain-summary">Instrument stack for the public Forecast — roles and honesty notes only. No decorative share weights; P50/P10/P90 come from power-law + AR(1) + scaled residual bands.</p>
+    <p class="chart-plain-summary">Instrument stack for the public Forecast — roles and honesty notes only. No decorative share weights. P10/P90 only through 4y; beyond that the ribbon is Idle and Redline around Cruise. Not confidence intervals.</p>
     <table class="cycle-tops-table" id="forecast-ensemble-table" aria-label="Forecast instrument stack">
       <thead><tr><th>Instrument</th><th>Role</th><th>Trust note</th></tr></thead>
       <tbody id="forecast-ensemble-tbody"><tr><td colspan="3">loading&hellip;</td></tr></tbody>

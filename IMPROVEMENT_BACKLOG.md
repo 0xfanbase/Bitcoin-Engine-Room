@@ -14,6 +14,11 @@ Per spec Section 19: "where the spec is silent, choose the simplest option and l
 
 ---
 
+### [forecast] Structural stress toggle (flatten b) — deferred (2026-10-27)
+Source: manual (CFO forecast-honesty refine; medium, not clean enough to ride along)
+Description: a Forecast control that flattens the power-law exponent `b` and redraws the fan under that stress. Models already plots the since-2017 scenario fit (flatter `b`) beside Cruise. A second interactive path on the Forecast card would need its own honesty copy so it cannot be read as a calibrated band, and it is easy to overclaim. Left undone on the Idle-label pass.
+Suggested fix: not implemented. If it ships later, drive it from the published scenario `b` in `models.json`, label it a stress case, and keep it off the conformal P10/P90 names.
+
 ### [post-v1] Model-honesty + UX overhaul follow-ups (2026-10-01)
 Source: manual (Phases A–K build; backtest results)
 Description: things deliberately left open: (1) the live forecast ledger's first 1-year entry matures 2027-09-30 -- until then the Track Record card can only show the walk-forward replay; (2) the walk-forward's honest sample is small (~13 independent 1-year windows, ~2 at 4 years) and the 4-year coverage figure should not be over-read; (3) the 1-year outer-band realised coverage is ~84% vs the nominal 95% -- the audit only warns below 80%, so a slow slide toward that line would go unremarked until it crosses; (4) the hash-rate cross-source variance gap (CLAUDE.md §1) is unchanged -- the new Bitstamp check covers price history only; (5) in-page section navigation was not added because the owner removed the nav bar on 2026-07-09.

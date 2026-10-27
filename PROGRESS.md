@@ -13,6 +13,10 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 
 ## Log
 
+### 2026-10-27 — Forecast honesty: Idle is not P10 past the conformal horizon
+
+CFO (Burnston) refine. Past 4 years the Forecast ribbon is the Models Idle–Redline corridor around Cruise, so the UI and `band_labels` say Idle / Cruise / Redline. Numeric `p10` / `p90` keys stay as cache aliases. Real P10/P90 labels remain only on conformal horizons (≤4y). The fan legend splits at that boundary. The Forecast card states, under the fan: "Beyond 4y this is a power-law residual ribbon, not a probability." Each horizon chip shows `conformal_indep_windows` and an "unearned" badge when that count is under 5 or null. The 1-year walk-forward miss from `learning.backtest_horizons` sits on the Forecast panel. Closed-loop copy says there is no live recalibration while matured n is 0. Models chips spell out that `?pl=2030&plt=log` is chart zoom, not a Forecast horizon. A spot→Idle/Cruise compound-rate table ships for the corridor horizons. A structural-stress toggle that flattens `b` is deferred (see `IMPROVEMENT_BACKLOG.md`).
+
 ### 2026-10-01 — Model-honesty upgrade + UX overhaul (owner-approved Phases A–K)
 
 Owner asked for a backtest of the price models, a critical review of whether they actually predict anything, and a plan to improve both the models and the UI/UX (Power Law chart didn't visibly extend into the future and couldn't be zoomed); then approved building every phase. Director ruling for the visual work: `docs/UX_OVERHAUL_DIRECTOR_RULING.md` (Fable, per CLAUDE.md Section 6 process), including two documented implementer deviations.
