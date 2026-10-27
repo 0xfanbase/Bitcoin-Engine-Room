@@ -2,7 +2,7 @@
   "metric": "fng_daily",
   "unit": "index_0_100",
   "schema_version": 1,
-  "generated_at": "2026-10-26T13:27:42Z",
+  "generated_at": "2026-10-27T12:35:04Z",
   "series": [
     {
       "date": "2018-02-01",
@@ -19117,6 +19117,12 @@
     {
       "date": "2026-10-26",
       "value": 50,
+      "classification": "Neutral",
+      "source": "alternative_me"
+    },
+    {
+      "date": "2026-10-27",
+      "value": 48,
       "classification": "Neutral",
       "source": "alternative_me"
     }
