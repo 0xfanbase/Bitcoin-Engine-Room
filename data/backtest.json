@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-27T12:35:05Z",
-  "data_through": "2026-10-27",
+  "generated_at": "2026-10-28T13:25:06Z",
+  "data_through": "2026-10-28",
   "method": {
     "origins": "first of every month from 2013-01-01, refit on data strictly before each origin",
     "error_unit": "log10(actual / forecast); *_mae_factor = 10^mean|error| (x2.0 = typically off by a factor of 2 either way)",
@@ -60,12 +60,12 @@
     },
     {
       "horizon_days": 180,
-      "n_origins": 160,
+      "n_origins": 161,
       "trend_mae_factor": 1.896,
-      "trend_plus_ar1_mae_factor": 1.687,
-      "random_walk_mae_factor": 1.716,
-      "ar1_coverage_68": 0.75,
-      "ar1_coverage_95": 0.9812
+      "trend_plus_ar1_mae_factor": 1.686,
+      "random_walk_mae_factor": 1.711,
+      "ar1_coverage_68": 0.7516,
+      "ar1_coverage_95": 0.9814
     },
     {
       "horizon_days": 365,
