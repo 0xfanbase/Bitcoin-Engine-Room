@@ -79,7 +79,13 @@
           "inner_high": 298923.44,
           "floor": 57668.27,
           "ceiling": 755579.17,
-          "outcome": null
+          "outcome": {
+            "actual_date": "2026-10-31",
+            "actual": 77437.0,
+            "miss_factor": 0.5427,
+            "inside_inner": true,
+            "inside_outer": true
+          }
         },
         {
           "horizon_days": 90,
@@ -125,5 +131,5 @@
     }
   ],
   "started": "2026-09-30",
-  "updated_at": "2026-10-30"
+  "updated_at": "2026-10-31"
 }

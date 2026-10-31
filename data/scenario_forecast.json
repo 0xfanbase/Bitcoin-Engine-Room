@@ -1,38 +1,38 @@
 {
   "schema_version": 3,
-  "generated_at": "2026-10-30T13:23:39Z",
-  "as_of": "2026-10-30",
-  "spot": 77231.0,
+  "generated_at": "2026-10-31T12:58:03Z",
+  "as_of": "2026-10-31",
+  "spot": 77437.0,
   "method": {
     "family": "power_law_ar1_conformal",
-    "a": -16.19121,
-    "b": 5.596491,
+    "a": -16.190519,
+    "b": 5.59628,
     "genesis_date": "2009-01-03",
     "fit_start_date": "2010-07-17",
     "residual_quantiles": {
-      "p10": -0.325873,
-      "p50": -0.061758,
-      "p90": 0.435315
+      "p10": -0.325797,
+      "p50": -0.061663,
+      "p90": 0.435258
     },
-    "n_residuals": 5918,
+    "n_residuals": 5919,
     "ar1": {
       "sample_days": 30,
-      "phi": 0.88731,
+      "phi": 0.887305,
       "innov_sigma": 0.138159,
       "half_life_days": 173.9,
-      "r0": -0.263297
+      "r0": -0.262399
     },
     "width": {
       "rule": "\u22644y: walk-forward conformal P10/P90 of AR1-relative log errors; 10y/30y: Idle/Redline corridor around Cruise; fan tapers 4y\u219210y",
       "conformal": {
         "30": {
           "horizon_days": 30,
-          "n_origins": 165,
-          "approx_independent_windows": 167.3,
-          "offset_lo": -0.115852,
-          "offset_hi": 0.13401,
-          "width": 0.249862,
-          "err_p50": -0.021294
+          "n_origins": 166,
+          "approx_independent_windows": 167.4,
+          "offset_lo": -0.115632,
+          "offset_hi": 0.133757,
+          "width": 0.249389,
+          "err_p50": -0.021398
         },
         "90": {
           "horizon_days": 90,
@@ -82,8 +82,8 @@
       },
       "ultra_long": {
         "source": "models.power_law.bands.outer_offsets_log10",
-        "offset_lo": -0.394171,
-        "offset_hi": 0.722393
+        "offset_lo": -0.394196,
+        "offset_hi": 0.722329
       },
       "replaced": "sqrt_years_scale_from_v2"
     },
@@ -96,15 +96,15 @@
     ],
     "closed_loop": {
       "status": "inactive_below_min_n",
-      "n_matured_total": 1,
+      "n_matured_total": 2,
       "pooled": {
-        "n": 1,
+        "n": 2,
         "bias_log10": 0.0,
         "widen_log10": 0.0
       },
       "note_path": "pipeline/notes/FORECAST_CLOSED_LOOP_V1.md"
     },
-    "disclaimer": "P50 mean-reverts toward Cruise via AR(1) (same family as Models short-term). P10/P90 labels apply only through 4y, where walk-forward conformal coverage is real \u2014 empirical coverage targets, NOT confidence intervals (independent windows are small). Beyond 4y this is a power-law residual ribbon, not a probability. Closed-loop is inactive (1 matured ledger calls) \u2014 there is no live recalibration. 10y/30y (and the fan from 20y through 30y) use the Models Idle/Redline corridor around Cruise as a scenario ribbon only. Live ledger freezes 30d/90d/1y/2y/4y. Educational scenario, not financial advice.",
+    "disclaimer": "P50 mean-reverts toward Cruise via AR(1) (same family as Models short-term). P10/P90 labels apply only through 4y, where walk-forward conformal coverage is real \u2014 empirical coverage targets, NOT confidence intervals (independent windows are small). Beyond 4y this is a power-law residual ribbon, not a probability. Closed-loop is inactive (2 matured ledger calls) \u2014 there is no live recalibration. 10y/30y (and the fan from 20y through 30y) use the Models Idle/Redline corridor around Cruise as a scenario ribbon only. Live ledger freezes 30d/90d/1y/2y/4y. Educational scenario, not financial advice.",
     "note_path": "pipeline/notes/FORECAST_CALIBRATION_V3.md"
   },
   "horizons": [
@@ -112,22 +112,22 @@
       "id": "1m",
       "label": "1 month",
       "days": 30,
-      "target_date": "2026-11-29",
-      "p10": 64981.12,
-      "p50": 84847.53,
-      "p90": 115517.87,
-      "cruise": 145299.75,
-      "multiple_vs_spot_p50": 1.099,
-      "log_width": 0.2499,
-      "offset_lo": -0.115852,
-      "offset_hi": 0.13401,
-      "residual_mean": -0.233626,
+      "target_date": "2026-11-30",
+      "p10": 65172.17,
+      "p50": 85053.89,
+      "p90": 115731.39,
+      "cruise": 145385.95,
+      "multiple_vs_spot_p50": 1.098,
+      "log_width": 0.2494,
+      "offset_lo": -0.115632,
+      "offset_hi": 0.133757,
+      "residual_mean": -0.232828,
       "closed_loop_bias": 0.0,
       "closed_loop_widen": 0.0,
       "closed_loop_source": "identity",
       "band_source": "conformal@30d",
-      "conformal_n_origins": 165,
-      "conformal_indep_windows": 167.3,
+      "conformal_n_origins": 166,
+      "conformal_indep_windows": 167.4,
       "in_live_ledger": true,
       "caveat": null,
       "band_labels": {
@@ -142,16 +142,16 @@
       "id": "1y",
       "label": "1 year",
       "days": 365,
-      "target_date": "2027-10-30",
-      "p10": 49510.83,
-      "p50": 166810.82,
-      "p90": 437832.73,
-      "cruise": 192175.75,
-      "multiple_vs_spot_p50": 2.16,
+      "target_date": "2027-10-31",
+      "p10": 49562.01,
+      "p50": 166983.23,
+      "p90": 438285.26,
+      "cruise": 192279.72,
+      "multiple_vs_spot_p50": 2.156,
       "log_width": 0.9466,
       "offset_lo": -0.527524,
       "offset_hi": 0.419084,
-      "residual_mean": -0.061474,
+      "residual_mean": -0.061261,
       "closed_loop_bias": 0.0,
       "closed_loop_widen": 0.0,
       "closed_loop_source": "identity",
@@ -172,16 +172,16 @@
       "id": "2y",
       "label": "2 years",
       "days": 730,
-      "target_date": "2028-10-29",
-      "p10": 62888.96,
-      "p50": 248366.73,
-      "p90": 442264.84,
-      "cruise": 256712.15,
-      "multiple_vs_spot_p50": 3.216,
+      "target_date": "2028-10-30",
+      "p10": 62927.09,
+      "p50": 248517.31,
+      "p90": 442532.99,
+      "cruise": 256837.68,
+      "multiple_vs_spot_p50": 3.209,
       "log_width": 0.8471,
       "offset_lo": -0.596519,
       "offset_hi": 0.250589,
-      "residual_mean": -0.014353,
+      "residual_mean": -0.014302,
       "closed_loop_bias": 0.0,
       "closed_loop_widen": 0.0,
       "closed_loop_source": "identity",
@@ -202,16 +202,16 @@
       "id": "4y",
       "label": "4 years",
       "days": 1461,
-      "target_date": "2030-10-30",
-      "p10": 156540.27,
-      "p50": 439022.8,
-      "p90": 878207.36,
-      "cruise": 439811.3,
-      "multiple_vs_spot_p50": 5.685,
+      "target_date": "2030-10-31",
+      "p10": 156603.57,
+      "p50": 439200.34,
+      "p90": 878562.51,
+      "cruise": 439986.25,
+      "multiple_vs_spot_p50": 5.672,
       "log_width": 0.749,
       "offset_lo": -0.447861,
       "offset_hi": 0.30111,
-      "residual_mean": -0.000779,
+      "residual_mean": -0.000776,
       "closed_loop_bias": 0.0,
       "closed_loop_widen": 0.0,
       "closed_loop_source": "identity",
@@ -232,15 +232,15 @@
       "id": "10y",
       "label": "10 years",
       "days": 3652,
-      "target_date": "2036-10-29",
-      "p10": 690880.27,
-      "p50": 1712276.07,
-      "p90": 9035803.7,
-      "cruise": 1712276.07,
-      "multiple_vs_spot_p50": 22.171,
-      "log_width": 1.1166,
-      "offset_lo": -0.394171,
-      "offset_hi": 0.722393,
+      "target_date": "2036-10-30",
+      "p10": 690975.27,
+      "p50": 1712610.11,
+      "p90": 9036234.75,
+      "cruise": 1712610.11,
+      "multiple_vs_spot_p50": 22.116,
+      "log_width": 1.1165,
+      "offset_lo": -0.394196,
+      "offset_hi": 0.722329,
       "residual_mean": 0.0,
       "closed_loop_bias": 0.0,
       "closed_loop_widen": 0.0,
@@ -257,24 +257,24 @@
         "kind": "corridor"
       },
       "coverage_earned": false,
-      "idle": 690880.27,
-      "redline": 9035803.7,
-      "cagr_to_idle": 0.245,
-      "cagr_to_cruise": 0.3633
+      "idle": 690975.27,
+      "redline": 9036234.75,
+      "cagr_to_idle": 0.2447,
+      "cagr_to_cruise": 0.363
     },
     {
       "id": "30y",
       "label": "30 years",
       "days": 10957,
-      "target_date": "2056-10-29",
-      "p10": 14322422.99,
-      "p50": 35496660.41,
-      "p90": 187318424.25,
-      "cruise": 35496660.41,
-      "multiple_vs_spot_p50": 459.617,
-      "log_width": 1.1166,
-      "offset_lo": -0.394171,
-      "offset_hi": 0.722393,
+      "target_date": "2056-10-30",
+      "p10": 14319456.72,
+      "p50": 35491351.81,
+      "p90": 187262812.27,
+      "cruise": 35491351.81,
+      "multiple_vs_spot_p50": 458.326,
+      "log_width": 1.1165,
+      "offset_lo": -0.394196,
+      "offset_hi": 0.722329,
       "residual_mean": 0.0,
       "closed_loop_bias": 0.0,
       "closed_loop_widen": 0.0,
@@ -291,10 +291,10 @@
         "kind": "corridor"
       },
       "coverage_earned": false,
-      "idle": 14322422.99,
-      "redline": 187318424.25,
-      "cagr_to_idle": 0.1902,
-      "cagr_to_cruise": 0.2267
+      "idle": 14319456.72,
+      "redline": 187262812.27,
+      "cagr_to_idle": 0.1901,
+      "cagr_to_cruise": 0.2266
     }
   ],
   "history": [
@@ -1967,18 +1967,18 @@
       "price": 80484.0
     },
     {
-      "date": "2026-10-30",
-      "price": 77231.0
+      "date": "2026-10-31",
+      "price": 77437.0
     }
   ],
   "fan": [
     {
-      "date": "2026-10-30",
+      "date": "2026-10-31",
       "days": 0,
-      "p10": 72248.47,
-      "p50": 77231.0,
-      "p90": 83424.6,
-      "cruise": 141608.17,
+      "p10": 72450.36,
+      "p50": 77437.0,
+      "p90": 83634.94,
+      "cruise": 141692.88,
       "band_source": "asof_tight",
       "band_labels": {
         "low": "P10",
@@ -1988,12 +1988,12 @@
       }
     },
     {
-      "date": "2026-11-29",
+      "date": "2026-11-30",
       "days": 30,
-      "p10": 64981.12,
-      "p50": 84847.53,
-      "p90": 115517.87,
-      "cruise": 145299.75,
+      "p10": 65172.17,
+      "p50": 85053.89,
+      "p90": 115731.39,
+      "cruise": 145385.95,
       "band_source": "conformal@30d",
       "band_labels": {
         "low": "P10",
@@ -2003,12 +2003,12 @@
       }
     },
     {
-      "date": "2026-12-30",
+      "date": "2026-12-31",
       "days": 61,
-      "p10": 58426.36,
-      "p50": 92744.13,
-      "p90": 154901.64,
-      "cruise": 149197.05,
+      "p10": 58566.33,
+      "p50": 92949.65,
+      "p90": 155212.89,
+      "cruise": 149284.81,
       "band_source": "conformal_interp_30_90",
       "band_labels": {
         "low": "P10",
@@ -2018,12 +2018,12 @@
       }
     },
     {
-      "date": "2027-01-29",
+      "date": "2027-01-30",
       "days": 91,
-      "p10": 56596.31,
-      "p50": 100375.34,
-      "p90": 188160.57,
-      "cruise": 153049.97,
+      "p10": 56711.2,
+      "p50": 100579.11,
+      "p90": 188542.54,
+      "cruise": 153139.26,
       "band_source": "conformal_interp_90_180",
       "band_labels": {
         "low": "P10",
@@ -2033,12 +2033,12 @@
       }
     },
     {
-      "date": "2027-03-01",
+      "date": "2027-03-02",
       "days": 122,
-      "p10": 55091.52,
-      "p50": 108220.25,
-      "p90": 222165.49,
-      "cruise": 157116.8,
+      "p10": 55193.93,
+      "p50": 108421.44,
+      "p90": 222578.5,
+      "cruise": 157207.69,
       "band_source": "conformal_interp_90_180",
       "band_labels": {
         "low": "P10",
@@ -2048,12 +2048,12 @@
       }
     },
     {
-      "date": "2027-03-31",
+      "date": "2027-04-01",
       "days": 152,
-      "p10": 54577.72,
-      "p50": 115751.36,
-      "p90": 254385.54,
-      "cruise": 161136.54,
+      "p10": 54671.14,
+      "p50": 115949.5,
+      "p90": 254820.99,
+      "cruise": 161228.98,
       "band_source": "conformal_interp_90_180",
       "band_labels": {
         "low": "P10",
@@ -2063,12 +2063,12 @@
       }
     },
     {
-      "date": "2027-05-01",
+      "date": "2027-05-02",
       "days": 183,
-      "p10": 54362.32,
-      "p50": 123454.93,
-      "p90": 286752.59,
-      "cruise": 165378.61,
+      "p10": 54448.01,
+      "p50": 123649.53,
+      "p90": 287204.6,
+      "cruise": 165472.68,
       "band_source": "conformal_interp_180_365",
       "band_labels": {
         "low": "P10",
@@ -2078,12 +2078,12 @@
       }
     },
     {
-      "date": "2027-05-31",
+      "date": "2027-06-01",
       "days": 213,
-      "p10": 52821.4,
-      "p50": 130824.3,
-      "p90": 312147.29,
-      "cruise": 169570.75,
+      "p10": 52898.5,
+      "p50": 131015.24,
+      "p90": 312602.88,
+      "cruise": 169666.42,
       "band_source": "conformal_interp_180_365",
       "band_labels": {
         "low": "P10",
@@ -2093,12 +2093,12 @@
       }
     },
     {
-      "date": "2027-07-01",
+      "date": "2027-07-02",
       "days": 244,
-      "p10": 51685.82,
-      "p50": 138345.53,
-      "p90": 338129.98,
-      "cruise": 173993.93,
+      "p10": 51755.69,
+      "p50": 138532.58,
+      "p90": 338587.12,
+      "cruise": 174091.25,
       "band_source": "conformal_interp_180_365",
       "band_labels": {
         "low": "P10",
@@ -2108,12 +2108,12 @@
       }
     },
     {
-      "date": "2027-07-31",
+      "date": "2027-08-01",
       "days": 274,
-      "p10": 50885.26,
-      "p50": 145532.24,
-      "p90": 363072.87,
-      "cruise": 178364.21,
+      "p10": 50949.34,
+      "p50": 145715.5,
+      "p90": 363530.05,
+      "cruise": 178463.16,
       "band_source": "conformal_interp_180_365",
       "band_labels": {
         "low": "P10",
@@ -2123,12 +2123,12 @@
       }
     },
     {
-      "date": "2027-08-30",
+      "date": "2027-08-31",
       "days": 304,
-      "p10": 50291.34,
-      "p50": 152630.5,
-      "p90": 387850.75,
-      "cruise": 182824.25,
+      "p10": 50350.5,
+      "p50": 152810.03,
+      "p90": 388306.96,
+      "cruise": 182924.83,
       "band_source": "conformal_interp_180_365",
       "band_labels": {
         "low": "P10",
@@ -2138,12 +2138,12 @@
       }
     },
     {
-      "date": "2027-09-30",
+      "date": "2027-10-01",
       "days": 335,
-      "p10": 49836.06,
-      "p50": 159877.06,
-      "p90": 413309.73,
-      "cruise": 187528.77,
+      "p10": 49890.87,
+      "p50": 160052.88,
+      "p90": 413764.26,
+      "cruise": 187631.07,
       "band_source": "conformal_interp_180_365",
       "band_labels": {
         "low": "P10",
@@ -2153,12 +2153,12 @@
       }
     },
     {
-      "date": "2027-10-30",
+      "date": "2027-10-31",
       "days": 365,
-      "p10": 49510.83,
-      "p50": 166810.82,
-      "p90": 437832.73,
-      "cruise": 192175.75,
+      "p10": 49562.01,
+      "p50": 166983.23,
+      "p90": 438285.26,
+      "cruise": 192279.72,
       "band_source": "conformal@365d",
       "band_labels": {
         "low": "P10",
@@ -2168,12 +2168,12 @@
       }
     },
     {
-      "date": "2027-11-30",
+      "date": "2027-12-01",
       "days": 396,
-      "p10": 50660.22,
-      "p50": 173902.23,
-      "p90": 436087.33,
-      "cruise": 197076.57,
+      "p10": 50709.48,
+      "p50": 174071.34,
+      "p90": 436511.41,
+      "cruise": 197182.28,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2183,12 +2183,12 @@
       }
     },
     {
-      "date": "2027-12-30",
+      "date": "2027-12-31",
       "days": 426,
-      "p10": 51767.56,
-      "p50": 180702.67,
-      "p90": 434992.17,
-      "cruise": 201916.58,
+      "p10": 51815.16,
+      "p50": 180868.83,
+      "p90": 435392.15,
+      "cruise": 202023.99,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2198,12 +2198,12 @@
       }
     },
     {
-      "date": "2028-01-30",
+      "date": "2028-01-31",
       "days": 457,
-      "p10": 52906.46,
-      "p50": 187675.53,
-      "p90": 434359.28,
-      "cruise": 207020.05,
+      "p10": 52952.52,
+      "p50": 187838.9,
+      "p90": 434737.4,
+      "cruise": 207129.24,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2213,12 +2213,12 @@
       }
     },
     {
-      "date": "2028-02-29",
+      "date": "2028-03-01",
       "days": 487,
-      "p10": 54004.01,
-      "p50": 194380.94,
-      "p90": 434149.7,
-      "cruise": 212059.29,
+      "p10": 54048.73,
+      "p50": 194541.89,
+      "p90": 434509.17,
+      "cruise": 212170.22,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2228,12 +2228,12 @@
       }
     },
     {
-      "date": "2028-03-30",
+      "date": "2028-03-31",
       "days": 517,
-      "p10": 55098.02,
-      "p50": 201054.59,
-      "p90": 434278.55,
-      "cruise": 217198.85,
+      "p10": 55141.54,
+      "p50": 201213.38,
+      "p90": 434621.53,
+      "cruise": 217311.52,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2243,12 +2243,12 @@
       }
     },
     {
-      "date": "2028-04-30",
+      "date": "2028-05-01",
       "days": 548,
-      "p10": 56226.16,
-      "p50": 207927.89,
-      "p90": 434721.97,
-      "cruise": 222616.76,
+      "p10": 56268.56,
+      "p50": 208084.71,
+      "p90": 435049.85,
+      "cruise": 222731.26,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2258,12 +2258,12 @@
       }
     },
     {
-      "date": "2028-05-30",
+      "date": "2028-05-31",
       "days": 578,
-      "p10": 57317.12,
-      "p50": 214567.51,
-      "p90": 435418.24,
-      "cruise": 227965.09,
+      "p10": 57358.57,
+      "p50": 214722.7,
+      "p90": 435733.17,
+      "cruise": 228081.37,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2273,12 +2273,12 @@
       }
     },
     {
-      "date": "2028-06-30",
+      "date": "2028-07-01",
       "days": 609,
-      "p10": 58445.29,
-      "p50": 221426.44,
-      "p90": 436387.41,
-      "cruise": 233602.12,
+      "p10": 58485.88,
+      "p50": 221580.21,
+      "p90": 436690.46,
+      "cruise": 233720.26,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2288,12 +2288,12 @@
       }
     },
     {
-      "date": "2028-07-30",
+      "date": "2028-07-31",
       "days": 639,
-      "p10": 59539.49,
-      "p50": 228071.78,
-      "p90": 437547.45,
-      "cruise": 239165.82,
+      "p10": 59579.34,
+      "p50": 228224.42,
+      "p90": 437840.29,
+      "cruise": 239285.77,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2303,12 +2303,12 @@
       }
     },
     {
-      "date": "2028-08-30",
+      "date": "2028-08-31",
       "days": 670,
-      "p10": 60674.34,
-      "p50": 234956.23,
-      "p90": 438959.81,
-      "cruise": 245028.84,
+      "p10": 60713.52,
+      "p50": 235107.95,
+      "p90": 439243.26,
+      "cruise": 245150.68,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2318,12 +2318,12 @@
       }
     },
     {
-      "date": "2028-09-29",
+      "date": "2028-09-30",
       "days": 700,
-      "p10": 61778.17,
-      "p50": 241644.54,
-      "p90": 440521.33,
-      "cruise": 250814.63,
+      "p10": 61816.79,
+      "p50": 241795.59,
+      "p90": 440796.69,
+      "cruise": 250938.31,
       "band_source": "conformal_interp_365_730",
       "band_labels": {
         "low": "P10",
@@ -2333,12 +2333,12 @@
       }
     },
     {
-      "date": "2028-10-29",
+      "date": "2028-10-30",
       "days": 730,
-      "p10": 62888.96,
-      "p50": 248366.73,
-      "p90": 442264.84,
-      "cruise": 256712.15,
+      "p10": 62927.09,
+      "p50": 248517.31,
+      "p90": 442532.99,
+      "cruise": 256837.68,
       "band_source": "conformal@730d",
       "band_labels": {
         "low": "P10",
@@ -2348,12 +2348,12 @@
       }
     },
     {
-      "date": "2028-11-29",
+      "date": "2028-11-30",
       "days": 761,
-      "p10": 65999.3,
-      "p50": 255356.94,
-      "p90": 457893.99,
-      "cruise": 262925.42,
+      "p10": 66038.15,
+      "p50": 255507.26,
+      "p90": 458163.52,
+      "cruise": 263052.89,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2363,12 +2363,12 @@
       }
     },
     {
-      "date": "2028-12-29",
+      "date": "2028-12-30",
       "days": 791,
-      "p10": 69065.63,
-      "p50": 262171.92,
-      "p90": 473171.73,
-      "cruise": 269055.34,
+      "p10": 69105.21,
+      "p50": 262322.16,
+      "p90": 473442.88,
+      "cruise": 269184.7,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2378,12 +2378,12 @@
       }
     },
     {
-      "date": "2029-01-29",
+      "date": "2029-01-30",
       "days": 822,
-      "p10": 72294.66,
-      "p50": 269273.64,
-      "p90": 489131.47,
-      "cruise": 275512.41,
+      "p10": 72335.02,
+      "p50": 269423.98,
+      "p90": 489404.57,
+      "cruise": 275643.74,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2393,12 +2393,12 @@
       }
     },
     {
-      "date": "2029-02-28",
+      "date": "2029-03-01",
       "days": 852,
-      "p10": 75480.25,
-      "p50": 276210.85,
-      "p90": 504757.32,
-      "cruise": 281881.84,
+      "p10": 75521.41,
+      "p50": 276361.46,
+      "p90": 505032.54,
+      "cruise": 282015.08,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2408,12 +2408,12 @@
       }
     },
     {
-      "date": "2029-03-31",
+      "date": "2029-04-01",
       "days": 883,
-      "p10": 78837.13,
-      "p50": 283452.9,
-      "p90": 521104.82,
-      "cruise": 288590.13,
+      "p10": 78879.13,
+      "p50": 283603.94,
+      "p90": 521382.5,
+      "cruise": 288725.37,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2423,12 +2423,12 @@
       }
     },
     {
-      "date": "2029-04-30",
+      "date": "2029-05-01",
       "days": 913,
-      "p10": 82150.93,
-      "p50": 290538.8,
-      "p90": 537132.1,
-      "cruise": 295206.33,
+      "p10": 82193.79,
+      "p50": 290690.4,
+      "p90": 537412.37,
+      "cruise": 295343.5,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2438,12 +2438,12 @@
       }
     },
     {
-      "date": "2029-05-31",
+      "date": "2029-06-01",
       "days": 944,
-      "p10": 85644.91,
-      "p50": 297947.1,
-      "p90": 553920.48,
-      "cruise": 302173.43,
+      "p10": 85688.7,
+      "p50": 298099.42,
+      "p90": 554203.66,
+      "cruise": 302312.63,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2453,12 +2453,12 @@
       }
     },
     {
-      "date": "2029-06-30",
+      "date": "2029-07-01",
       "days": 974,
-      "p10": 89095.9,
-      "p50": 305205.44,
-      "p90": 570398.72,
-      "cruise": 309043.8,
+      "p10": 89140.61,
+      "p50": 305358.57,
+      "p90": 570684.91,
+      "cruise": 309184.98,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2468,12 +2468,12 @@
       }
     },
     {
-      "date": "2029-07-30",
+      "date": "2029-07-31",
       "days": 1004,
-      "p10": 92617.65,
-      "p50": 312556.57,
-      "p90": 587115.85,
-      "cruise": 316041.96,
+      "p10": 92663.31,
+      "p50": 312710.63,
+      "p90": 587405.25,
+      "cruise": 316185.12,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2483,12 +2483,12 @@
       }
     },
     {
-      "date": "2029-08-30",
+      "date": "2029-08-31",
       "days": 1035,
-      "p10": 96333.44,
-      "p50": 320255.44,
-      "p90": 604652.61,
-      "cruise": 323409.6,
+      "p10": 96380.1,
+      "p50": 320410.57,
+      "p90": 604945.5,
+      "cruise": 323554.82,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2498,12 +2498,12 @@
       }
     },
     {
-      "date": "2029-09-29",
+      "date": "2029-09-30",
       "days": 1065,
-      "p10": 100005.75,
-      "p50": 327810.15,
-      "p90": 621888.28,
-      "cruise": 330673.3,
+      "p10": 100053.42,
+      "p50": 327966.41,
+      "p90": 622184.72,
+      "cruise": 330820.54,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2513,12 +2513,12 @@
       }
     },
     {
-      "date": "2029-10-30",
+      "date": "2029-10-31",
       "days": 1096,
-      "p10": 103881.73,
-      "p50": 335729.14,
-      "p90": 639982.7,
-      "cruise": 338319.36,
+      "p10": 103930.47,
+      "p50": 335886.67,
+      "p90": 640282.98,
+      "cruise": 338468.69,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2528,12 +2528,12 @@
       }
     },
     {
-      "date": "2029-11-29",
+      "date": "2029-11-30",
       "days": 1126,
-      "p10": 107713.51,
-      "p50": 343505.89,
-      "p90": 657778.52,
-      "cruise": 345856.43,
+      "p10": 107763.31,
+      "p50": 343664.72,
+      "p90": 658082.67,
+      "cruise": 346007.8,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2543,12 +2543,12 @@
       }
     },
     {
-      "date": "2029-12-30",
+      "date": "2029-12-31",
       "days": 1157,
-      "p10": 111758.84,
-      "p50": 351663.22,
-      "p90": 676472.29,
-      "cruise": 353789.07,
+      "p10": 111809.78,
+      "p50": 351823.48,
+      "p90": 676780.58,
+      "cruise": 353942.56,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2558,12 +2558,12 @@
       }
     },
     {
-      "date": "2030-01-29",
+      "date": "2030-01-30",
       "days": 1187,
-      "p10": 115758.94,
-      "p50": 359678.87,
-      "p90": 694867.41,
-      "cruise": 361607.5,
+      "p10": 115810.99,
+      "p50": 359840.59,
+      "p90": 695179.83,
+      "cruise": 361763.05,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2573,12 +2573,12 @@
       }
     },
     {
-      "date": "2030-03-01",
+      "date": "2030-03-02",
       "days": 1218,
-      "p10": 119982.77,
-      "p50": 368091.25,
-      "p90": 714199.84,
-      "cruise": 369835.06,
+      "p10": 120036.0,
+      "p50": 368254.55,
+      "p90": 714516.67,
+      "cruise": 369992.76,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2588,12 +2588,12 @@
       }
     },
     {
-      "date": "2030-03-31",
+      "date": "2030-04-01",
       "days": 1248,
-      "p10": 124160.01,
-      "p50": 376361.35,
-      "p90": 733231.31,
-      "cruise": 377942.99,
+      "p10": 124214.4,
+      "p50": 376526.23,
+      "p90": 733552.53,
+      "cruise": 378102.78,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2603,12 +2603,12 @@
       }
     },
     {
-      "date": "2030-04-30",
+      "date": "2030-05-01",
       "days": 1278,
-      "p10": 128427.58,
-      "p50": 384761.96,
-      "p90": 752588.79,
-      "cruise": 386196.35,
+      "p10": 128483.16,
+      "p50": 384928.48,
+      "p90": 752914.5,
+      "cruise": 386358.24,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2618,12 +2618,12 @@
       }
     },
     {
-      "date": "2030-05-31",
+      "date": "2030-06-01",
       "days": 1309,
-      "p10": 132934.57,
-      "p50": 393583.28,
-      "p90": 772942.9,
-      "cruise": 394879.74,
+      "p10": 132991.4,
+      "p50": 393751.55,
+      "p90": 773273.36,
+      "cruise": 395043.82,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2633,12 +2633,12 @@
       }
     },
     {
-      "date": "2030-06-30",
+      "date": "2030-07-01",
       "days": 1339,
-      "p10": 137392.38,
-      "p50": 402259.57,
-      "p90": 792988.89,
-      "cruise": 403435.08,
+      "p10": 137450.44,
+      "p50": 402429.59,
+      "p90": 793324.05,
+      "cruise": 403601.28,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2648,12 +2648,12 @@
       }
     },
     {
-      "date": "2030-07-31",
+      "date": "2030-08-01",
       "days": 1370,
-      "p10": 142100.48,
-      "p50": 411372.69,
-      "p90": 814071.83,
-      "cruise": 412434.94,
+      "p10": 142159.84,
+      "p50": 411544.55,
+      "p90": 814411.94,
+      "cruise": 412603.34,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2663,12 +2663,12 @@
       }
     },
     {
-      "date": "2030-08-30",
+      "date": "2030-08-31",
       "days": 1400,
-      "p10": 146757.31,
-      "p50": 420337.89,
-      "p90": 834839.67,
-      "cruise": 421300.83,
+      "p10": 146817.95,
+      "p50": 420511.58,
+      "p90": 835184.66,
+      "cruise": 421471.38,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2678,12 +2678,12 @@
       }
     },
     {
-      "date": "2030-09-30",
+      "date": "2030-10-01",
       "days": 1431,
-      "p10": 151675.61,
-      "p50": 429756.11,
-      "p90": 856685.34,
-      "cruise": 430626.09,
+      "p10": 151737.6,
+      "p50": 429931.74,
+      "p90": 857035.45,
+      "cruise": 430798.88,
       "band_source": "conformal_interp_730_1461",
       "band_labels": {
         "low": "P10",
@@ -2693,12 +2693,12 @@
       }
     },
     {
-      "date": "2030-10-30",
+      "date": "2030-10-31",
       "days": 1461,
-      "p10": 156540.27,
-      "p50": 439022.8,
-      "p90": 878207.36,
-      "cruise": 439811.3,
+      "p10": 156603.57,
+      "p50": 439200.34,
+      "p90": 878562.51,
+      "cruise": 439986.25,
       "band_source": "conformal@1461d",
       "band_labels": {
         "low": "P10",
@@ -2708,12 +2708,12 @@
       }
     },
     {
-      "date": "2030-11-29",
+      "date": "2030-11-30",
       "days": 1491,
-      "p10": 160338.08,
-      "p50": 448442.22,
-      "p90": 916564.71,
-      "cruise": 449156.81,
+      "p10": 160402.05,
+      "p50": 448621.71,
+      "p90": 916928.56,
+      "cruise": 449333.93,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2721,16 +2721,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 160338.08,
-      "redline": 916564.71
+      "idle": 160402.05,
+      "redline": 916928.56
     },
     {
-      "date": "2030-12-30",
+      "date": "2030-12-31",
       "days": 1522,
-      "p10": 164332.35,
-      "p50": 458339.14,
-      "p90": 957428.27,
-      "cruise": 458984.55,
+      "p10": 164397.02,
+      "p50": 458520.66,
+      "p90": 957801.15,
+      "cruise": 459163.94,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2738,16 +2738,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 164332.35,
-      "redline": 957428.27
+      "idle": 164397.02,
+      "redline": 957801.15
     },
     {
-      "date": "2031-01-29",
+      "date": "2031-01-30",
       "days": 1552,
-      "p10": 168266.71,
-      "p50": 468077.95,
-      "p90": 998189.85,
-      "cruise": 468662.75,
+      "p10": 168332.05,
+      "p50": 468261.48,
+      "p90": 998571.52,
+      "cruise": 468844.34,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2755,16 +2755,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 168266.71,
-      "redline": 998189.85
+      "idle": 168332.05,
+      "redline": 998571.52
     },
     {
-      "date": "2031-03-01",
+      "date": "2031-03-02",
       "days": 1583,
-      "p10": 172404.8,
-      "p50": 478310.92,
-      "p90": 1041596.84,
-      "cruise": 478839.01,
+      "p10": 172470.84,
+      "p50": 478496.54,
+      "p90": 1041987.63,
+      "cruise": 479022.88,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2772,16 +2772,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 172404.8,
-      "redline": 1041596.84
+      "idle": 172470.84,
+      "redline": 1041987.63
     },
     {
-      "date": "2031-03-31",
+      "date": "2031-04-01",
       "days": 1613,
-      "p10": 176480.92,
-      "p50": 488380.68,
-      "p90": 1084877.9,
-      "cruise": 488859.11,
+      "p10": 176547.64,
+      "p50": 488568.37,
+      "p90": 1085277.53,
+      "cruise": 489045.19,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2789,16 +2789,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 176480.92,
-      "redline": 1084877.9
+      "idle": 176547.64,
+      "redline": 1085277.53
     },
     {
-      "date": "2031-05-01",
+      "date": "2031-05-02",
       "days": 1644,
-      "p10": 180768.16,
-      "p50": 498961.52,
-      "p90": 1130949.35,
-      "cruise": 499393.48,
+      "p10": 180835.59,
+      "p50": 499151.35,
+      "p90": 1131358.14,
+      "cruise": 499581.86,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2806,16 +2806,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 180768.16,
-      "redline": 1130949.35
+      "idle": 180835.59,
+      "redline": 1131358.14
     },
     {
-      "date": "2031-05-31",
+      "date": "2031-06-01",
       "days": 1674,
-      "p10": 184991.2,
-      "p50": 509373.58,
-      "p90": 1176868.92,
-      "cruise": 509764.84,
+      "p10": 185059.32,
+      "p50": 509565.51,
+      "p90": 1177286.59,
+      "cruise": 509955.46,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2823,16 +2823,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 184991.2,
-      "redline": 1176868.92
+      "idle": 185059.32,
+      "redline": 1177286.59
     },
     {
-      "date": "2031-06-30",
+      "date": "2031-07-01",
       "days": 1704,
-      "p10": 189288.38,
-      "p50": 519958.09,
-      "p90": 1224130.95,
-      "cruise": 520312.45,
+      "p10": 189357.19,
+      "p50": 520152.14,
+      "p90": 1224557.5,
+      "cruise": 520505.31,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2840,16 +2840,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 189288.38,
-      "redline": 1224130.95
+      "idle": 189357.19,
+      "redline": 1224557.5
     },
     {
-      "date": "2031-07-31",
+      "date": "2031-08-01",
       "days": 1735,
-      "p10": 193807.98,
-      "p50": 531079.43,
-      "p90": 1274410.82,
-      "cruise": 531399.3,
+      "p10": 193877.51,
+      "p50": 531275.7,
+      "p90": 1274846.54,
+      "cruise": 531594.48,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2857,16 +2857,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 193807.98,
-      "redline": 1274410.82
+      "idle": 193877.51,
+      "redline": 1274846.54
     },
     {
-      "date": "2031-08-30",
+      "date": "2031-08-31",
       "days": 1765,
-      "p10": 198259.69,
-      "p50": 542022.86,
-      "p90": 1324496.18,
-      "cruise": 542312.52,
+      "p10": 198329.92,
+      "p50": 542221.28,
+      "p90": 1324940.76,
+      "cruise": 542509.96,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2874,16 +2874,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 198259.69,
-      "redline": 1324496.18
+      "idle": 198329.92,
+      "redline": 1324940.76
     },
     {
-      "date": "2031-09-30",
+      "date": "2031-10-01",
       "days": 1796,
-      "p10": 202941.63,
-      "p50": 553520.8,
-      "p90": 1377759.55,
-      "cruise": 553782.21,
+      "p10": 203012.57,
+      "p50": 553721.47,
+      "p90": 1378213.27,
+      "cruise": 553982.0,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2891,16 +2891,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 202941.63,
-      "redline": 1377759.55
+      "idle": 203012.57,
+      "redline": 1378213.27
     },
     {
-      "date": "2031-10-30",
+      "date": "2031-10-31",
       "days": 1826,
-      "p10": 207552.99,
-      "p50": 564834.18,
-      "p90": 1430797.14,
-      "cruise": 565070.88,
+      "p10": 207624.62,
+      "p50": 565037.04,
+      "p90": 1431259.67,
+      "cruise": 565272.93,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2908,16 +2908,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 207552.99,
-      "redline": 1430797.14
+      "idle": 207624.62,
+      "redline": 1431259.67
     },
     {
-      "date": "2031-11-30",
+      "date": "2031-12-01",
       "days": 1857,
-      "p10": 212402.52,
-      "p50": 576720.11,
-      "p90": 1487179.34,
-      "cruise": 576933.69,
+      "p10": 212474.87,
+      "p50": 576925.25,
+      "p90": 1487650.93,
+      "cruise": 577138.1,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2925,16 +2925,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 212402.52,
-      "redline": 1487179.34
+      "idle": 212474.87,
+      "redline": 1487650.93
     },
     {
-      "date": "2031-12-30",
+      "date": "2031-12-31",
       "days": 1887,
-      "p10": 217178.64,
-      "p50": 588414.48,
-      "p90": 1543302.17,
-      "cruise": 588607.83,
+      "p10": 217251.68,
+      "p50": 588621.84,
+      "p90": 1543782.48,
+      "cruise": 588814.53,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2942,16 +2942,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 217178.64,
-      "redline": 1543302.17
+      "idle": 217251.68,
+      "redline": 1543782.48
     },
     {
-      "date": "2032-01-30",
+      "date": "2032-01-31",
       "days": 1918,
-      "p10": 222201.08,
-      "p50": 600699.79,
-      "p90": 1602942.82,
-      "cruise": 600874.23,
+      "p10": 222274.83,
+      "p50": 600909.44,
+      "p90": 1603432.08,
+      "cruise": 601083.29,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2959,16 +2959,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 222201.08,
-      "redline": 1602942.82
+      "idle": 222274.83,
+      "redline": 1603432.08
     },
     {
-      "date": "2032-02-29",
+      "date": "2032-03-01",
       "days": 1948,
-      "p10": 227147.1,
-      "p50": 612786.17,
-      "p90": 1662288.16,
-      "cruise": 612944.07,
+      "p10": 227221.54,
+      "p50": 612998.07,
+      "p90": 1662786.03,
+      "cruise": 613155.43,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2976,16 +2976,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 227147.1,
-      "redline": 1662288.16
+      "idle": 227221.54,
+      "redline": 1662786.03
     },
     {
-      "date": "2032-03-30",
+      "date": "2032-03-31",
       "days": 1978,
-      "p10": 232178.57,
-      "p50": 625069.42,
-      "p90": 1723270.02,
-      "cruise": 625212.33,
+      "p10": 232253.69,
+      "p50": 625283.57,
+      "p90": 1723776.41,
+      "cruise": 625425.98,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -2993,16 +2993,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 232178.57,
-      "redline": 1723270.02
+      "idle": 232253.69,
+      "redline": 1723776.41
     },
     {
-      "date": "2032-04-30",
+      "date": "2032-05-01",
       "days": 2009,
-      "p10": 237468.86,
-      "p50": 637971.77,
-      "p90": 1788040.81,
-      "cruise": 638100.68,
+      "p10": 237544.69,
+      "p50": 638188.25,
+      "p90": 1788555.91,
+      "cruise": 638316.71,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3010,16 +3010,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 237468.86,
-      "redline": 1788040.81
+      "idle": 237544.69,
+      "redline": 1788555.91
     },
     {
-      "date": "2032-05-30",
+      "date": "2032-05-31",
       "days": 2039,
-      "p10": 242677.98,
-      "p50": 650663.59,
-      "p90": 1852458.08,
-      "cruise": 650780.25,
+      "p10": 242754.48,
+      "p50": 650882.34,
+      "p90": 1852981.51,
+      "cruise": 650998.59,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3027,16 +3027,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 242677.98,
-      "redline": 1852458.08
+      "idle": 242754.48,
+      "redline": 1852981.51
     },
     {
-      "date": "2032-06-30",
+      "date": "2032-07-01",
       "days": 2070,
-      "p10": 248154.55,
-      "p50": 663993.92,
-      "p90": 1920854.83,
-      "cruise": 664099.13,
+      "p10": 248231.75,
+      "p50": 664215.02,
+      "p90": 1921386.77,
+      "cruise": 664319.87,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3044,16 +3044,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 248154.55,
-      "redline": 1920854.83
+      "idle": 248231.75,
+      "redline": 1921386.77
     },
     {
-      "date": "2032-07-30",
+      "date": "2032-07-31",
       "days": 2100,
-      "p10": 253546.57,
-      "p50": 677105.53,
-      "p90": 1988855.83,
-      "cruise": 677200.73,
+      "p10": 253624.43,
+      "p50": 677328.91,
+      "p90": 1989395.86,
+      "cruise": 677423.78,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3061,16 +3061,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 253546.57,
-      "redline": 1988855.83
+      "idle": 253624.43,
+      "redline": 1989395.86
     },
     {
-      "date": "2032-08-30",
+      "date": "2032-08-31",
       "days": 2131,
-      "p10": 259214.88,
-      "p50": 690875.47,
-      "p90": 2061034.18,
-      "cruise": 690961.31,
+      "p10": 259293.43,
+      "p50": 691101.22,
+      "p90": 2061582.46,
+      "cruise": 691186.76,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3078,16 +3078,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 259214.88,
-      "redline": 2061034.18
+      "idle": 259293.43,
+      "redline": 2061582.46
     },
     {
-      "date": "2032-09-29",
+      "date": "2032-09-30",
       "days": 2161,
-      "p10": 264795.12,
-      "p50": 704418.19,
-      "p90": 2132771.85,
-      "cruise": 704495.85,
+      "p10": 264874.32,
+      "p50": 704646.23,
+      "p90": 2133327.96,
+      "cruise": 704723.62,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3095,16 +3095,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 264795.12,
-      "redline": 2132771.85
+      "idle": 264874.32,
+      "redline": 2133327.96
     },
     {
-      "date": "2032-10-30",
+      "date": "2032-10-31",
       "days": 2192,
-      "p10": 270660.7,
-      "p50": 718639.5,
-      "p90": 2208892.29,
-      "cruise": 718709.52,
+      "p10": 270740.58,
+      "p50": 718869.91,
+      "p90": 2209456.34,
+      "cruise": 718939.69,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3112,16 +3112,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 270660.7,
-      "redline": 2208892.29
+      "idle": 270740.58,
+      "redline": 2209456.34
     },
     {
-      "date": "2032-11-29",
+      "date": "2032-11-30",
       "days": 2222,
-      "p10": 276434.56,
-      "p50": 732624.77,
-      "p90": 2284524.33,
-      "cruise": 732688.1,
+      "p10": 276515.08,
+      "p50": 732857.48,
+      "p90": 2285095.89,
+      "cruise": 732920.6,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3129,16 +3129,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 276434.56,
-      "redline": 2284524.33
+      "idle": 276515.08,
+      "redline": 2285095.89
     },
     {
-      "date": "2032-12-29",
+      "date": "2032-12-30",
       "days": 2252,
-      "p10": 282305.64,
-      "p50": 746831.93,
-      "p90": 2362130.97,
-      "cruise": 746889.22,
+      "p10": 282386.8,
+      "p50": 747066.95,
+      "p90": 2362709.86,
+      "cruise": 747124.04,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3146,16 +3146,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 282305.64,
-      "redline": 2362130.97
+      "idle": 282386.8,
+      "redline": 2362709.86
     },
     {
-      "date": "2033-01-29",
+      "date": "2033-01-30",
       "days": 2283,
-      "p10": 288475.97,
-      "p50": 761748.77,
-      "p90": 2444441.31,
-      "cruise": 761800.41,
+      "p10": 288557.79,
+      "p50": 761986.17,
+      "p90": 2445027.59,
+      "cruise": 762037.63,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3163,16 +3163,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 288475.97,
-      "redline": 2444441.31
+      "idle": 288557.79,
+      "redline": 2445027.59
     },
     {
-      "date": "2033-02-28",
+      "date": "2033-03-01",
       "days": 2313,
-      "p10": 294548.86,
-      "p50": 776415.83,
-      "p90": 2526186.66,
-      "cruise": 776462.53,
+      "p10": 294631.29,
+      "p50": 776655.55,
+      "p90": 2526779.88,
+      "cruise": 776702.09,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3180,16 +3180,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 294548.86,
-      "redline": 2526186.66
+      "idle": 294631.29,
+      "redline": 2526779.88
     },
     {
-      "date": "2033-03-31",
+      "date": "2033-04-01",
       "days": 2344,
-      "p10": 300930.6,
-      "p50": 791813.99,
-      "p90": 2612860.87,
-      "cruise": 791856.09,
+      "p10": 301013.67,
+      "p50": 792056.1,
+      "p90": 2613461.04,
+      "cruise": 792098.04,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3197,16 +3197,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 300930.6,
-      "redline": 2612860.87
+      "idle": 301013.67,
+      "redline": 2613461.04
     },
     {
-      "date": "2033-04-30",
+      "date": "2033-05-01",
       "days": 2374,
-      "p10": 307210.88,
-      "p50": 806952.79,
-      "p90": 2698914.98,
-      "cruise": 806990.85,
+      "p10": 307294.56,
+      "p50": 807197.2,
+      "p90": 2699521.65,
+      "cruise": 807235.13,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3214,16 +3214,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 307210.88,
-      "redline": 2698914.98
+      "idle": 307294.56,
+      "redline": 2699521.65
     },
     {
-      "date": "2033-05-31",
+      "date": "2033-06-01",
       "days": 2405,
-      "p10": 313809.86,
-      "p50": 822844.59,
-      "p90": 2790131.43,
-      "cruise": 822878.89,
+      "p10": 313894.15,
+      "p50": 823091.39,
+      "p90": 2790744.55,
+      "cruise": 823125.57,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3231,16 +3231,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 313809.86,
-      "redline": 2790131.43
+      "idle": 313894.15,
+      "redline": 2790744.55
     },
     {
-      "date": "2033-06-30",
+      "date": "2033-07-01",
       "days": 2435,
-      "p10": 320303.22,
-      "p50": 838467.12,
-      "p90": 2880669.51,
-      "cruise": 838498.14,
+      "p10": 320388.1,
+      "p50": 838716.23,
+      "p90": 2881288.62,
+      "cruise": 838747.14,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3248,16 +3248,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 320303.22,
-      "redline": 2880669.51
+      "idle": 320388.1,
+      "redline": 2881288.62
     },
     {
-      "date": "2033-07-30",
+      "date": "2033-07-31",
       "days": 2465,
-      "p10": 326903.49,
-      "p50": 854332.02,
-      "p90": 2973478.68,
-      "cruise": 854360.06,
+      "p10": 326988.95,
+      "p50": 854583.44,
+      "p90": 2974103.51,
+      "cruise": 854611.38,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3265,16 +3265,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 326903.49,
-      "redline": 2973478.68
+      "idle": 326988.95,
+      "redline": 2974103.51
     },
     {
-      "date": "2033-08-30",
+      "date": "2033-08-31",
       "days": 2496,
-      "p10": 333837.58,
-      "p50": 870983.51,
-      "p90": 3071814.47,
-      "cruise": 871008.78,
+      "p10": 333923.62,
+      "p50": 871237.32,
+      "p90": 3072444.91,
+      "cruise": 871262.5,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3282,16 +3282,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 333837.58,
-      "redline": 3071814.47
+      "idle": 333923.62,
+      "redline": 3072444.91
     },
     {
-      "date": "2033-09-29",
+      "date": "2033-09-30",
       "days": 2526,
-      "p10": 340659.58,
-      "p50": 887350.4,
-      "p90": 3169378.83,
-      "cruise": 887373.24,
+      "p10": 340746.18,
+      "p50": 887606.51,
+      "p90": 3170014.39,
+      "cruise": 887629.27,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3299,16 +3299,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 340659.58,
-      "redline": 3169378.83
+      "idle": 340746.18,
+      "redline": 3170014.39
     },
     {
-      "date": "2033-10-30",
+      "date": "2033-10-31",
       "days": 2557,
-      "p10": 347825.83,
-      "p50": 904527.03,
-      "p90": 3272725.02,
-      "cruise": 904547.61,
+      "p10": 347913.0,
+      "p50": 904785.52,
+      "p90": 3273365.56,
+      "cruise": 904806.02,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3316,16 +3316,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 347825.83,
-      "redline": 3272725.02
+      "idle": 347913.0,
+      "redline": 3273365.56
     },
     {
-      "date": "2033-11-29",
+      "date": "2033-11-30",
       "days": 2587,
-      "p10": 354875.49,
-      "p50": 921408.38,
-      "p90": 3375233.14,
-      "cruise": 921426.98,
+      "p10": 354963.19,
+      "p50": 921669.16,
+      "p90": 3375878.15,
+      "cruise": 921687.69,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3333,16 +3333,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 354875.49,
-      "redline": 3375233.14
+      "idle": 354963.19,
+      "redline": 3375878.15
     },
     {
-      "date": "2033-12-30",
+      "date": "2033-12-31",
       "days": 2618,
-      "p10": 362280.09,
-      "p50": 939123.15,
-      "p90": 3483787.49,
-      "cruise": 939139.9,
+      "p10": 362368.32,
+      "p50": 939386.3,
+      "p90": 3484436.74,
+      "cruise": 939402.99,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3350,16 +3350,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 362280.09,
-      "redline": 3483787.49
+      "idle": 362368.32,
+      "redline": 3484436.74
     },
     {
-      "date": "2034-01-29",
+      "date": "2034-01-30",
       "days": 2648,
-      "p10": 369563.43,
-      "p50": 956531.62,
-      "p90": 3591433.52,
-      "cruise": 956546.77,
+      "p10": 369652.17,
+      "p50": 956797.06,
+      "p90": 3592086.53,
+      "cruise": 956812.15,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3367,16 +3367,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 369563.43,
-      "redline": 3591433.52
+      "idle": 369652.17,
+      "redline": 3592086.53
     },
     {
-      "date": "2034-02-28",
+      "date": "2034-03-01",
       "days": 2678,
-      "p10": 376963.93,
-      "p50": 974204.06,
-      "p90": 3701679.36,
-      "cruise": 974217.74,
+      "p10": 377053.16,
+      "p50": 974471.78,
+      "p90": 3702335.74,
+      "cruise": 974485.41,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3384,16 +3384,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 376963.93,
-      "redline": 3701679.36
+      "idle": 377053.16,
+      "redline": 3702335.74
     },
     {
-      "date": "2034-03-31",
+      "date": "2034-04-01",
       "days": 2709,
-      "p10": 384735.79,
-      "p50": 992746.22,
-      "p90": 3818383.39,
-      "cruise": 992758.54,
+      "p10": 384825.52,
+      "p50": 993016.28,
+      "p90": 3819042.82,
+      "cruise": 993028.56,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3401,16 +3401,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 384735.79,
-      "redline": 3818383.39
+      "idle": 384825.52,
+      "redline": 3819042.82
     },
     {
-      "date": "2034-04-30",
+      "date": "2034-05-01",
       "days": 2739,
-      "p10": 392379.15,
-      "p50": 1010965.08,
-      "p90": 3934067.42,
-      "cruise": 1010976.21,
+      "p10": 392469.35,
+      "p50": 1011237.41,
+      "p90": 3934729.4,
+      "cruise": 1011248.5,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3418,16 +3418,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 392379.15,
-      "redline": 3934067.42
+      "idle": 392469.35,
+      "redline": 3934729.4
     },
     {
-      "date": "2034-05-31",
+      "date": "2034-06-01",
       "days": 2770,
-      "p10": 400405.2,
-      "p50": 1030078.66,
-      "p90": 4056497.92,
-      "cruise": 1030088.69,
+      "p10": 400495.87,
+      "p50": 1030353.33,
+      "p90": 4057162.07,
+      "cruise": 1030363.32,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3435,16 +3435,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 400405.2,
-      "redline": 4056497.92
+      "idle": 400495.87,
+      "redline": 4057162.07
     },
     {
-      "date": "2034-06-30",
+      "date": "2034-07-01",
       "days": 2800,
-      "p10": 408297.71,
-      "p50": 1048857.14,
-      "p90": 4177828.74,
-      "cruise": 1048866.2,
+      "p10": 408388.81,
+      "p50": 1049134.06,
+      "p90": 4178494.53,
+      "cruise": 1049143.08,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3452,16 +3452,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 408297.71,
-      "redline": 4177828.74
+      "idle": 408388.81,
+      "redline": 4178494.53
     },
     {
-      "date": "2034-07-31",
+      "date": "2034-08-01",
       "days": 2831,
-      "p10": 416584.5,
-      "p50": 1068555.9,
-      "p90": 4306204.35,
-      "cruise": 1068564.05,
+      "p10": 416676.04,
+      "p50": 1068835.13,
+      "p90": 4306871.33,
+      "cruise": 1068843.25,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3469,16 +3469,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 416584.5,
-      "redline": 4306204.35
+      "idle": 416676.04,
+      "redline": 4306871.33
     },
     {
-      "date": "2034-08-30",
+      "date": "2034-08-31",
       "days": 2861,
-      "p10": 424732.56,
-      "p50": 1087907.41,
-      "p90": 4433396.55,
-      "cruise": 1087914.77,
+      "p10": 424824.5,
+      "p50": 1088188.87,
+      "p90": 4434064.2,
+      "cruise": 1088196.21,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3486,16 +3486,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 424732.56,
-      "redline": 4433396.55
+      "idle": 424824.5,
+      "redline": 4434064.2
     },
     {
-      "date": "2034-09-30",
+      "date": "2034-10-01",
       "days": 2892,
-      "p10": 433286.76,
-      "p50": 1108205.31,
-      "p90": 4567942.17,
-      "cruise": 1108211.95,
+      "p10": 433379.11,
+      "p50": 1108489.07,
+      "p90": 4568609.96,
+      "cruise": 1108495.68,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3503,16 +3503,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 433286.76,
-      "redline": 4567942.17
+      "idle": 433379.11,
+      "redline": 4568609.96
     },
     {
-      "date": "2034-10-30",
+      "date": "2034-10-31",
       "days": 2922,
-      "p10": 441696.88,
-      "p50": 1128143.49,
-      "p90": 4701216.48,
-      "cruise": 1128149.48,
+      "p10": 441789.6,
+      "p50": 1128429.45,
+      "p90": 4701883.88,
+      "cruise": 1128435.42,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3520,16 +3520,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 441696.88,
-      "redline": 4701216.48
+      "idle": 441789.6,
+      "redline": 4701883.88
     },
     {
-      "date": "2034-11-29",
+      "date": "2034-11-30",
       "days": 2952,
-      "p10": 450238.29,
-      "p50": 1148375.26,
-      "p90": 4837564.88,
-      "cruise": 1148380.67,
+      "p10": 450331.36,
+      "p50": 1148663.42,
+      "p90": 4838231.33,
+      "cruise": 1148668.81,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3537,16 +3537,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 450238.29,
-      "redline": 4837564.88
+      "idle": 450331.36,
+      "redline": 4838231.33
     },
     {
-      "date": "2034-12-30",
+      "date": "2034-12-31",
       "days": 2983,
-      "p10": 459204.08,
-      "p50": 1169593.45,
-      "p90": 4981746.83,
-      "cruise": 1169598.32,
+      "p10": 459297.5,
+      "p50": 1169883.86,
+      "p90": 4982411.7,
+      "cruise": 1169888.72,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3554,16 +3554,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 459204.08,
-      "redline": 4981746.83
+      "idle": 459297.5,
+      "redline": 4982411.7
     },
     {
-      "date": "2035-01-29",
+      "date": "2035-01-30",
       "days": 3013,
-      "p10": 468017.48,
-      "p50": 1190432.65,
-      "p90": 5124518.3,
-      "cruise": 1190437.05,
+      "p10": 468111.21,
+      "p50": 1190725.23,
+      "p90": 5125181.02,
+      "cruise": 1190729.61,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3571,16 +3571,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 468017.48,
-      "redline": 5124518.3
+      "idle": 468111.21,
+      "redline": 5125181.02
     },
     {
-      "date": "2035-03-01",
+      "date": "2035-03-02",
       "days": 3044,
-      "p10": 477267.81,
-      "p50": 1212285.82,
-      "p90": 5275458.81,
-      "cruise": 1212289.78,
+      "p10": 477361.86,
+      "p50": 1212580.63,
+      "p90": 5276118.68,
+      "cruise": 1212584.57,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3588,16 +3588,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 477267.81,
-      "redline": 5275458.81
+      "idle": 477361.86,
+      "redline": 5276118.68
     },
     {
-      "date": "2035-03-31",
+      "date": "2035-04-01",
       "days": 3074,
-      "p10": 486359.99,
-      "p50": 1233746.65,
-      "p90": 5424889.9,
-      "cruise": 1233750.23,
+      "p10": 486454.31,
+      "p50": 1234043.59,
+      "p90": 5425546.36,
+      "cruise": 1234047.15,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3605,16 +3605,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 486359.99,
-      "redline": 5424889.9
+      "idle": 486454.31,
+      "redline": 5425546.36
     },
     {
-      "date": "2035-05-01",
+      "date": "2035-05-02",
       "days": 3105,
-      "p10": 495901.96,
-      "p50": 1256249.6,
-      "p90": 5582836.81,
-      "cruise": 1256252.82,
+      "p10": 495996.55,
+      "p50": 1256548.73,
+      "p90": 5583489.05,
+      "cruise": 1256551.94,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3622,16 +3622,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 495901.96,
-      "redline": 5582836.81
+      "idle": 495996.55,
+      "redline": 5583489.05
     },
     {
-      "date": "2035-05-31",
+      "date": "2035-06-01",
       "days": 3135,
-      "p10": 505279.85,
-      "p50": 1278346.49,
-      "p90": 5739170.68,
-      "cruise": 1278349.4,
+      "p10": 505374.67,
+      "p50": 1278647.73,
+      "p90": 5739818.13,
+      "cruise": 1278650.62,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3639,16 +3639,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 505279.85,
-      "redline": 5739170.68
+      "idle": 505374.67,
+      "redline": 5739818.13
     },
     {
-      "date": "2035-07-01",
+      "date": "2035-07-02",
       "days": 3166,
-      "p10": 515120.66,
-      "p50": 1301514.26,
-      "p90": 5904378.67,
-      "cruise": 1301516.88,
+      "p10": 515215.71,
+      "p50": 1301817.65,
+      "p90": 5905020.43,
+      "cruise": 1301820.26,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3656,16 +3656,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 515120.66,
-      "redline": 5904378.67
+      "idle": 515215.71,
+      "redline": 5905020.43
     },
     {
-      "date": "2035-07-31",
+      "date": "2035-08-01",
       "days": 3196,
-      "p10": 524791.29,
-      "p50": 1324261.89,
-      "p90": 6067865.18,
-      "cruise": 1324264.25,
+      "p10": 524886.52,
+      "p50": 1324567.35,
+      "p90": 6068500.68,
+      "cruise": 1324569.7,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3673,16 +3673,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 524791.29,
-      "redline": 6067865.18
+      "idle": 524886.52,
+      "redline": 6068500.68
     },
     {
-      "date": "2035-08-30",
+      "date": "2035-08-31",
       "days": 3226,
-      "p10": 534608.5,
-      "p50": 1347335.01,
-      "p90": 6234963.1,
-      "cruise": 1347337.14,
+      "p10": 534703.91,
+      "p50": 1347642.52,
+      "p90": 6235591.59,
+      "cruise": 1347644.64,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3690,16 +3690,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 534608.5,
-      "redline": 6234963.1
+      "idle": 534703.91,
+      "redline": 6235591.59
     },
     {
-      "date": "2035-09-30",
+      "date": "2035-10-01",
       "days": 3257,
-      "p10": 544908.82,
-      "p50": 1371523.04,
-      "p90": 6411491.78,
-      "cruise": 1371524.96,
+      "p10": 545004.37,
+      "p50": 1371832.65,
+      "p90": 6412112.2,
+      "cruise": 1371834.56,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3707,16 +3707,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 544908.82,
-      "redline": 6411491.78
+      "idle": 545004.37,
+      "redline": 6412112.2
     },
     {
-      "date": "2035-10-30",
+      "date": "2035-10-31",
       "days": 3287,
-      "p10": 555029.5,
-      "p50": 1395269.24,
-      "p90": 6586127.83,
-      "cruise": 1395270.97,
+      "p10": 555125.18,
+      "p50": 1395580.85,
+      "p90": 6586739.6,
+      "cruise": 1395582.58,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3724,16 +3724,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 555029.5,
-      "redline": 6586127.83
+      "idle": 555125.18,
+      "redline": 6586739.6
     },
     {
-      "date": "2035-11-30",
+      "date": "2035-12-01",
       "days": 3318,
-      "p10": 565647.18,
-      "p50": 1420160.64,
-      "p90": 6770583.02,
-      "cruise": 1420162.2,
+      "p10": 565742.96,
+      "p50": 1420474.31,
+      "p90": 6771184.98,
+      "cruise": 1420475.86,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3741,16 +3741,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 565647.18,
-      "redline": 6770583.02
+      "idle": 565742.96,
+      "redline": 6771184.98
     },
     {
-      "date": "2035-12-30",
+      "date": "2035-12-31",
       "days": 3348,
-      "p10": 576078.69,
-      "p50": 1444595.19,
-      "p90": 6953024.33,
-      "cruise": 1444596.59,
+      "p10": 576174.54,
+      "p50": 1444910.82,
+      "p90": 6953615.92,
+      "cruise": 1444912.22,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3758,16 +3758,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 576078.69,
-      "redline": 6953024.33
+      "idle": 576174.54,
+      "redline": 6953615.92
     },
     {
-      "date": "2036-01-30",
+      "date": "2036-01-31",
       "days": 3379,
-      "p10": 587021.4,
-      "p50": 1470205.88,
-      "p90": 7145685.77,
-      "cruise": 1470207.14,
+      "p10": 587117.29,
+      "p50": 1470523.51,
+      "p90": 7146265.7,
+      "cruise": 1470524.77,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3775,16 +3775,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 587021.4,
-      "redline": 7145685.77
+      "idle": 587117.29,
+      "redline": 7146265.7
     },
     {
-      "date": "2036-02-29",
+      "date": "2036-03-01",
       "days": 3409,
-      "p10": 597771.2,
-      "p50": 1495344.3,
-      "p90": 7336206.68,
-      "cruise": 1495345.44,
+      "p10": 597867.11,
+      "p50": 1495663.84,
+      "p90": 7336774.39,
+      "cruise": 1495664.98,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3792,16 +3792,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 597771.2,
-      "redline": 7336206.68
+      "idle": 597867.11,
+      "redline": 7336774.39
     },
     {
-      "date": "2036-03-30",
+      "date": "2036-03-31",
       "days": 3439,
-      "p10": 608680.31,
-      "p50": 1520834.66,
-      "p90": 7530804.03,
-      "cruise": 1520835.68,
+      "p10": 608776.22,
+      "p50": 1521156.09,
+      "p90": 7531358.56,
+      "cruise": 1521157.12,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3809,16 +3809,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 608680.31,
-      "redline": 7530804.03
+      "idle": 608776.22,
+      "redline": 7531358.56
     },
     {
-      "date": "2036-04-30",
+      "date": "2036-05-01",
       "days": 3470,
-      "p10": 620122.41,
-      "p50": 1547548.51,
-      "p90": 7736243.77,
-      "cruise": 1547549.43,
+      "p10": 620218.28,
+      "p50": 1547871.87,
+      "p90": 7736783.67,
+      "cruise": 1547872.79,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3826,16 +3826,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 620122.41,
-      "redline": 7736243.77
+      "idle": 620218.28,
+      "redline": 7736783.67
     },
     {
-      "date": "2036-05-30",
+      "date": "2036-05-31",
       "days": 3500,
-      "p10": 631361.21,
-      "p50": 1573766.36,
-      "p90": 7939343.6,
-      "cruise": 1573767.2,
+      "p10": 631457.01,
+      "p50": 1574091.56,
+      "p90": 7939868.3,
+      "cruise": 1574092.39,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3843,16 +3843,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 631361.21,
-      "redline": 7939343.6
+      "idle": 631457.01,
+      "redline": 7939868.3
     },
     {
-      "date": "2036-06-30",
+      "date": "2036-07-01",
       "days": 3531,
-      "p10": 643148.0,
-      "p50": 1601240.27,
-      "p90": 8153719.55,
-      "cruise": 1601241.02,
+      "p10": 643243.7,
+      "p50": 1601567.33,
+      "p90": 8154227.45,
+      "cruise": 1601568.08,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3860,16 +3860,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 643148.0,
-      "redline": 8153719.55
+      "idle": 643243.7,
+      "redline": 8154227.45
     },
     {
-      "date": "2036-07-30",
+      "date": "2036-07-31",
       "days": 3561,
-      "p10": 654724.28,
-      "p50": 1628201.78,
-      "p90": 8365614.68,
-      "cruise": 1628202.45,
+      "p10": 654819.85,
+      "p50": 1628530.62,
+      "p90": 8366105.23,
+      "cruise": 1628531.29,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3877,16 +3877,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 654724.28,
-      "redline": 8365614.68
+      "idle": 654819.85,
+      "redline": 8366105.23
     },
     {
-      "date": "2036-08-30",
+      "date": "2036-08-31",
       "days": 3592,
-      "p10": 666863.87,
-      "p50": 1656452.57,
-      "p90": 8589233.36,
-      "cruise": 1656453.17,
+      "p10": 666959.28,
+      "p50": 1656783.21,
+      "p90": 8589704.83,
+      "cruise": 1656783.82,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3894,16 +3894,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 666863.87,
-      "redline": 8589233.36
+      "idle": 666959.28,
+      "redline": 8589704.83
     },
     {
-      "date": "2036-09-29",
+      "date": "2036-09-30",
       "days": 3622,
-      "p10": 678785.55,
-      "p50": 1684174.12,
-      "p90": 8810224.26,
-      "cruise": 1684174.67,
+      "p10": 678880.78,
+      "p50": 1684506.48,
+      "p90": 8810676.11,
+      "cruise": 1684507.03,
       "band_source": "taper_conformal_to_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3911,16 +3911,16 @@
         "high": "Redline",
         "kind": "taper"
       },
-      "idle": 678785.55,
-      "redline": 8810224.26
+      "idle": 678880.78,
+      "redline": 8810676.11
     },
     {
-      "date": "2036-10-29",
+      "date": "2036-10-30",
       "days": 3652,
-      "p10": 690880.27,
-      "p50": 1712276.07,
-      "p90": 9035803.7,
-      "cruise": 1712276.07,
+      "p10": 690975.27,
+      "p50": 1712610.11,
+      "p90": 9036234.75,
+      "cruise": 1712610.11,
       "band_source": "idle_redline_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3928,16 +3928,16 @@
         "high": "Redline",
         "kind": "corridor"
       },
-      "idle": 690880.27,
-      "redline": 9035803.7
+      "idle": 690975.27,
+      "redline": 9036234.75
     },
     {
-      "date": "2041-10-30",
+      "date": "2041-10-31",
       "days": 5479,
-      "p10": 1742963.89,
-      "p50": 4319757.72,
-      "p90": 22795671.49,
-      "cruise": 4319757.72,
+      "p10": 1742996.46,
+      "p50": 4320087.11,
+      "p90": 22794050.41,
+      "cruise": 4320087.11,
       "band_source": "idle_redline_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3945,16 +3945,16 @@
         "high": "Redline",
         "kind": "corridor"
       },
-      "idle": 1742963.89,
-      "redline": 22795671.49
+      "idle": 1742996.46,
+      "redline": 22794050.41
     },
     {
-      "date": "2046-10-30",
+      "date": "2046-10-31",
       "days": 7305,
-      "p10": 3853714.6,
-      "p50": 9551037.46,
-      "p90": 50401510.06,
-      "cruise": 9551037.46,
+      "p10": 3853433.55,
+      "p50": 9550890.69,
+      "p90": 50393308.76,
+      "cruise": 9550890.69,
       "band_source": "idle_redline_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3962,16 +3962,16 @@
         "high": "Redline",
         "kind": "corridor"
       },
-      "idle": 3853714.6,
-      "redline": 50401510.06
+      "idle": 3853433.55,
+      "redline": 50393308.76
     },
     {
-      "date": "2051-10-30",
+      "date": "2051-10-31",
       "days": 9131,
-      "p10": 7720176.26,
-      "p50": 19133667.21,
-      "p90": 100969734.92,
-      "cruise": 19133667.21,
+      "p10": 7719045.94,
+      "p50": 19131967.12,
+      "p90": 100945886.36,
+      "cruise": 19131967.12,
       "band_source": "idle_redline_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3979,16 +3979,16 @@
         "high": "Redline",
         "kind": "corridor"
       },
-      "idle": 7720176.26,
-      "redline": 100969734.92
+      "idle": 7719045.94,
+      "redline": 100945886.36
     },
     {
-      "date": "2056-10-30",
+      "date": "2056-10-31",
       "days": 10958,
-      "p10": 14327012.81,
-      "p50": 35508035.82,
-      "p90": 187378453.09,
-      "cruise": 35508035.82,
+      "p10": 14324045.16,
+      "p50": 35502724.44,
+      "p90": 187322817.6,
+      "cruise": 35502724.44,
       "band_source": "idle_redline_corridor",
       "band_labels": {
         "low": "Idle",
@@ -3996,8 +3996,8 @@
         "high": "Redline",
         "kind": "corridor"
       },
-      "idle": 14327012.81,
-      "redline": 187378453.09
+      "idle": 14324045.16,
+      "redline": 187322817.6
     }
   ],
   "ensemble": [
@@ -4029,7 +4029,7 @@
       "id": "closed_loop",
       "name": "Ledger closed-loop nudge",
       "role": "Inactive \u2014 no live recalibration",
-      "trust_note": "1 matured ledger calls. Forecasts are not adjusted from live outcomes."
+      "trust_note": "2 matured ledger calls. Forecasts are not adjusted from live outcomes."
     }
   ],
   "learning": {
@@ -4048,6 +4048,21 @@
         },
         "floor": 57634.83,
         "ceiling": 755224.45
+      },
+      {
+        "issued": "2026-10-01",
+        "horizon_days": 30,
+        "target_date": "2026-10-31",
+        "trend": 142690.8,
+        "outcome": {
+          "actual_date": "2026-10-31",
+          "actual": 77437.0,
+          "miss_factor": 0.5427,
+          "inside_inner": true,
+          "inside_outer": true
+        },
+        "floor": 57668.27,
+        "ceiling": 755579.17
       }
     ],
     "miss_by_year": [
@@ -4172,23 +4187,23 @@
       }
     ],
     "ledger_started": "2026-09-30",
-    "ledger_updated_at": "2026-10-30",
-    "ledger_note": "Live ledger scores 30d/90d/1y/2y/4y; other cards are scenario-labeled. Closed-loop inactive (1 matured) \u2014 no live recalibration.",
+    "ledger_updated_at": "2026-10-31",
+    "ledger_note": "Live ledger scores 30d/90d/1y/2y/4y; other cards are scenario-labeled. Closed-loop inactive (2 matured) \u2014 no live recalibration.",
     "correction": {
       "status": "inactive_below_min_n",
-      "n_matured_total": 1,
+      "n_matured_total": 2,
       "pooled": {
-        "n": 1,
+        "n": 2,
         "bias_log10": 0.0,
         "widen_log10": 0.0
       },
       "horizons": {
         "30": {
           "horizon_days": 30,
-          "n": 1,
+          "n": 2,
           "bias_log10": 0.0,
           "widen_log10": 0.0,
-          "raw_mean_log_err": -0.266328,
+          "raw_mean_log_err": -0.265888,
           "outer_miss_rate": 0.0,
           "source": "identity",
           "active": false
