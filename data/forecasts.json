@@ -128,8 +128,66 @@
           "outcome": null
         }
       ]
+    },
+    {
+      "issued": "2026-11-01",
+      "price_at_issue": 77827.0,
+      "a": -16.189833,
+      "b": 5.59607,
+      "horizons": [
+        {
+          "horizon_days": 30,
+          "target_date": "2026-12-01",
+          "trend": 145471.78,
+          "inner_low": 74965.38,
+          "inner_high": 304765.47,
+          "floor": 58689.41,
+          "ceiling": 767433.5,
+          "outcome": null
+        },
+        {
+          "horizon_days": 90,
+          "target_date": "2027-01-30",
+          "trend": 153098.32,
+          "inner_low": 78895.54,
+          "inner_high": 320743.18,
+          "floor": 61766.28,
+          "ceiling": 807667.18,
+          "outcome": null
+        },
+        {
+          "horizon_days": 365,
+          "target_date": "2027-11-01",
+          "trend": 192383.19,
+          "inner_low": 99140.05,
+          "inner_high": 403045.55,
+          "floor": 77615.44,
+          "ceiling": 1014913.74,
+          "outcome": null
+        },
+        {
+          "horizon_days": 730,
+          "target_date": "2028-10-31",
+          "trend": 256962.56,
+          "inner_low": 132419.47,
+          "inner_high": 538340.26,
+          "floor": 103669.47,
+          "ceiling": 1355600.93,
+          "outcome": null
+        },
+        {
+          "horizon_days": 1461,
+          "target_date": "2030-11-01",
+          "trend": 440160.09,
+          "inner_low": 226825.91,
+          "inner_high": 922141.71,
+          "floor": 177579.02,
+          "ceiling": 2322055.87,
+          "outcome": null
+        }
+      ]
     }
   ],
   "started": "2026-09-30",
-  "updated_at": "2026-10-31"
+  "updated_at": "2026-11-01"
 }
