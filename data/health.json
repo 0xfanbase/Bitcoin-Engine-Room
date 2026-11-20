@@ -1,62 +1,62 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-19T15:58:57Z",
+  "generated_at": "2026-11-20T15:41:57Z",
   "metrics": {
     "price_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 431.5,
+      "latency_ms": 702.3,
       "consecutive_failures": 0,
-      "last_success_date": "2026-11-19",
+      "last_success_date": "2026-11-20",
       "stale_since": null,
       "cross_source_variance_warn": false,
-      "last_date": "2026-11-19",
-      "last_value": 62964.0
+      "last_date": "2026-11-20",
+      "last_value": 60119.0
     },
     "hashrate_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 317.9,
+      "latency_ms": 588.8,
       "consecutive_failures": 0,
-      "last_success_date": "2026-11-19",
+      "last_success_date": "2026-11-20",
       "stale_since": null,
-      "last_date": "2026-11-19",
-      "last_value": 1011.666001475774
+      "last_date": "2026-11-20",
+      "last_value": 1042.3842647319889
     },
     "difficulty_daily": {
       "source": "mempool_space",
       "status": "OK",
-      "latency_ms": 317.0,
+      "latency_ms": 584.1,
       "consecutive_failures": 0,
-      "last_success_date": "2026-11-19",
+      "last_success_date": "2026-11-20",
       "stale_since": null,
-      "last_date": "2026-11-19",
+      "last_date": "2026-11-20",
       "last_value": 134823837323272.7
     },
     "supply_daily": {
       "source": "blockchain_info",
       "status": "OK",
-      "latency_ms": 287.3,
+      "latency_ms": 231.5,
       "consecutive_failures": 0,
-      "last_success_date": "2026-11-19",
+      "last_success_date": "2026-11-20",
       "stale_since": null,
-      "last_date": "2026-11-19",
-      "last_value": 20114012.0
+      "last_date": "2026-11-20",
+      "last_value": 20114434.0
     },
     "fng_daily": {
       "source": "alternative_me",
       "status": "OK",
-      "latency_ms": 70.2,
+      "latency_ms": 213.7,
       "consecutive_failures": 0,
-      "last_success_date": "2026-11-19",
+      "last_success_date": "2026-11-20",
       "stale_since": null,
-      "last_date": "2026-11-19",
-      "last_value": 10,
+      "last_date": "2026-11-20",
+      "last_value": 12,
       "last_classification": "Extreme Fear"
     }
   },
   "tip_height": {
-    "height": 976602,
-    "date": "2026-11-19"
+    "height": 976749,
+    "date": "2026-11-20"
   }
 }

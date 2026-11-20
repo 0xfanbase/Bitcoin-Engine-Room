@@ -1,8 +1,17 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-19T15:59:01Z",
+  "generated_at": "2026-11-20T15:42:02Z",
   "power_law": {
     "params": {
+      "a": -16.17463,
+      "b": 5.591427,
+      "r_squared": 0.960026,
+      "sigma": 0.300765,
+      "fit_start_date": "2010-07-17",
+      "genesis_date": "2009-01-03",
+      "n_points": 5939
+    },
+    "previous_params": {
       "a": -16.175619,
       "b": 5.591729,
       "r_squared": 0.96003,
@@ -11,22 +20,13 @@
       "genesis_date": "2009-01-03",
       "n_points": 5938
     },
-    "previous_params": {
-      "a": -16.176556,
-      "b": 5.592015,
-      "r_squared": 0.960033,
-      "sigma": 0.30074,
-      "fit_start_date": "2010-07-17",
-      "genesis_date": "2009-01-03",
-      "n_points": 5937
-    },
     "current": {
-      "date": "2026-11-19",
-      "price": 62964.0,
-      "trend_price": 143208.78,
-      "deviation_pct": -56.03,
-      "z_score": -1.1866,
-      "residual_percentile": 5.22
+      "date": "2026-11-20",
+      "price": 60119.0,
+      "trend_price": 143277.57,
+      "deviation_pct": -58.04,
+      "z_score": -1.254,
+      "residual_percentile": 3.74
     },
     "bands": {
       "floor_label": "Idle",
@@ -42,59 +42,59 @@
         0.84
       ],
       "outer_offsets_log10": [
-        -0.394736,
-        0.720617
+        -0.394751,
+        0.720507
       ],
       "inner_offsets_log10": [
-        -0.288048,
-        0.321944
+        -0.287991,
+        0.322029
       ],
       "in_sample_coverage": {
         "outer": 0.9498,
-        "inner": 0.68
+        "inner": 0.6797
       },
       "note": "floor/ceiling (Idle/Redline) are the trend shifted by the 2.5th/97.5th percentiles of past fit residuals in log10 space, and the inner band by the 16th/84th -- empirical, skewed envelopes from history, not statistical confidence intervals (residuals are autocorrelated across multi-year cycles). Walk-forward calibration is published in data/backtest.json."
     },
     "projections": [
       {
         "date": "2027-01-01",
-        "floor": 59865.35,
-        "inner_low": 76535.58,
-        "trend": 148563.12,
-        "inner_high": 311784.59,
-        "ceiling": 780779.62,
-        "trend_low": 108477.34,
-        "trend_high": 209175.64
+        "floor": 59840.53,
+        "inner_low": 76516.66,
+        "trend": 148506.97,
+        "inner_high": 311727.65,
+        "ceiling": 780286.06,
+        "trend_low": 108418.63,
+        "trend_high": 209169.07
       },
       {
         "date": "2028-01-01",
-        "floor": 80990.96,
-        "inner_low": 103543.88,
-        "trend": 200988.89,
-        "inner_high": 421808.84,
-        "ceiling": 1056305.4,
-        "trend_low": 144337.87,
-        "trend_high": 287625.31
+        "floor": 80956.06,
+        "inner_low": 103516.59,
+        "trend": 200909.64,
+        "inner_high": 421724.92,
+        "ceiling": 1055620.43,
+        "trend_low": 144258.0,
+        "trend_high": 287403.17
       },
       {
         "date": "2030-01-01",
-        "floor": 141819.18,
-        "inner_low": 181310.46,
-        "trend": 351941.49,
-        "inner_high": 738608.17,
-        "ceiling": 1849643.05,
-        "trend_low": 245047.4,
-        "trend_high": 518157.48
+        "floor": 141753.77,
+        "inner_low": 181257.19,
+        "trend": 351792.07,
+        "inner_high": 738438.86,
+        "ceiling": 1848387.68,
+        "trend_low": 244992.86,
+        "trend_high": 517571.59
       },
       {
         "date": "2035-01-01",
-        "floor": 468234.69,
-        "inner_low": 598620.34,
-        "trend": 1161981.18,
-        "inner_high": 2438612.11,
-        "ceiling": 6106840.06,
-        "trend_low": 744680.63,
-        "trend_high": 1798536.0
+        "floor": 467988.54,
+        "inner_low": 598405.87,
+        "trend": 1161412.88,
+        "inner_high": 2437895.81,
+        "ceiling": 6102301.48,
+        "trend_low": 744206.88,
+        "trend_high": 1797891.16
       }
     ],
     "trend_uncertainty": {
@@ -107,378 +107,378 @@
         50,
         95
       ],
-      "b_low": 5.220032,
-      "b_high": 5.90147,
+      "b_low": 5.218821,
+      "b_high": 5.901428,
       "fan": [
         {
-          "day": 6529.0,
-          "low": 5.020104,
-          "mid": 5.161527,
-          "high": 5.303506
+          "day": 6530.0,
+          "low": 5.020226,
+          "mid": 5.161508,
+          "high": 5.30389
         },
         {
-          "day": 6596.6,
-          "low": 5.044011,
-          "mid": 5.186158,
-          "high": 5.330187
+          "day": 6597.59,
+          "low": 5.044121,
+          "mid": 5.186282,
+          "high": 5.33056
         },
         {
-          "day": 6664.9,
-          "low": 5.067917,
-          "mid": 5.210788,
-          "high": 5.356862
+          "day": 6665.87,
+          "low": 5.068017,
+          "mid": 5.21087,
+          "high": 5.357224
         },
         {
-          "day": 6733.91,
-          "low": 5.091824,
-          "mid": 5.235516,
-          "high": 5.383537
+          "day": 6734.86,
+          "low": 5.091912,
+          "mid": 5.235512,
+          "high": 5.383831
         },
         {
-          "day": 6803.63,
-          "low": 5.115522,
-          "mid": 5.260444,
-          "high": 5.409808
+          "day": 6804.57,
+          "low": 5.115599,
+          "mid": 5.260416,
+          "high": 5.409832
         },
         {
-          "day": 6874.08,
-          "low": 5.138794,
-          "mid": 5.285529,
-          "high": 5.435819
+          "day": 6875.0,
+          "low": 5.138859,
+          "mid": 5.285567,
+          "high": 5.435833
         },
         {
-          "day": 6945.25,
-          "low": 5.162066,
-          "mid": 5.310488,
-          "high": 5.461829
+          "day": 6946.16,
+          "low": 5.162119,
+          "mid": 5.310543,
+          "high": 5.46182
         },
         {
-          "day": 7017.16,
-          "low": 5.185338,
-          "mid": 5.335462,
-          "high": 5.487825
+          "day": 7018.05,
+          "low": 5.18538,
+          "mid": 5.335708,
+          "high": 5.487801
         },
         {
-          "day": 7089.82,
-          "low": 5.20861,
-          "mid": 5.360449,
-          "high": 5.513816
+          "day": 7090.69,
+          "low": 5.20864,
+          "mid": 5.36066,
+          "high": 5.513783
         },
         {
-          "day": 7163.23,
-          "low": 5.231919,
-          "mid": 5.385778,
-          "high": 5.539807
+          "day": 7164.08,
+          "low": 5.232099,
+          "mid": 5.386093,
+          "high": 5.539764
         },
         {
-          "day": 7237.39,
-          "low": 5.255723,
-          "mid": 5.410671,
-          "high": 5.565799
+          "day": 7238.23,
+          "low": 5.255892,
+          "mid": 5.411032,
+          "high": 5.565745
         },
         {
-          "day": 7312.33,
-          "low": 5.279569,
-          "mid": 5.435408,
-          "high": 5.591926
+          "day": 7313.14,
+          "low": 5.279717,
+          "mid": 5.4354,
+          "high": 5.591742
         },
         {
-          "day": 7388.04,
-          "low": 5.303372,
-          "mid": 5.460563,
-          "high": 5.618505
+          "day": 7388.83,
+          "low": 5.303458,
+          "mid": 5.460447,
+          "high": 5.618313
         },
         {
-          "day": 7464.54,
-          "low": 5.327133,
-          "mid": 5.485643,
-          "high": 5.645085
+          "day": 7465.31,
+          "low": 5.327259,
+          "mid": 5.485495,
+          "high": 5.644881
         },
         {
-          "day": 7541.82,
-          "low": 5.350916,
-          "mid": 5.510634,
-          "high": 5.671664
+          "day": 7542.58,
+          "low": 5.35105,
+          "mid": 5.510288,
+          "high": 5.67144
         },
         {
-          "day": 7619.91,
-          "low": 5.374715,
-          "mid": 5.535582,
-          "high": 5.698237
+          "day": 7620.64,
+          "low": 5.37484,
+          "mid": 5.535495,
+          "high": 5.697994
         },
         {
-          "day": 7698.81,
-          "low": 5.398515,
-          "mid": 5.560823,
-          "high": 5.724803
+          "day": 7699.52,
+          "low": 5.39863,
+          "mid": 5.560628,
+          "high": 5.724548
         },
         {
-          "day": 7778.52,
-          "low": 5.422314,
-          "mid": 5.585883,
-          "high": 5.750727
+          "day": 7779.21,
+          "low": 5.42242,
+          "mid": 5.585686,
+          "high": 5.75047
         },
         {
-          "day": 7859.06,
-          "low": 5.446113,
-          "mid": 5.610445,
-          "high": 5.776485
+          "day": 7859.72,
+          "low": 5.44621,
+          "mid": 5.610302,
+          "high": 5.776229
         },
         {
-          "day": 7940.43,
-          "low": 5.469913,
-          "mid": 5.634883,
-          "high": 5.802243
+          "day": 7941.07,
+          "low": 5.470001,
+          "mid": 5.634736,
+          "high": 5.801974
         },
         {
-          "day": 8022.65,
-          "low": 5.493712,
-          "mid": 5.660028,
-          "high": 5.828001
+          "day": 8023.26,
+          "low": 5.493791,
+          "mid": 5.659877,
+          "high": 5.827719
         },
         {
-          "day": 8105.71,
-          "low": 5.517512,
-          "mid": 5.685181,
-          "high": 5.854113
+          "day": 8106.3,
+          "low": 5.517435,
+          "mid": 5.685018,
+          "high": 5.853828
         },
         {
-          "day": 8189.64,
-          "low": 5.540612,
-          "mid": 5.710321,
-          "high": 5.880429
+          "day": 8190.21,
+          "low": 5.540519,
+          "mid": 5.71012,
+          "high": 5.880129
         },
         {
-          "day": 8274.44,
-          "low": 5.563707,
-          "mid": 5.735,
-          "high": 5.906745
+          "day": 8274.97,
+          "low": 5.563604,
+          "mid": 5.734787,
+          "high": 5.90643
         },
         {
-          "day": 8360.11,
-          "low": 5.586802,
-          "mid": 5.759679,
-          "high": 5.93306
+          "day": 8360.62,
+          "low": 5.586688,
+          "mid": 5.759454,
+          "high": 5.932731
         },
         {
-          "day": 8446.67,
-          "low": 5.609897,
-          "mid": 5.784358,
-          "high": 5.959376
+          "day": 8447.15,
+          "low": 5.609773,
+          "mid": 5.784122,
+          "high": 5.959032
         },
         {
-          "day": 8534.13,
-          "low": 5.632992,
-          "mid": 5.809037,
-          "high": 5.985536
+          "day": 8534.58,
+          "low": 5.632858,
+          "mid": 5.808924,
+          "high": 5.985333
         },
         {
-          "day": 8622.49,
-          "low": 5.656088,
-          "mid": 5.833767,
-          "high": 6.011569
+          "day": 8622.92,
+          "low": 5.655942,
+          "mid": 5.833789,
+          "high": 6.011532
         },
         {
-          "day": 8711.77,
-          "low": 5.679183,
-          "mid": 5.858828,
-          "high": 6.037603
+          "day": 8712.17,
+          "low": 5.679027,
+          "mid": 5.859005,
+          "high": 6.037557
         },
         {
-          "day": 8801.97,
-          "low": 5.702278,
-          "mid": 5.884224,
-          "high": 6.063637
+          "day": 8802.34,
+          "low": 5.702111,
+          "mid": 5.884391,
+          "high": 6.063581
         },
         {
-          "day": 8893.1,
-          "low": 5.725373,
-          "mid": 5.909619,
-          "high": 6.08967
+          "day": 8893.44,
+          "low": 5.725196,
+          "mid": 5.909776,
+          "high": 6.089606
         },
         {
-          "day": 8985.18,
-          "low": 5.748468,
-          "mid": 5.935015,
-          "high": 6.115704
+          "day": 8985.49,
+          "low": 5.74828,
+          "mid": 5.935161,
+          "high": 6.115631
         },
         {
-          "day": 9078.21,
-          "low": 5.771563,
-          "mid": 5.960411,
-          "high": 6.141738
+          "day": 9078.49,
+          "low": 5.771365,
+          "mid": 5.960513,
+          "high": 6.141656
         },
         {
-          "day": 9172.21,
-          "low": 5.794659,
-          "mid": 5.985578,
-          "high": 6.167771
+          "day": 9172.45,
+          "low": 5.794449,
+          "mid": 5.985542,
+          "high": 6.16768
         },
         {
-          "day": 9267.18,
-          "low": 5.817754,
-          "mid": 6.010512,
-          "high": 6.193805
+          "day": 9267.39,
+          "low": 5.817534,
+          "mid": 6.010465,
+          "high": 6.193705
         },
         {
-          "day": 9363.13,
-          "low": 5.840849,
-          "mid": 6.035446,
-          "high": 6.219838
+          "day": 9363.31,
+          "low": 5.840618,
+          "mid": 6.035388,
+          "high": 6.21973
         },
         {
-          "day": 9460.08,
-          "low": 5.863944,
-          "mid": 6.06038,
-          "high": 6.245872
+          "day": 9460.22,
+          "low": 5.863703,
+          "mid": 6.060311,
+          "high": 6.245755
         },
         {
-          "day": 9558.02,
-          "low": 5.887041,
-          "mid": 6.085314,
-          "high": 6.271906
+          "day": 9558.13,
+          "low": 5.886796,
+          "mid": 6.085234,
+          "high": 6.27178
         },
         {
-          "day": 9656.99,
-          "low": 5.910179,
-          "mid": 6.110248,
-          "high": 6.297939
+          "day": 9657.06,
+          "low": 5.909924,
+          "mid": 6.110157,
+          "high": 6.297804
         },
         {
-          "day": 9756.98,
-          "low": 5.933318,
-          "mid": 6.135182,
-          "high": 6.323973
+          "day": 9757.01,
+          "low": 5.933052,
+          "mid": 6.13508,
+          "high": 6.323829
         },
         {
           "day": 9858.0,
-          "low": 5.956456,
-          "mid": 6.160116,
-          "high": 6.350007
+          "low": 5.95618,
+          "mid": 6.160004,
+          "high": 6.349854
         }
       ]
     },
     "scenario": {
       "label": "since-2017 fit",
       "fit_start_date": "2017-01-01",
-      "a": -13.269121,
-      "b": 4.804122,
-      "sigma": 0.214254,
-      "n_points": 3610
+      "a": -13.264847,
+      "b": 4.802934,
+      "sigma": 0.214274,
+      "n_points": 3611
     },
     "short_term": {
       "method": "trend_plus_ar1_residual",
       "sample_days": 30,
-      "phi": 0.887196,
+      "phi": 0.887189,
       "half_life_days": 173.7,
       "path": [
         {
-          "date": "2026-12-19",
-          "day": 6559,
-          "center": 70873.26,
-          "inner_low": 51562.05,
-          "inner_high": 97416.96,
-          "outer_low": 37993.05,
-          "outer_high": 132208.89
+          "date": "2026-12-20",
+          "day": 6560,
+          "center": 68028.5,
+          "inner_low": 49492.48,
+          "inner_high": 93506.68,
+          "outer_low": 36468.13,
+          "outer_high": 126901.95
         },
         {
-          "date": "2027-01-18",
-          "day": 6589,
-          "center": 78936.98,
-          "inner_low": 51593.43,
-          "inner_high": 120772.1,
-          "outer_low": 34300.13,
-          "outer_high": 181662.5
+          "date": "2027-01-19",
+          "day": 6590,
+          "center": 76123.6,
+          "inner_low": 49754.74,
+          "inner_high": 116467.34,
+          "outer_low": 33077.83,
+          "outer_high": 175186.9
         },
         {
-          "date": "2027-02-17",
-          "day": 6619,
-          "center": 87096.23,
-          "inner_low": 53171.36,
-          "inner_high": 142666.17,
-          "outer_low": 33107.7,
-          "outer_high": 229123.57
+          "date": "2027-02-18",
+          "day": 6620,
+          "center": 84341.04,
+          "inner_low": 51489.6,
+          "inner_high": 138152.4,
+          "outer_low": 32060.68,
+          "outer_high": 221873.35
         },
         {
-          "date": "2027-03-19",
-          "day": 6649,
-          "center": 95300.23,
-          "inner_low": 55470.15,
-          "inner_high": 163730.1,
-          "outer_low": 32993.33,
-          "outer_high": 275271.81
+          "date": "2027-03-20",
+          "day": 6650,
+          "center": 92625.52,
+          "inner_low": 53913.7,
+          "inner_high": 159133.73,
+          "outer_low": 32067.77,
+          "outer_high": 267542.35
         },
         {
-          "date": "2027-04-18",
-          "day": 6679,
-          "center": 103506.55,
-          "inner_low": 58187.96,
-          "inner_high": 184120.65,
-          "outer_low": 33473.71,
-          "outer_high": 320060.28
+          "date": "2027-04-19",
+          "day": 6680,
+          "center": 100930.2,
+          "inner_low": 56740.13,
+          "inner_high": 179536.15,
+          "outer_low": 32641.1,
+          "outer_high": 312088.28
         },
         {
-          "date": "2027-05-18",
-          "day": 6709,
-          "center": 111680.98,
-          "inner_low": 61174.69,
-          "inner_high": 203885.65,
-          "outer_low": 34325.8,
-          "outer_high": 363360.57
+          "date": "2027-05-19",
+          "day": 6710,
+          "center": 109216.65,
+          "inner_low": 59825.47,
+          "inner_high": 199384.61,
+          "outer_low": 33569.08,
+          "outer_high": 355335.23
         },
         {
-          "date": "2027-06-17",
-          "day": 6739,
-          "center": 119797.0,
-          "inner_low": 64342.28,
-          "inner_high": 223046.54,
-          "outer_low": 35427.86,
-          "outer_high": 405085.82
+          "date": "2027-06-18",
+          "day": 6740,
+          "center": 117454.54,
+          "inner_low": 63084.94,
+          "inner_high": 218682.46,
+          "outer_low": 34735.96,
+          "outer_high": 397155.27
         },
         {
-          "date": "2027-07-17",
-          "day": 6769,
-          "center": 127835.07,
-          "inner_low": 67633.58,
-          "inner_high": 241622.63,
-          "outer_low": 36705.77,
-          "outer_high": 445210.82
+          "date": "2027-07-18",
+          "day": 6770,
+          "center": 125620.93,
+          "inner_low": 66463.08,
+          "inner_high": 237434.37,
+          "outer_low": 36071.0,
+          "outer_high": 437487.76
         },
         {
-          "date": "2027-08-16",
-          "day": 6799,
-          "center": 135781.82,
-          "inner_low": 71009.19,
-          "inner_high": 259638.26,
-          "outer_low": 38110.84,
-          "outer_high": 483765.24
+          "date": "2027-08-17",
+          "day": 6800,
+          "center": 133699.55,
+          "inner_low": 69921.3,
+          "inner_high": 255652.72,
+          "outer_low": 37527.52,
+          "outer_high": 476332.35
         },
         {
-          "date": "2027-09-15",
-          "day": 6829,
-          "center": 143629.23,
-          "inner_low": 74440.92,
-          "inner_high": 277123.9,
-          "outer_low": 39609.36,
-          "outer_high": 520820.25
+          "date": "2027-09-16",
+          "day": 6830,
+          "center": 141679.92,
+          "inner_low": 73431.82,
+          "inner_high": 273358.36,
+          "outer_low": 39073.04,
+          "outer_high": 513735.33
         },
         {
-          "date": "2027-10-15",
-          "day": 6859,
-          "center": 151373.8,
-          "inner_low": 77908.31,
-          "inner_high": 294115.33,
-          "outer_low": 41177.08,
-          "outer_high": 556475.32
+          "date": "2027-10-16",
+          "day": 6860,
+          "center": 149556.51,
+          "inner_low": 76974.33,
+          "inner_high": 290579.35,
+          "outer_low": 40684.12,
+          "outer_high": 549776.0
         },
         {
-          "date": "2027-11-14",
-          "day": 6889,
-          "center": 159015.74,
-          "inner_low": 81396.54,
-          "inner_high": 310652.1,
-          "outer_low": 42796.19,
-          "outer_high": 590847.08
+          "date": "2027-11-15",
+          "day": 6890,
+          "center": 157327.92,
+          "inner_low": 80534.05,
+          "inner_high": 307349.2,
+          "outer_low": 42343.45,
+          "outer_high": 584554.93
         }
       ]
     },
@@ -1323,89 +1323,89 @@
       {
         "date": "2011-06-11",
         "price": 33.8,
-        "sigma_vs_trend": 4.0401,
+        "sigma_vs_trend": 4.0396,
         "kind": "confirmed_top",
         "confirmed": true
       },
       {
         "date": "2013-04-10",
         "price": 231.05,
-        "sigma_vs_trend": 2.2855,
+        "sigma_vs_trend": 2.2853,
         "kind": "confirmed_top",
         "confirmed": true
       },
       {
         "date": "2013-11-30",
         "price": 1133.95,
-        "sigma_vs_trend": 3.4528,
+        "sigma_vs_trend": 3.4526,
         "kind": "era_max_sigma",
         "confirmed": true
       },
       {
         "date": "2013-12-05",
         "price": 1136.9,
-        "sigma_vs_trend": 3.434,
+        "sigma_vs_trend": 3.4339,
         "kind": "confirmed_top",
         "confirmed": true
       },
       {
         "date": "2017-12-17",
         "price": 19279.9,
-        "sigma_vs_trend": 2.6877,
+        "sigma_vs_trend": 2.6878,
         "kind": "confirmed_top",
         "confirmed": true
       },
       {
         "date": "2021-03-14",
         "price": 61258.73,
-        "sigma_vs_trend": 1.8637,
+        "sigma_vs_trend": 1.864,
         "kind": "era_max_sigma",
         "confirmed": true
       },
       {
         "date": "2021-11-09",
         "price": 67562.17,
-        "sigma_vs_trend": 1.5813,
+        "sigma_vs_trend": 1.5816,
         "kind": "confirmed_top",
         "confirmed": true
       },
       {
         "date": "2024-12-17",
         "price": 106059.49,
-        "sigma_vs_trend": 0.4849,
+        "sigma_vs_trend": 0.4853,
         "kind": "era_max_sigma",
         "confirmed": false,
-        "drawdown_so_far_pct": 40.63
+        "drawdown_so_far_pct": 43.32
       },
       {
         "date": "2025-10-07",
         "price": 124776.68,
-        "sigma_vs_trend": 0.3221,
+        "sigma_vs_trend": 0.3226,
         "kind": "current_era_high",
         "confirmed": false,
-        "drawdown_so_far_pct": 49.54
+        "drawdown_so_far_pct": 51.82
       }
     ],
     "cycle_top_era_maxima_sigma": [
       {
         "date": "2011-06-11",
-        "sigma_vs_trend": 4.0401
+        "sigma_vs_trend": 4.0396
       },
       {
         "date": "2013-11-30",
-        "sigma_vs_trend": 3.4528
+        "sigma_vs_trend": 3.4526
       },
       {
         "date": "2017-12-17",
-        "sigma_vs_trend": 2.6877
+        "sigma_vs_trend": 2.6878
       },
       {
         "date": "2021-03-14",
-        "sigma_vs_trend": 1.8637
+        "sigma_vs_trend": 1.864
       },
       {
         "date": "2024-12-17",
-        "sigma_vs_trend": 0.4849
+        "sigma_vs_trend": 0.4853
       }
     ]
   },
@@ -10712,7 +10712,8 @@
           940,
           941,
           942,
-          943
+          943,
+          944
         ],
         "pct_performance": [
           0.0,
@@ -11658,15 +11659,16 @@
           0.74,
           0.5,
           -1.29,
-          -1.35
+          -1.35,
+          -5.8
         ]
       }
     ],
     "current_epoch": {
       "halving_date": "2024-04-20",
-      "days_into_epoch": 943,
-      "pct_complete_of_avg_epoch": 64.5,
-      "pct_performance": -1.35,
+      "days_into_epoch": 944,
+      "pct_complete_of_avg_epoch": 64.6,
+      "pct_performance": -5.8,
       "cycle_percentile_vs_prior_epochs": 0.0
     },
     "halving_dates": [
@@ -11679,11 +11681,11 @@
   },
   "mayer_multiple": {
     "current": {
-      "date": "2026-11-19",
-      "price": 62964.0,
-      "sma_200d": 72673.13,
-      "multiple": 0.8664,
-      "percentile": 24.0
+      "date": "2026-11-20",
+      "price": 60119.0,
+      "sma_200d": 72581.19,
+      "multiple": 0.8283,
+      "percentile": 19.4
     },
     "series": [
       {
@@ -34641,15 +34643,19 @@
       {
         "date": "2026-11-19",
         "value": 0.8664
+      },
+      {
+        "date": "2026-11-20",
+        "value": 0.8283
       }
     ]
   },
   "wma_200": {
     "current": {
-      "date": "2026-11-19",
-      "price": 62964.0,
-      "wma_200w": 68058.13,
-      "distance_pct": -7.48
+      "date": "2026-11-20",
+      "price": 60119.0,
+      "wma_200w": 68043.91,
+      "distance_pct": -11.65
     },
     "series": [
       {
@@ -38547,10 +38553,10 @@
         "distance_pct": -3.94
       },
       {
-        "date": "2026-11-19",
-        "price": 62964.0,
-        "wma_200w": 68058.13,
-        "distance_pct": -7.48
+        "date": "2026-11-20",
+        "price": 60119.0,
+        "wma_200w": 68043.91,
+        "distance_pct": -11.65
       }
     ]
   }
