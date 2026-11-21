@@ -74,8 +74,18 @@
   // halving-countdown math has exactly one implementation instead of two
   // copies that could drift apart.
 
-  const NEXT_HALVING_HEIGHT = 1_050_000;
+  // Same rule as pipeline/subsidy.py next_halving_height: the next multiple
+  // of 210,000 strictly after this height. At a halving height the event
+  // has already happened, so the countdown starts a full epoch.
+  const HALVING_INTERVAL_BLOCKS = 210_000;
   const AVG_BLOCK_MINUTES = 10;
+
+  BER.blocksUntilNextHalving = function (height) {
+    const h = Math.floor(Number(height));
+    if (!isFinite(h) || h < 0) return null;
+    const next = (Math.floor(h / HALVING_INTERVAL_BLOCKS) + 1) * HALVING_INTERVAL_BLOCKS;
+    return next - h;
+  };
 
   BER.renderOdometerDigits = function (height) {
     const digits = String(height).padStart(7, "0").split("");
@@ -88,14 +98,14 @@
   };
 
   BER.renderHalvingCountdown = function (height) {
-    const blocksRemaining = Math.max(NEXT_HALVING_HEIGHT - height, 0);
+    const blocksRemaining = BER.blocksUntilNextHalving(height);
     const el = document.getElementById("stat-halving-blocks");
-    if (el) el.textContent = blocksRemaining.toLocaleString("en-US");
+    if (el) el.textContent = blocksRemaining == null ? "—" : blocksRemaining.toLocaleString("en-US");
 
     const etaEl = document.getElementById("stat-halving-eta");
     if (etaEl) {
-      if (blocksRemaining === 0) {
-        etaEl.textContent = "any block now";
+      if (blocksRemaining == null) {
+        etaEl.textContent = "—";
       } else {
         const minutesRemaining = blocksRemaining * AVG_BLOCK_MINUTES;
         const eta = new Date(Date.now() + minutesRemaining * 60_000);
@@ -103,6 +113,67 @@
       }
     }
   };
+
+  function ordinalPercentile(p) {
+    const n = Number(p);
+    if (!isFinite(n)) return "—";
+    const nearInt = Math.abs(n - Math.round(n)) < 0.05;
+    const shown = nearInt ? String(Math.round(n)) : n.toFixed(1);
+    const k = nearInt ? Math.abs(Math.round(n)) : 0;
+    const mod100 = k % 100;
+    const suffix = !nearInt || (mod100 >= 11 && mod100 <= 13) ? "th" : { 1: "st", 2: "nd", 3: "rd" }[k % 10] || "th";
+    return shown + suffix;
+  }
+  BER.ordinalPercentile = ordinalPercentile;
+
+  function skillSentence(signal, noun) {
+    if (!signal || signal.spearman_vs_fwd_1y == null) return "";
+    const r = Number(signal.spearman_vs_fwd_1y);
+    const shown = (r > 0 ? "+" : "") + r.toFixed(2);
+    if (Math.abs(r) < 0.3) {
+      return noun + " has no reliable link to the next year's return (rank corr. " + shown + ").";
+    }
+    const dir = r < 0 ? "High readings were followed by lower returns." : "High readings were followed by higher returns.";
+    return noun + " rank corr. " + shown + " versus the next year's return. " + dir;
+  }
+
+  function paintModelStatus(summary, health) {
+    const el = document.getElementById("model-status");
+    if (!el || !summary) return;
+    const r = summary.reading || summary;
+    if (r.z_score == null || r.spot == null) return;
+    BER.roomSummary = summary;
+    const gap = Number(r.deviation_pct);
+    const side = gap < 0 ? Math.abs(gap).toFixed(0) + "% under Cruise" : gap.toFixed(0) + "% over Cruise";
+    const bucket = r.bucket || {};
+    const parts = [
+      BER.formatUSD(r.spot) + " · " + side + " (" + BER.formatUSD(r.cruise) + ")",
+      "z " + Number(r.z_score).toFixed(2),
+      ordinalPercentile(r.residual_percentile) + " percentile of past residuals",
+    ];
+    if (bucket.episodes != null) {
+      const med = Number(bucket.median_fwd_1y_pct);
+      const medText = (med > 0 ? "+" : "") + med.toFixed(0) + "%";
+      const neg = bucket.share_negative == null ? "" : ", " + Math.round(Number(bucket.share_negative) * 100) + "% of those months finished down";
+      parts.push(bucket.label + ": " + bucket.episodes + " episodes, median next year " + medText + neg);
+    }
+    if (health && health.tip_height && typeof health.tip_height.height === "number") {
+      const left = BER.blocksUntilNextHalving(health.tip_height.height);
+      if (left != null) parts.push(left.toLocaleString("en-US") + " blocks to the next halving");
+    }
+    const st = r.short_term_90;
+    if (st && st.ties_random_walk) parts.push("At 90 days the model ties a random walk");
+    let pipeline = "";
+    const metrics = health && health.metrics;
+    if (metrics) {
+      const bad = Object.keys(metrics).filter((k) => metrics[k] && metrics[k].status && metrics[k].status !== "OK");
+      pipeline = bad.length ? " A daily series needs the Health panel." : " Daily pipeline OK.";
+    }
+    el.textContent = parts.join(" · ") + "." + pipeline;
+    const skill = document.getElementById("gauge-fng-skill");
+    const fear = r.signals && r.signals.fear_greed;
+    if (skill && fear) skill.textContent = skillSentence(fear, "Fear & Greed");
+  }
 
   // ---------- status chip rendering ----------
 
@@ -181,6 +252,11 @@
     localStorage.removeItem("ber_theme"); // one-time cleanup, nothing reads this key anymore
     localStorage.removeItem("ber_rain"); // one-time cleanup: the rain ON/OFF rocker was removed, 2026-07-09
     scrambleH1();
+
+    const summaryPromise = fetchJSON("data/room_summary.json").catch((e) => {
+      console.warn("room_summary.json unavailable", e);
+      return null;
+    });
 
     let health = null;
     try {
@@ -267,6 +343,13 @@
     // Fees and mempool have no committed history (live-only per spec Section
     // 4/5) -- they stay at their placeholder STALE state until live.js
     // (or its absence) resolves them.
+
+    const summary = await summaryPromise;
+    if (summary) paintModelStatus(summary, health);
+    else {
+      const statusEl = document.getElementById("model-status");
+      if (statusEl) statusEl.textContent = "Model position unavailable.";
+    }
 
     document.dispatchEvent(new CustomEvent("ber:booted"));
   }

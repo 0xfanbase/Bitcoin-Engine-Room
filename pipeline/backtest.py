@@ -524,8 +524,13 @@ def main() -> None:
         corr = closed_loop.build_correction(out["ledger"])
         closed_loop.write(corr)
         print(f"wrote data/forecast_correction.json status={corr['status']}")
-        write(build(correction=corr))
+        doc = build(correction=corr)
+        write(doc)
         print("wrote data/scenario_forecast.json")
+        from pipeline.reading import write_room_summary
+
+        write_room_summary(doc["reading"])
+        print("wrote data/room_summary.json")
 
 
 if __name__ == "__main__":

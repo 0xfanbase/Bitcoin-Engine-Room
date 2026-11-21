@@ -32,6 +32,7 @@ from pathlib import Path
 import numpy as np
 
 from pipeline.forecast import ar1_residual, month_starts, ols_fit, residual_quantiles
+from pipeline.reading import build_reading
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODELS_PATH = REPO_ROOT / "data" / "models.json"
@@ -622,6 +623,7 @@ def build(*, now: datetime | None = None, correction: dict | None = None) -> dic
         "horizons": horizons_out,
         "history": history,
         "fan": fan,
+        "reading": build_reading(models, backtest),
         "ensemble": ensemble,
         "learning": {
             "matured": matured,

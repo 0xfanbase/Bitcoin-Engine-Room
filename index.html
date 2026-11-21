@@ -38,6 +38,7 @@
       <span class="site-nav-pill" aria-hidden="true"></span>
       <a role="listitem" href="#live" data-nav="live">Live</a>
       <a role="listitem" href="#models" data-nav="models">Models</a>
+      <a role="listitem" href="#track-record-card" data-nav="track-record-card">Record</a>
       <a role="listitem" href="#forecast" data-nav="forecast">Forecast</a>
       <a role="listitem" href="#health" data-nav="health">Health</a>
     </div>
@@ -125,11 +126,12 @@
         <div class="value numeral" id="stat-halving-eta">&mdash;</div>
         <div class="label">Est. halving date <button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-halving-eta" aria-label="Info">i</button></div>
         <div class="info-panel" id="info-halving-eta" hidden>
-          <p>A calendar-date estimate for when block <span class="numeral">1,050,000</span> will be mined, based on the network's current average block time. Because block times vary block to block, this date is a moving estimate, not a fixed appointment.</p>
+          <p>A calendar-date estimate for the next halving block &mdash; the next multiple of <span class="numeral">210,000</span> after the current height &mdash; based on a 10-minute average block. Because block times vary, this date is a moving estimate, not a fixed appointment. The cycle-overlay chart still marks the published <span class="numeral">2028-04</span> estimate for block <span class="numeral">1,050,000</span>.</p>
           <p class="info-source">Source: computed from live block height + Bitcoin's fixed block-reward schedule</p>
         </div>
       </div>
     </div>
+    <p class="model-status" id="model-status">Loading model position&hellip;</p>
     </div>
   </section>
 
@@ -204,6 +206,7 @@
       <h3><span>Fear &amp; Greed</span><button class="info-toggle" type="button" aria-expanded="false" aria-controls="info-fng" aria-label="Info">i</button></h3>
       <div class="gauge-value numeral" id="gauge-fng">&mdash;</div>
       <div class="gauge-sub" id="gauge-fng-sub">&mdash;</div>
+      <p class="gauge-skill" id="gauge-fng-skill"></p>
       <div class="status-chip" data-status="STALE" id="chip-fng" title="DAILY: refreshed once a day, on schedule &middot; STALE: pipeline failed, last saved snapshot shown"><span class="status-dot"></span><span>&mdash;</span></div>
       <div class="info-panel" id="info-fng" hidden>
         <p>A 0-100 score built from volatility, momentum, social-media buzz, and other market-sentiment signals &mdash; low means the market is fearful, high means it's greedy. It's a sentiment gauge, not a price model.</p>
@@ -223,6 +226,7 @@
       </div>
       <div class="chart-plate-stats numeral" id="power-law-stats">&mdash;</div>
     </div>
+    <p class="chart-job" id="power-law-job">Where price has lived around the fitted line. Zoom chips change this chart only.</p>
     <p class="chart-headline numeral" id="power-law-headline">&mdash;</p>
     <div class="info-panel" id="info-power-law" hidden>
       <p>A long-running model, published by Giovanni Santostasi, that fits Bitcoin's price history to a power-law curve: a straight line when both price and time are on log scales. Cruise is that fitted line.</p>
@@ -242,6 +246,7 @@
       </div>
     </div>
     <p class="chart-chip-legend" id="power-law-view-legend">Models chart zoom only. <span class="numeral">?pl=2030&amp;plt=log</span> sets this chart’s window and time axis — not the Forecast horizon.</p>
+    <p class="chart-chip-legend" id="power-law-preset-live">Showing through 2030, log time. This preset is the Models chart only.</p>
     <div class="chart-frame">
       <div id="power-law-chart" class="chart-canvas chart-canvas--hero" tabindex="0" role="img" aria-label="Power law corridor chart"></div>
       <div class="chart-zoom" role="group" aria-label="Zoom">
@@ -319,6 +324,7 @@
         </div>
         <div class="chart-plate-stats numeral" id="market-sentiment-stats">&mdash;</div>
       </div>
+      <p class="chart-job" id="sentiment-job">Crowd mood over time. Fear &amp; Greed is context, not a price model.</p>
       <div class="info-panel" id="info-market-sentiment" hidden>
         <p>A 0-100 score built from volatility, momentum, social-media buzz, and other market-sentiment signals, tracked daily over time &mdash; low means the market has been fearful, high means it's been greedy.</p>
         <p>This is sentiment, not valuation: it says something about the crowd's mood, not about where price is headed next. The gauge card above shows today's single reading; this chart shows how it's moved.</p>
@@ -344,6 +350,7 @@
       </div>
       <div class="chart-plate-stats numeral" id="mayer-200wma-stats">&mdash;</div>
     </div>
+    <p class="chart-job" id="mayer-job">Where price sits against its own averages. The track record says whether that has ranked the next year&rsquo;s return.</p>
     <div class="info-panel" id="info-mayer-200wma" hidden>
       <p>Mayer Multiple is today's price divided by its own 200-day moving average &mdash; 1.0 means price sits exactly at that average; well above means it's run up fast, well below means it's pulled back hard. The 200-week moving average is a much slower version of the same idea, using 200 weeks instead of 200 days.</p>
       <p>Mayer Multiple is often read as flagging overheated (high) or oversold (low) conditions, but this site's own point-in-time test found it has not reliably done so a year ahead (see Track Record). The 200-week average has historically acted as a long-term floor &mdash; price has rarely stayed below it for long.</p>
@@ -408,7 +415,8 @@
 
   
   <h2 class="plate" id="forecast">Forecast</h2>
-  <p class="section-lede">Scenario fans from today&rsquo;s price, using the same power-law fit as Models — not a crystal ball. Through 4 years, P10–P90 are walk-forward conformal spreads. Beyond that, Idle–Redline is a power-law residual ribbon, not a probability and <strong>not</strong> a confidence interval. Personal holdings are never shown here.</p>
+  <p class="section-lede">Walk-forward test from today&rsquo;s residual. Each card prints how far Cruise has missed. Through 4 years, P10–P90 are conformal spreads. Beyond that, Idle–Redline is the corridor around the fitted line, not a probability and <strong>not</strong> a confidence interval. <span class="numeral">?pl=</span> and <span class="numeral">?plt=</span> change the Models chart only. Personal holdings are never shown here.</p>
+  <div class="forecast-reading" id="forecast-reading"><p>Loading the conditional reading&hellip;</p></div>
   <div class="forecast-banner" id="forecast-disclaimer">Loading scenario forecast&hellip;</div>
   <div class="forecast-ranges" id="forecast-ranges" aria-live="polite"></div>
   <div class="chart-card chart-card--hero" id="forecast-fan-card">

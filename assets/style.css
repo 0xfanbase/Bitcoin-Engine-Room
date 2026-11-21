@@ -182,6 +182,18 @@ a {
   .masthead-inner {
     background: rgba(2, 8, 4, 0.96);
   }
+  /* Phone: the date lookup is the usable instrument. It sits above the
+     hero canvas. Plate, chips, and the static zoom legend stay first. */
+  #power-law-card {
+    display: flex;
+    flex-direction: column;
+  }
+  #power-law-lookup-disclosure { order: 1; }
+  #power-law-card .chart-frame { order: 2; }
+  #power-law-summary,
+  #power-law-cycle-tops-summary,
+  #power-law-card > .chart-caption,
+  #power-law-cycle-tops-disclosure { order: 3; }
 }
 
 .masthead-inner::after {
@@ -630,6 +642,31 @@ a {
   font-size: 0.9rem;
   color: var(--ink);
 }
+
+.model-status {
+  margin: 1.1rem 0 0;
+  max-width: 42rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--ink);
+  text-align: left;
+}
+
+.chart-job {
+  margin: 0.15rem 0 0.55rem;
+  max-width: 42rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.gauge-skill {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.gauge-skill:empty { display: none; }
 
 .chip-btn {
   font-family: var(--font-data);
@@ -1427,6 +1464,21 @@ a {
   font-size: 12px;
   margin-bottom: 14px;
 }
+.forecast-reading {
+  max-width: 52rem;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+.forecast-reading p {
+  margin: 0 0 0.55rem;
+}
+.forecast-reading p:last-child { margin-bottom: 0; }
 .forecast-ranges {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1523,4 +1575,10 @@ a {
   margin-top: 6px;
   font-size: 10px;
   color: var(--ink-dim);
+}
+.forecast-range .fr-bias {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ink);
 }

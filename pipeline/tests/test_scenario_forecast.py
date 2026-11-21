@@ -101,7 +101,14 @@ def test_idle_not_labeled_p10_past_conformal():
     assert "Idle" in cap["role"] and "P10" not in cap["role"]
     loop = next(e for e in doc["ensemble"] if e["id"] == "closed_loop")
     assert "no live recalibration" in loop["role"].lower()
-    assert doc["learning"]["correction"]["n_matured_total"] == 0
+    # Closed loop stays off until a horizon clears min_n. The live file's
+    # matured count moves; the status is the contract.
+    correction = doc["learning"]["correction"]
+    assert correction["status"] != "active"
+    assert int(correction["n_matured_total"]) < 4
+    assert doc["reading"]["z_score"] is not None
+    assert doc["reading"]["bucket"]["episodes"] >= 1
+    assert "not a percentile" in doc["reading"]["peak_stress"]["note"]
 
 
 def test_conformal_offsets_computed():

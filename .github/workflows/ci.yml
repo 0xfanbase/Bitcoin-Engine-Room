@@ -25,8 +25,12 @@ jobs:
   # math (Node's built-in runner, no dependencies) and an end-to-end smoke
   # test of the real page in headless Chromium. Test tooling only -- the
   # site itself still ships with no build step.
+  # ubuntu-latest moved to 26.04, which Playwright 1.56.1 refuses
+  # ("does not support chromium on ubuntu26.04-x64"). 24.04 is the image
+  # this pinned browser install still supports. The Python job stays on
+  # ubuntu-latest; it does not install a browser.
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

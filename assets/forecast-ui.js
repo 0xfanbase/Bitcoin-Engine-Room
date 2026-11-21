@@ -1,5 +1,7 @@
 /* forecast-ui.js — public Forecast section (scenario fans from BER models).
- * Loads data/scenario_forecast.json only. Never references holdings or private watcher APIs.
+ * Loads data/room_summary.json for the conditional reading, then
+ * data/scenario_forecast.json for the fan. Never references holdings
+ * or private watcher APIs.
  */
 (function () {
   "use strict";
@@ -55,6 +57,35 @@
     const n = h && h.conformal_indep_windows;
     if (n == null || n === "") return true;
     return Number(n) < UNEARNED_INDEP_BELOW;
+  }
+
+  function attachedReading(doc) {
+    if (doc && doc.reading && doc.reading.z_score != null) return doc.reading;
+    const summary = BER.roomSummary;
+    if (summary && summary.reading && summary.reading.z_score != null) return summary.reading;
+    if (summary && summary.z_score != null) return summary;
+    return null;
+  }
+
+  function biasPhrase(biasPct) {
+    const n = Math.abs(Number(biasPct));
+    if (!isFinite(n)) return "";
+    if (n < 0.5) return "was about even";
+    const shown = n.toFixed(0);
+    return Number(biasPct) < 0 ? "ran " + shown + "% high" : "ran " + shown + "% low";
+  }
+
+  function pctPoints(x) {
+    const n = Number(x);
+    if (!isFinite(n)) return "—";
+    return Math.round(n * 100) + "%";
+  }
+
+  function fmtSigma(x) {
+    const n = Number(x);
+    if (!isFinite(n)) return "—";
+    const sign = n > 0 ? "+" : "";
+    return sign + n.toFixed(1) + "σ";
   }
 
   function closedLoopState(doc) {
@@ -122,7 +153,118 @@
       if (src) caveatBits.push(src);
       if (h.caveat) caveatBits.push(String(h.caveat));
       if (caveatBits.length) card.appendChild(mk("div", "fr-caveat", caveatBits.join(" · ")));
+      // Walk-forward bias of the Cruise line. Wording stays off the name Idle
+      // so a conformal card keeps its P10/P90 labels.
+      const bias = (attachedReading(doc) || {}).horizon_bias;
+      const match = (bias || []).find((b) => b && b.horizon_days === h.days);
+      if (match && match.trend_bias_pct != null && match.trend_mae_factor != null) {
+        const mae = Number(match.trend_mae_factor);
+        const maeShown = mae >= 10 ? mae.toFixed(1) : mae.toFixed(2);
+        const indep = match.approx_independent_windows == null ? "" : ", " + fmtWindows(match.approx_independent_windows) + " indep.";
+        let line = "Walk-forward Cruise " + biasPhrase(match.trend_bias_pct) + " (miss ×" + maeShown + indep + ").";
+        const rawCruise = Number(h.cruise);
+        if (isFinite(rawCruise) && isFinite(Number(match.trend_bias_pct))) {
+          const adjusted = rawCruise * (1 + Number(match.trend_bias_pct) / 100);
+          if (isFinite(adjusted)) {
+            line += " Bias-adjusted Cruise " + fmtUSD(adjusted) + " — that shift is the unanchored Cruise line, not a retune of the center.";
+          }
+        }
+        if (match.coverage_outer != null) {
+          line += " Outer band caught " + pctPoints(match.coverage_outer) + ".";
+        }
+        if (match.share_below_outer != null) {
+          line += " " + pctPoints(match.share_below_outer) + " of outcomes came in below it.";
+        }
+        card.appendChild(mk("div", "fr-bias", line));
+      }
       root.appendChild(card);
+    }
+  }
+
+  function paintReading(reading) {
+    const root = document.getElementById("forecast-reading");
+    if (!root) return;
+    root.textContent = "";
+    if (!reading || reading.z_score == null) {
+      root.appendChild(mk("p", null, "Conditional reading unavailable."));
+      return;
+    }
+    const bucket = reading.bucket || {};
+    const med = Number(bucket.median_fwd_1y_pct);
+    const medText = isFinite(med) ? (med > 0 ? "+" : "") + med.toFixed(0) + "%" : "—";
+    const neg = bucket.share_negative == null ? "" : " " + Math.round(Number(bucket.share_negative) * 100) + "% of those months finished the next year down.";
+    const episodes = bucket.episodes == null ? "—" : String(bucket.episodes);
+    const months = bucket.n_months == null ? "" : " (" + bucket.n_months + " months)";
+    const lead = mk(
+      "p",
+      null,
+      "Today is " +
+        (bucket.label || "outside the published buckets") +
+        ": " +
+        episodes +
+        " separate episodes" +
+        months +
+        ", median next year " +
+        medText +
+        "." +
+        neg +
+        " Episode count is the sample. A bucket is not a price target."
+    );
+    root.appendChild(lead);
+    const st = reading.short_term_90;
+    if (st && st.ties_random_walk) {
+      root.appendChild(
+        mk(
+          "p",
+          null,
+          "At 90 days the short-term path (miss ×" +
+            Number(st.trend_plus_ar1_mae_factor).toFixed(2) +
+            ") ties a random walk (×" +
+            Number(st.random_walk_mae_factor).toFixed(2) +
+            "). Use the fan for years."
+        )
+      );
+    }
+    const floor = reading.walkforward_floor;
+    if (floor && floor.floor_price != null) {
+      root.appendChild(
+        mk(
+          "p",
+          null,
+          "1-year walk-forward floor " +
+            fmtUSD(floor.floor_price) +
+            " against Cruise " +
+            fmtUSD(floor.cruise_price) +
+            ". " +
+            (floor.note || "")
+        )
+      );
+    }
+    const stress = reading.peak_stress;
+    if (stress && stress.stress_price != null) {
+      const seq = (stress.closed_era_sigma || []).map(fmtSigma).join(", ");
+      const step = Number(stress.median_step);
+      const stepText = (step > 0 ? "+" : "") + step.toFixed(2) + "σ";
+      root.appendChild(
+        mk(
+          "p",
+          null,
+          "Peak stress, not a P90. Closed-era peaks versus today's trend: " +
+            seq +
+            ". Median step " +
+            stepText +
+            ". One more step is " +
+            fmtSigma(stress.stress_sigma) +
+            ", about " +
+            fmtUSD(stress.stress_price) +
+            " on " +
+            stress.eval_date +
+            " (Cruise that day " +
+            fmtUSD(stress.cruise_price) +
+            "). " +
+            (stress.note || "")
+        )
+      );
     }
   }
 
@@ -439,12 +581,19 @@
 
   async function bootForecast() {
     try {
+      try {
+        const sres = await fetch("data/room_summary.json");
+        if (sres.ok) BER.roomSummary = await sres.json();
+      } catch (e) {
+        /* masthead paints the same file; the fan still stands without it */
+      }
       const res = await fetch("data/scenario_forecast.json");
       if (!res.ok) throw new Error("HTTP " + res.status);
       const doc = await res.json();
       if (doc.holdings || doc.wallet) throw new Error("refusing private fields");
       BER.scenarioForecast = doc;
       paintRanges(doc);
+      paintReading(attachedReading(doc));
       paintCagr(doc);
       paintWalkforward(doc);
       paintEnsemble(doc);
@@ -483,7 +632,7 @@
     const map = Object.fromEntries(
       links.map((a) => [a.getAttribute("data-nav"), a])
     );
-    const ids = ["live", "models", "forecast", "health"];
+    const ids = ["live", "models", "track-record-card", "forecast", "health"];
     let activeId = null;
     let lockUntil = 0;
 

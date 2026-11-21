@@ -68,6 +68,7 @@ test("corridor horizons render Idle/Cruise/Redline and conformal stays P10", asy
     "forecast-learning-chart",
     "forecast-cagr-tbody",
     "forecast-walkforward-miss",
+    "forecast-reading",
   ];
   for (const id of ids) {
     const el = makeEl("div");
@@ -92,6 +93,7 @@ test("corridor horizons render Idle/Cruise/Redline and conformal stays P10", asy
         p10: 50000,
         p50: 110000,
         p90: 180000,
+        cruise: 194000,
         target_date: "2027-10-27",
       },
       {
@@ -159,6 +161,40 @@ test("corridor horizons render Idle/Cruise/Redline and conformal stays P10", asy
       ledger_note: "Closed-loop applies shrunk ledger bias when matured sample clears min_n.",
       correction: { status: "inactive_waiting_for_matured", n_matured_total: 0 },
     },
+    reading: {
+      z_score: -1.254,
+      bucket: {
+        label: "z below -1",
+        episodes: 3,
+        n_months: 15,
+        median_fwd_1y_pct: 130.3,
+        share_negative: 0,
+      },
+      horizon_bias: [
+        {
+          horizon_days: 365,
+          trend_bias_pct: -16.1,
+          trend_mae_factor: 1.994,
+          coverage_outer: 0.845,
+          share_below_outer: 0.142,
+          approx_independent_windows: 12.9,
+        },
+      ],
+      walkforward_floor: {
+        floor_price: 47000,
+        cruise_price: 194000,
+        note: "Does not replace Idle or P10.",
+      },
+      peak_stress: {
+        closed_era_sigma: [4.0, 3.5, 2.7, 1.9],
+        median_step: -0.7,
+        stress_sigma: 1.2,
+        stress_price: 250000,
+        cruise_price: 200000,
+        eval_date: "2028-04-15",
+        note: "A scenario label, not a percentile and not a P90.",
+      },
+    },
   };
 
   const window = {
@@ -207,6 +243,9 @@ test("corridor horizons render Idle/Cruise/Redline and conformal stays P10", asy
   assert.match(y1, /P10/);
   assert.match(y1, /P90/);
   assert.doesNotMatch(y1, /Idle/);
+  assert.match(y1, /ran 16% high/);
+  assert.match(y1, /Bias-adjusted Cruise \$162,766/);
+  assert.match(y1, /not a retune of the center/);
   assert.match(y1, /indep 12\.8/);
   assert.doesNotMatch(y1, /unearned/);
   assert.match(y4, /P10/);
@@ -223,6 +262,13 @@ test("corridor horizons render Idle/Cruise/Redline and conformal stays P10", asy
   assert.match(y30, /Redline/);
   assert.doesNotMatch(y30, /\bP10\b/);
   assert.match(y30, /unearned/);
+
+  const reading = textOf(byId["forecast-reading"]);
+  assert.match(reading, /3 separate episodes/);
+  assert.match(reading, /not a price target/);
+  assert.match(reading, /Does not replace Idle or P10/);
+  assert.match(reading, /Peak stress, not a P90/);
+  assert.match(reading, /not a percentile/);
 
   assert.equal(
     textOf(byId["forecast-ribbon-disclaimer"]).trim(),

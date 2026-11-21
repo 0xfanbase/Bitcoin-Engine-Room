@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/0xfanbase/Bitcoin-Engine-Room/pipeline/schemas/room_summary.schema.json",
+  "type": "object",
+  "required": ["schema_version", "reading"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "generated_at": { "type": ["string", "null"] },
+    "reading": {
+      "type": "object",
+      "required": ["as_of", "spot", "cruise", "z_score", "bucket", "horizon_bias"],
+      "properties": {
+        "z_score": { "type": "number" },
+        "spot": { "type": "number" },
+        "cruise": { "type": "number" }
+      }
+    }
+  },
+  "additionalProperties": true
+}
