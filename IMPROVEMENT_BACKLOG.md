@@ -18,6 +18,7 @@ Per spec Section 19: "where the spec is silent, choose the simplest option and l
 Source: manual (CFO forecast-honesty refine; medium, not clean enough to ride along)
 Description: a Forecast control that flattens the power-law exponent `b` and redraws the fan under that stress. Models already plots the since-2017 scenario fit (flatter `b`) beside Cruise. A second interactive path on the Forecast card would need its own honesty copy so it cannot be read as a calibrated band, and it is easy to overclaim. Left undone on the Idle-label pass.
 Suggested fix: not implemented. If it ships later, drive it from the published scenario `b` in `models.json`, label it a stress case, and keep it off the conformal P10/P90 names.
+**Partial, 2026-11-21:** a labeled peak-step stress readout ships in the Forecast reading (median step of the closed-era peak sigmas, applied once, priced on today's fit, copy says it is not a P90). The interactive flatten-`b` fan toggle stays deferred.
 
 ### [post-v1] Model-honesty + UX overhaul follow-ups (2026-10-01)
 Source: manual (Phases A–K build; backtest results)
@@ -70,6 +71,7 @@ Suggested fix: not implemented -- needs real design thought (e.g. widening the d
 Source: manual (Fable-led data pipeline audit)
 Description: `pipeline/subsidy.py`'s `NEXT_HALVING_HEIGHT = 1_050_000` (duplicated in `assets/app.js`) is correct for the current halving epoch but hardcoded -- `blocks_until_next_halving()` will return 0 forever once the chain passes that height (~2028), and the frontend's countdown will silently show "0 blocks" instead of counting toward the *next* halving after that.
 Suggested fix: bump both `pipeline/subsidy.py` and `assets/app.js` to the following halving height once this one actually passes, or compute it generically as `((height // HALVING_INTERVAL_BLOCKS) + 1) * HALVING_INTERVAL_BLOCKS` instead of a pinned constant -- the latter is a real fix, not just a future edit, and worth doing next time this file is touched.
+**Resolved 2026-11-21:** `blocks_until_next_halving()` uses that formula in `pipeline/subsidy.py` and `assets/app.js`. At a halving height the countdown starts the following epoch. `NEXT_HALVING_HEIGHT = 1_050_000` stays only as the cycle-overlay pin.
 
 ### [post-v1] `pipeline/requirements.txt` pins nothing (2026-07-13)
 Source: manual (Fable-led data pipeline audit)

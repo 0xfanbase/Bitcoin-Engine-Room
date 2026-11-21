@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-20T15:42:02Z",
+  "reading": {
+    "as_of": "2026-11-20",
+    "models_generated_at": "2026-11-20T15:42:02Z",
+    "backtest_generated_at": "2026-11-20T15:42:02Z",
+    "spot": 60119.0,
+    "cruise": 143277.57,
+    "deviation_pct": -58.04,
+    "z_score": -1.254,
+    "residual_percentile": 3.74,
+    "noise_abs": 0.3,
+    "bucket": {
+      "z_low": -99.0,
+      "z_high": -1.0,
+      "n_months": 15,
+      "episodes": 3,
+      "median_fwd_1y_pct": 130.3,
+      "share_negative": 0.0,
+      "label": "z below -1"
+    },
+    "signals": {
+      "power_law_z_realtime": {
+        "spearman_vs_fwd_1y": -0.514,
+        "n_months": 155,
+        "first_origin": "2013-01-01",
+        "approx_independent_windows": 12.8
+      },
+      "mayer_multiple": {
+        "spearman_vs_fwd_1y": 0.17,
+        "n_months": 155,
+        "first_origin": "2013-01-01",
+        "approx_independent_windows": 12.8
+      },
+      "wma200_distance": {
+        "spearman_vs_fwd_1y": -0.496,
+        "n_months": 137,
+        "first_origin": "2014-07-01",
+        "approx_independent_windows": 11.3
+      },
+      "price_vs_hashrate_fit": {
+        "spearman_vs_fwd_1y": -0.311,
+        "n_months": 155,
+        "first_origin": "2013-01-01",
+        "approx_independent_windows": 12.8
+      },
+      "fear_greed": {
+        "spearman_vs_fwd_1y": 0.077,
+        "n_months": 93,
+        "first_origin": "2018-03-01",
+        "approx_independent_windows": 7.7
+      }
+    },
+    "horizon_bias": [
+      {
+        "horizon_days": 365,
+        "trend_bias_pct": -16.1,
+        "trend_mae_factor": 1.994,
+        "random_walk_mae_factor": 2.384,
+        "coverage_outer": 0.8452,
+        "share_below_outer": 0.1419,
+        "share_above_outer": 0.0129,
+        "approx_independent_windows": 12.9,
+        "n_origins": 155
+      },
+      {
+        "horizon_days": 730,
+        "trend_bias_pct": -26.2,
+        "trend_mae_factor": 1.825,
+        "random_walk_mae_factor": 3.143,
+        "coverage_outer": 0.8671,
+        "share_below_outer": 0.1329,
+        "share_above_outer": 0.0,
+        "approx_independent_windows": 5.9,
+        "n_origins": 143
+      },
+      {
+        "horizon_days": 1461,
+        "trend_bias_pct": -23.6,
+        "trend_mae_factor": 1.784,
+        "random_walk_mae_factor": 8.5,
+        "coverage_outer": 0.9076,
+        "share_below_outer": 0.0924,
+        "share_above_outer": 0.0,
+        "approx_independent_windows": 2.5,
+        "n_origins": 119
+      }
+    ],
+    "short_term_90": {
+      "horizon_days": 90,
+      "trend_plus_ar1_mae_factor": 1.433,
+      "random_walk_mae_factor": 1.418,
+      "ties_random_walk": true
+    },
+    "walkforward_floor": {
+      "horizon_days": 365,
+      "quantile": 0.025,
+      "n_origins": 155,
+      "offset_log10": -0.732485,
+      "floor_price": 35955.82,
+      "cruise_price": 194202.21,
+      "in_sample_outer_offset_log10": -0.394751,
+      "note": "2.5th percentile of past 1-year log misses versus the Cruise line, priced off today's Cruise one year out. Fitted on the same walk-forward errors it summarizes. Does not replace Idle or P10."
+    },
+    "peak_stress": {
+      "kind": "median_step_from_closed_era_sigma",
+      "closed_era_sigma": [
+        4.0396,
+        3.4526,
+        2.6878,
+        1.864
+      ],
+      "closed_era_dates": [
+        "2011-06-11",
+        "2013-11-30",
+        "2017-12-17",
+        "2021-03-14"
+      ],
+      "median_step": -0.7648,
+      "stress_sigma": 1.0992,
+      "steps_strictly_down": true,
+      "eval_date": "2028-04-15",
+      "cruise_price": 218515.08,
+      "stress_price": 467823.79,
+      "note": "Median step between successive closed-era peak sigmas, applied once to the last closed era and scored on today's fit. A scenario label, not a percentile. A decaying probability band was tested and rejected."
+    }
+  }
+}

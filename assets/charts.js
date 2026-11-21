@@ -764,6 +764,19 @@
     } catch (e) {
       /* file:// or sandboxed iframe -- sharing state is a convenience only */
     }
+    const preset = document.getElementById("power-law-preset-live");
+    if (preset) {
+      let rangeName = "custom zoom";
+      if (!plState.view) {
+        if (plState.range === "1y") rangeName = "1y";
+        else if (plState.range === "2030") rangeName = "through 2030";
+        else if (plState.range === "2035") rangeName = "through 2035";
+        else if (plState.range === "all") rangeName = "full history";
+        else rangeName = String(plState.range || "custom zoom");
+      }
+      const axis = plState.timeScale === "log" ? "log time" : "calendar time";
+      preset.textContent = "Showing " + rangeName + ", " + axis + ". This preset is the Models chart only.";
+    }
   }
 
   function rerenderPowerLaw() {
@@ -1008,6 +1021,8 @@
 
   // G5: model at a date / when a price is reached.
   function initLookup() {
+    const lookup = document.getElementById("power-law-lookup-disclosure");
+    if (lookup && window.matchMedia("(max-width: 600px)").matches) lookup.open = true;
     const dateInput = document.getElementById("lookup-date");
     const priceInput = document.getElementById("lookup-price");
     if (dateInput) {
@@ -1325,6 +1340,7 @@
         "mayer-200wma-summary",
         `Price is ${Math.abs(pctFromAvg).toFixed(0)}% ${pctFromAvg >= 0 ? "above" : "below"} its 200-day average and ${Math.abs(wma.distance_pct).toFixed(0)}% ${wma.distance_pct >= 0 ? "above" : "below"} its 200-week average.${sig}`
       );
+      setText("mayer-job", "Where price sits against its own averages." + (sig || " The track record says whether that has ranked the next year's return."));
     }
   }
 
@@ -1421,6 +1437,12 @@
 
     const latest = fngHistorySeries[fngHistorySeries.length - 1];
     setText("market-sentiment-stats", `${latest.value} · ${latest.classification} · ${latest.date}`);
+    const fear = signalLine("fear_greed");
+    setText(
+      "sentiment-job",
+      "Crowd mood over time. Fear & Greed is context, not a price model." +
+        (fear || " The track record prints the rank correlation once it loads.")
+    );
     document.querySelectorAll("[data-sentiment-window]").forEach((b) => {
       const active = Number(b.dataset.sentimentWindow) === sentimentSmoothing;
       b.classList.toggle("is-active", active);

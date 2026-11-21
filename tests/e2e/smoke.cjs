@@ -88,10 +88,16 @@ async function run(viewportName) {
   check((await state()).timeScale === "cal", `[${viewportName}] calendar-time toggle`);
   await tapClearOfNav(page, '[data-power-law-time="log"]');
   await tapClearOfNav(page, '[data-power-law-range="2030"]');
+  check(
+    /Showing through 2030, log time/.test(await page.textContent("#power-law-preset-live")),
+    `[${viewportName}] named preset is through 2030, log time`
+  );
 
   const headline = await page.textContent("#power-law-headline");
   check(/below trend|above trend/.test(headline) && /percentile/.test(headline), `[${viewportName}] headline reading rendered`);
   check((await page.locator("#track-record-tbody tr").count()) === 3, `[${viewportName}] track record lists 1y/2y/4y`);
+  check(/rank corr/.test(await page.textContent("#mayer-job")), `[${viewportName}] Mayer card face prints its rank correlation`);
+  check(/rank corr/.test(await page.textContent("#sentiment-job")), `[${viewportName}] sentiment card face prints its rank correlation`);
   check((await page.locator("#power-law-projections-tbody tr").count()) >= 4, `[${viewportName}] projection table rendered`);
 
   if (!mobile) {
@@ -180,7 +186,10 @@ async function run(viewportName) {
     check((await state()).view !== null, "[mobile] horizontal swipe pans the hero chart");
   }
 
-  await page.locator("#power-law-lookup-disclosure summary").click({ force: true });
+  const lookupOpen = await page.locator("#power-law-lookup-disclosure").getAttribute("open");
+  if (lookupOpen === null) {
+    await page.locator("#power-law-lookup-disclosure summary").click({ force: true });
+  }
   await page.fill("#lookup-date", "2030-06-01");
   await page.fill("#lookup-price", "250000");
   check(/Cruise \$/.test(await page.textContent("#lookup-date-out")), `[${viewportName}] date lookup`);
@@ -330,6 +339,7 @@ async function run(viewportName) {
   });
   const noP10 = (s) => !/\bP10\b/.test(s) && !/\bP90\b/.test(s);
   check(/P10/.test(honesty.y1) && /P90/.test(honesty.y1) && !/Idle/.test(honesty.y1), `[${viewportName}] 1y card keeps P10/P90`);
+  check(/ran \d+% high/.test(honesty.y1) && /Bias-adjusted Cruise/.test(honesty.y1), `[${viewportName}] 1y card prints walk-forward bias (${honesty.y1})`);
   check(/P10/.test(honesty.y4) && /unearned/.test(honesty.y4) && /indep/.test(honesty.y4), `[${viewportName}] 4y card is P10 and unearned`);
   check(/Idle/.test(honesty.y10) && /Redline/.test(honesty.y10) && /Cruise/.test(honesty.y10) && noP10(honesty.y10) && /unearned/.test(honesty.y10), `[${viewportName}] 10y card is Idle/Cruise/Redline, not P10`);
   check(/Idle/.test(honesty.y30) && noP10(honesty.y30) && /unearned/.test(honesty.y30) && /indep/.test(honesty.y30), `[${viewportName}] 30y card is Idle and unearned`);
@@ -343,6 +353,29 @@ async function run(viewportName) {
   check(honesty.series.includes("P10") && honesty.series.includes("Idle") && honesty.series.includes("Redline"), `[${viewportName}] fan legend has P10 and Idle/Redline (${honesty.series.join(",")})`);
   check(honesty.p10Last != null && honesty.idleLast != null && String(honesty.idleLast) > String(honesty.p10Last), `[${viewportName}] Idle series continues past the P10 series`);
   check(/10 years/.test(honesty.cagr) && /30 years/.test(honesty.cagr) && /%/.test(honesty.cagr) && noP10(honesty.cagr), `[${viewportName}] CAGR table is spot→Idle/Cruise`);
+
+  const readingReady = await page
+    .waitForFunction(
+      () => {
+        const status = (document.getElementById("model-status") || {}).textContent || "";
+        const reading = (document.getElementById("forecast-reading") || {}).textContent || "";
+        return /under Cruise|over Cruise/.test(status) && /episode/.test(reading);
+      },
+      null,
+      { timeout: 15000 }
+    )
+    .then(() => true, () => false);
+  check(readingReady, `[${viewportName}] status line and conditional reading painted`);
+  const faces = await page.evaluate(() => ({
+    status: (document.getElementById("model-status") || {}).textContent || "",
+    reading: (document.getElementById("forecast-reading") || {}).textContent || "",
+    preset: (document.getElementById("power-law-preset-live") || {}).textContent || "",
+    fng: (document.getElementById("gauge-fng-skill") || {}).textContent || "",
+  }));
+  check(/under Cruise|over Cruise/.test(faces.status) && /blocks to the next halving/.test(faces.status), `[${viewportName}] status line has price gap and halving (${faces.status})`);
+  check(/episode/.test(faces.reading) && /not a P90|not a percentile/i.test(faces.reading), `[${viewportName}] forecast reading leads with episodes and a labeled peak stress`);
+  check(/Showing /.test(faces.preset) && /Models chart only/.test(faces.preset), `[${viewportName}] preset line still names the Models chart after pan (${faces.preset})`);
+  check(/Fear & Greed/.test(faces.fng) && /rank corr/.test(faces.fng), `[${viewportName}] Fear & Greed gauge prints its rank correlation`);
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(overflow <= 0, `[${viewportName}] no horizontal page overflow (${overflow}px)`);

@@ -1,7 +1,12 @@
+from pathlib import Path
+
 from pipeline.subsidy import (
+    HALVING_INTERVAL_BLOCKS,
+    NEXT_HALVING_HEIGHT,
     block_reward_at_height,
     blocks_until_next_halving,
     estimate_supply_at_height,
+    next_halving_height,
 )
 
 
@@ -35,7 +40,17 @@ def test_supply_matches_real_observed_value_within_tolerance():
     assert abs(estimated - observed) / observed < 0.001
 
 
-def test_blocks_until_next_halving_counts_down_to_pinned_height():
-    assert blocks_until_next_halving(1_049_000) == 1000
-    assert blocks_until_next_halving(1_050_000) == 0
-    assert blocks_until_next_halving(1_060_000) == 0  # never negative
+def test_blocks_until_next_halving_rolls_into_the_following_epoch():
+    assert next_halving_height(0) == HALVING_INTERVAL_BLOCKS
+    assert blocks_until_next_halving(NEXT_HALVING_HEIGHT - 1000) == 1000
+    assert next_halving_height(NEXT_HALVING_HEIGHT - 1) == NEXT_HALVING_HEIGHT
+    assert blocks_until_next_halving(NEXT_HALVING_HEIGHT) == HALVING_INTERVAL_BLOCKS
+    assert blocks_until_next_halving(NEXT_HALVING_HEIGHT + 10_000) == HALVING_INTERVAL_BLOCKS - 10_000
+    assert blocks_until_next_halving(1_049_999) == 1
+
+
+def test_frontend_halving_countdown_uses_the_same_rule():
+    js = (Path(__file__).resolve().parents[2] / "assets" / "app.js").read_text()
+    assert "BER.blocksUntilNextHalving" in js
+    assert "HALVING_INTERVAL_BLOCKS = 210_000" in js
+    assert "NEXT_HALVING_HEIGHT" not in js

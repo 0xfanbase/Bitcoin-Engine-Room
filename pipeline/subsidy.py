@@ -10,7 +10,9 @@ from __future__ import annotations
 
 GENESIS_REWARD_BTC = 50.0
 HALVING_INTERVAL_BLOCKS = 210_000
-NEXT_HALVING_HEIGHT = 1_050_000  # per spec Section 4 / model_constants.json cycle_overlay
+# Pinned cycle-overlay height (model_constants.json). The countdown does not
+# use this: blocks_until_next_halving rolls to the following epoch on its own.
+NEXT_HALVING_HEIGHT = 1_050_000
 
 
 def block_reward_at_height(height: int) -> float:
@@ -40,5 +42,16 @@ def estimate_supply_at_height(height: int) -> float:
     return supply
 
 
+def next_halving_height(height: int) -> int:
+    """Height of the next halving strictly after `height`.
+
+    At a halving height the event has already happened, so the next one is
+    a full epoch ahead. Height 0 counts down to 210,000.
+    """
+    if height < 0:
+        raise ValueError("height must be >= 0")
+    return (height // HALVING_INTERVAL_BLOCKS + 1) * HALVING_INTERVAL_BLOCKS
+
+
 def blocks_until_next_halving(height: int) -> int:
-    return max(NEXT_HALVING_HEIGHT - height, 0)
+    return next_halving_height(height) - height

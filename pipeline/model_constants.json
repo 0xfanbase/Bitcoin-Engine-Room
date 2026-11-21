@@ -66,6 +66,7 @@
       "sample_days": 30,
       "steps": 12
     },
+    "signal_noise_abs": 0.3,
     "note": "Phases B-D (2026-10-01). Bands are empirical residual quantiles (walk-forward calibration published in data/backtest.json; a time-decaying band variant was tested and rejected as overconfident, ~77% realised coverage for a nominal 95%). Trend uncertainty is a circular block bootstrap of residuals (730-day blocks preserve multi-year autocorrelation; fixed seed keeps the nightly refit deterministic). See MODEL_METHODOLOGY.md 'Model honesty' before changing any value -- each is a methodology change, not a data update."
   }
 }
