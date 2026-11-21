@@ -13,6 +13,10 @@ How to use this file: read the latest entry (top of the list) plus `CLAUDE.md` b
 
 ## Log
 
+### 2026-11-21 — Phone and desktop pass on the new Forecast reading
+
+The masthead no longer repeats the Forecast essay. It shows three centered lines: the model close and its date (so it is not confused with the live price), z and the residual percentile and the halving countdown, and whether the daily pipeline is OK. On a phone the corridor chips and the date lookup come before the chart, and the projection table scrolls inside the card instead of breaking the 5–95% range. Checked at 390px and 1280px, and the Playwright smoke passed on both.
+
 ### 2026-11-21 — Conditional reading and a usable first screen
 
 The Forecast now leads with today's power-law bucket: which z range price is in, how many separate episodes that range has, and what the next year did in those episodes. Episode count sits with the dollar figures. Under that, each conformal card prints the walk-forward Cruise bias and a bias-adjusted Cruise dollar (`cruise × (1 + trend_bias_pct/100)`). That second number shifts the unanchored Cruise line. It does not refit `b`, and it does not replace the AR(1) center. Realized outer-band coverage stays on the card. A 1-year walk-forward floor (2.5th percentile of the same stored misses) is labeled as a description of those misses and does not replace Idle or P10. Peak stress is a scenario sentence: one more median step down the closed-era peak sigmas, priced on today's fit at the pinned 2028-04 halving month, and marked not a P90. The decaying-peak probability band stays rejected. The closed loop stays off.

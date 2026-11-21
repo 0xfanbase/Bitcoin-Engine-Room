@@ -182,18 +182,29 @@ a {
   .masthead-inner {
     background: rgba(2, 8, 4, 0.96);
   }
-  /* Phone: the date lookup is the usable instrument. It sits above the
-     hero canvas. Plate, chips, and the static zoom legend stay first. */
+  /* Phone: chips, then the date lookup, then the chart. The zoom
+     legend and captions follow the canvas. */
   #power-law-card {
     display: flex;
     flex-direction: column;
   }
+  #power-law-card > * {
+    min-width: 0;
+    max-width: 100%;
+  }
   #power-law-lookup-disclosure { order: 1; }
   #power-law-card .chart-frame { order: 2; }
+  #power-law-view-legend,
+  #power-law-preset-live,
   #power-law-summary,
   #power-law-cycle-tops-summary,
   #power-law-card > .chart-caption,
   #power-law-cycle-tops-disclosure { order: 3; }
+  .lookup-input,
+  .lookup-out { flex: 1 1 100%; }
+  .chart-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .masthead-inner::after {
@@ -644,12 +655,15 @@ a {
 }
 
 .model-status {
-  margin: 1.1rem 0 0;
-  max-width: 42rem;
-  font-size: 0.95rem;
-  line-height: 1.45;
+  margin: 1.15rem auto 0;
+  max-width: 36rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
   color: var(--ink);
-  text-align: left;
+  text-align: center;
+}
+.model-status p {
+  margin: 0.15rem 0;
 }
 
 .chart-job {
@@ -863,6 +877,9 @@ a {
 
 .table-scroll {
   overflow-x: auto;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (max-width: 480px) {
@@ -1194,6 +1211,13 @@ a {
 .cycle-tops-table td:last-child {
   color: var(--ink-dim);
   white-space: normal;
+}
+/* The projection table's last column is a dollar range, not a sentence.
+   Keep it on one line and let the card scroll sideways. */
+table[aria-label="Published projections"] td,
+table[aria-label="Published projections"] td:last-child {
+  white-space: nowrap;
+  color: var(--ink);
 }
 
 /* Instrument stack (Forecast): Role + Trust note are prose, not short

@@ -775,7 +775,7 @@
         else rangeName = String(plState.range || "custom zoom");
       }
       const axis = plState.timeScale === "log" ? "log time" : "calendar time";
-      preset.textContent = "Showing " + rangeName + ", " + axis + ". This preset is the Models chart only.";
+      preset.textContent = "Showing " + rangeName + ", " + axis + ".";
     }
   }
 
