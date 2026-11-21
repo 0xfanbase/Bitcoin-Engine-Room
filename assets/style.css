@@ -1445,7 +1445,6 @@ a {
    Earlier fold-in referenced undefined --surface/--muted, so horizon cards
    rendered fully transparent over Digital Rain. */
 .section-lede {
-  max-width: 52rem;
   margin: 0 0 14px;
   color: var(--ink-dim);
   font-size: 13px;
@@ -1465,7 +1464,6 @@ a {
   margin-bottom: 14px;
 }
 .forecast-reading {
-  max-width: 52rem;
   margin: 0 0 14px;
   padding: 10px 14px;
   background: var(--panel);
