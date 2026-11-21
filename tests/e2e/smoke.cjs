@@ -374,7 +374,7 @@ async function run(viewportName) {
   }));
   check(/under Cruise|over Cruise/.test(faces.status) && /blocks to the next halving/.test(faces.status), `[${viewportName}] status line has price gap and halving (${faces.status})`);
   check(/episode/.test(faces.reading) && /not a P90|not a percentile/i.test(faces.reading), `[${viewportName}] forecast reading leads with episodes and a labeled peak stress`);
-  check(/Showing /.test(faces.preset) && /Models chart only/.test(faces.preset), `[${viewportName}] preset line still names the Models chart after pan (${faces.preset})`);
+  check(/Showing /.test(faces.preset), `[${viewportName}] preset line still names the window after pan (${faces.preset})`);
   check(/Fear & Greed/.test(faces.fng) && /rank corr/.test(faces.fng), `[${viewportName}] Fear & Greed gauge prints its rank correlation`);
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

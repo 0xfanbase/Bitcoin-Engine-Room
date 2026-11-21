@@ -261,8 +261,7 @@
             stress.eval_date +
             " (Cruise that day " +
             fmtUSD(stress.cruise_price) +
-            "). " +
-            (stress.note || "")
+            "). A scenario label, not a percentile."
         )
       );
     }

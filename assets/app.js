@@ -145,31 +145,25 @@
     BER.roomSummary = summary;
     const gap = Number(r.deviation_pct);
     const side = gap < 0 ? Math.abs(gap).toFixed(0) + "% under Cruise" : gap.toFixed(0) + "% over Cruise";
-    const bucket = r.bucket || {};
-    const parts = [
-      BER.formatUSD(r.spot) + " · " + side + " (" + BER.formatUSD(r.cruise) + ")",
-      "z " + Number(r.z_score).toFixed(2),
-      ordinalPercentile(r.residual_percentile) + " percentile of past residuals",
-    ];
-    if (bucket.episodes != null) {
-      const med = Number(bucket.median_fwd_1y_pct);
-      const medText = (med > 0 ? "+" : "") + med.toFixed(0) + "%";
-      const neg = bucket.share_negative == null ? "" : ", " + Math.round(Number(bucket.share_negative) * 100) + "% of those months finished down";
-      parts.push(bucket.label + ": " + bucket.episodes + " episodes, median next year " + medText + neg);
-    }
+    const line = (text) => {
+      const p = document.createElement("p");
+      p.textContent = text;
+      return p;
+    };
+    el.textContent = "";
+    const asOf = r.as_of ? " as of " + r.as_of : "";
+    el.appendChild(line("Model " + BER.formatUSD(r.spot) + asOf + " · " + side + " (" + BER.formatUSD(r.cruise) + ")"));
+    const where = ["z " + Number(r.z_score).toFixed(2), ordinalPercentile(r.residual_percentile) + " percentile of past residuals"];
     if (health && health.tip_height && typeof health.tip_height.height === "number") {
       const left = BER.blocksUntilNextHalving(health.tip_height.height);
-      if (left != null) parts.push(left.toLocaleString("en-US") + " blocks to the next halving");
+      if (left != null) where.push(left.toLocaleString("en-US") + " blocks to the next halving");
     }
-    const st = r.short_term_90;
-    if (st && st.ties_random_walk) parts.push("At 90 days the model ties a random walk");
-    let pipeline = "";
+    el.appendChild(line(where.join(" · ")));
     const metrics = health && health.metrics;
     if (metrics) {
       const bad = Object.keys(metrics).filter((k) => metrics[k] && metrics[k].status && metrics[k].status !== "OK");
-      pipeline = bad.length ? " A daily series needs the Health panel." : " Daily pipeline OK.";
+      el.appendChild(line(bad.length ? "A daily series needs the Health panel." : "Daily pipeline OK."));
     }
-    el.textContent = parts.join(" · ") + "." + pipeline;
     const skill = document.getElementById("gauge-fng-skill");
     const fear = r.signals && r.signals.fear_greed;
     if (skill && fear) skill.textContent = skillSentence(fear, "Fear & Greed");
