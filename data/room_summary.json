@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-21T14:53:18Z",
+  "generated_at": "2026-11-22T14:48:52Z",
   "reading": {
-    "as_of": "2026-11-21",
-    "models_generated_at": "2026-11-21T14:53:18Z",
-    "backtest_generated_at": "2026-11-21T14:53:18Z",
-    "spot": 60209.0,
-    "cruise": 143346.44,
-    "deviation_pct": -58.0,
-    "z_score": -1.252,
-    "residual_percentile": 3.8,
+    "as_of": "2026-11-22",
+    "models_generated_at": "2026-11-22T14:48:52Z",
+    "backtest_generated_at": "2026-11-22T14:48:53Z",
+    "spot": 60867.0,
+    "cruise": 143415.98,
+    "deviation_pct": -57.56,
+    "z_score": -1.237,
+    "residual_percentile": 4.07,
     "noise_abs": 0.3,
     "bucket": {
       "z_low": -99.0,
@@ -98,18 +98,18 @@
       "quantile": 0.025,
       "n_origins": 155,
       "offset_log10": -0.732485,
-      "floor_price": 35970.8,
-      "cruise_price": 194283.12,
-      "in_sample_outer_offset_log10": -0.394795,
+      "floor_price": 35985.97,
+      "cruise_price": 194365.08,
+      "in_sample_outer_offset_log10": -0.394836,
       "note": "2.5th percentile of past 1-year log misses versus the Cruise line, priced off today's Cruise one year out. Fitted on the same walk-forward errors it summarizes. Does not replace Idle or P10."
     },
     "peak_stress": {
       "kind": "median_step_from_closed_era_sigma",
       "closed_era_sigma": [
-        4.0391,
-        3.4524,
-        2.6879,
-        1.8643
+        4.0386,
+        3.4522,
+        2.688,
+        1.8646
       ],
       "closed_era_dates": [
         "2011-06-11",
@@ -117,12 +117,12 @@
         "2017-12-17",
         "2021-03-14"
       ],
-      "median_step": -0.7645,
-      "stress_sigma": 1.0998,
+      "median_step": -0.7642,
+      "stress_sigma": 1.1004,
       "steps_strictly_down": true,
       "eval_date": "2028-04-15",
-      "cruise_price": 218427.55,
-      "stress_price": 467848.52,
+      "cruise_price": 218341.25,
+      "stress_price": 467873.47,
       "note": "Median step between successive closed-era peak sigmas, applied once to the last closed era and scored on today's fit. A scenario label, not a percentile. A decaying probability band was tested and rejected."
     }
   }
