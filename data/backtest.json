@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-22T14:48:53Z",
-  "data_through": "2026-11-22",
+  "generated_at": "2026-11-23T18:39:41Z",
+  "data_through": "2026-11-23",
   "method": {
     "origins": "first of every month from 2013-01-01, refit on data strictly before each origin",
     "error_unit": "log10(actual / forecast); *_mae_factor = 10^mean|error| (x2.0 = typically off by a factor of 2 either way)",
@@ -24,7 +24,7 @@
     {
       "horizon_days": 730,
       "n_origins": 143,
-      "approx_independent_windows": 5.9,
+      "approx_independent_windows": 6.0,
       "trend_mae_factor": 1.825,
       "trend_bias_pct": -26.2,
       "random_walk_mae_factor": 3.143,
