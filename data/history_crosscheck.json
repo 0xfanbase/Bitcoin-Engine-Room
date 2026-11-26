@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-29T13:33:18Z",
+  "generated_at": "2026-11-26T17:14:03Z",
   "reference_source": "bitstamp",
   "method": "committed daily price inside the reference day's [low, high] widened by 3%",
   "range_tolerance": 0.03,
@@ -112,19 +112,19 @@
     },
     {
       "year": 2026,
-      "days_compared": 302,
+      "days_compared": 330,
       "outside_range": 0,
       "outside_share": 0.0,
-      "median_abs_close_dev_pct": 1.0
+      "median_abs_close_dev_pct": 0.96
     }
   ],
   "fit_sensitivity": {
     "days_substituted": 155,
-    "b_committed": 5.596703,
-    "b_with_bitstamp_substituted": 5.599903,
-    "trend_2030_committed": 354412.52,
-    "trend_2030_with_bitstamp_substituted": 354930.65,
-    "trend_2030_change_pct": 0.15
+    "b_committed": 5.589622,
+    "b_with_bitstamp_substituted": 5.592812,
+    "trend_2030_committed": 350900.69,
+    "trend_2030_with_bitstamp_substituted": 351409.17,
+    "trend_2030_change_pct": 0.14
   },
   "largest_disagreements": [
     {
